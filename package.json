@@ -1,0 +1,23 @@
+{
+  "name": "pupitre",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @pupitre/api --filter @pupitre/app dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck && tsc -p e2e",
+    "db:generate": "pnpm --filter @pupitre/api db:generate",
+    "db:migrate": "pnpm --filter @pupitre/api db:migrate",
+    "auth:generate": "pnpm --filter @pupitre/api auth:generate",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  }
+}

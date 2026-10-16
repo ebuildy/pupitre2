@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.local
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/
+playwright-report/
+test-results/
+e2e/.auth/
+.DS_Store
