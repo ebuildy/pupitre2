@@ -9,6 +9,7 @@ import { secureHeaders } from 'hono/secure-headers'
 import { auth } from './auth.ts'
 import { env } from './env.ts'
 import { type AppEnv, sessionMiddleware } from './middleware/session.ts'
+import { meRoutes } from './routes/me.ts'
 
 const app = new Hono<AppEnv>()
 
@@ -34,12 +35,18 @@ app.use(
   }),
 )
 
+// A deactivated user keeps their session rows, but the web app must see them as signed out.
+app.get('/api/auth/get-session', async (c, next) => {
+  const result = await auth.api.getSession({ headers: c.req.raw.headers })
+  if (result && !result.user.isActive) return c.json(null)
+  await next()
+})
 app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 
 app.use('/api/*', sessionMiddleware)
 
 // Feature routers are chained here so `AppType` carries their types to the web client.
-const routes = app.basePath('/api')
+const routes = app.basePath('/api').route('/me', meRoutes)
 
 app.notFound((c) => c.json<ApiError>({ error: 'Not found' }, 404))
 

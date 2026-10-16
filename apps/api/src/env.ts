@@ -14,6 +14,9 @@ const schema = z.object({
     .default('http://localhost:3000')
     .transform((v) => v.split(',').map((o) => o.trim()).filter(Boolean)),
   LOG_REQUESTS: z.stringbool().default(true),
+  /** Admin bootstrap (spec 016). `_FILE` (mounted secret) wins over the plain variable. */
+  ADMIN_PASSWORD: z.string().optional(),
+  ADMIN_PASSWORD_FILE: z.string().optional(),
 })
 
 export const env = schema.parse(process.env)

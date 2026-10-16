@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/app.ts"
+    ".": "./src/app.ts",
+    "./auth": "./src/auth.ts"
   },
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env src/index.ts",

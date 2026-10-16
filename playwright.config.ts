@@ -1,9 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
-
-// Dedicated ports and a throwaway database so e2e runs don't collide with `pnpm dev`.
-const APP_PORT = 3100
-const API_PORT = 3101
-const baseURL = `http://localhost:${APP_PORT}`
+import { API_PORT, APP_PORT, BASE_URL } from './e2e/env.ts'
 
 export default defineConfig({
   testDir: './e2e',
@@ -13,7 +9,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
-    baseURL,
+    baseURL: BASE_URL,
     locale: 'fr-FR',
     trace: 'on-first-retry',
   },
@@ -29,16 +25,17 @@ export default defineConfig({
         NODE_ENV: 'test',
         PORT: String(API_PORT),
         DATABASE_URL: './data/e2e.db',
-        BETTER_AUTH_URL: baseURL,
-        CORS_ORIGINS: baseURL,
+        BETTER_AUTH_URL: BASE_URL,
+        CORS_ORIGINS: BASE_URL,
         LOG_REQUESTS: 'false',
+        ADMIN_PASSWORD: 'Admin@e2e-1234',
       },
     },
     {
       name: 'app',
       command: 'pnpm dev',
       cwd: './apps/app',
-      url: baseURL,
+      url: BASE_URL,
       reuseExistingServer: !process.env.CI,
       env: {
         PORT: String(APP_PORT),

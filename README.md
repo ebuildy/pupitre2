@@ -1,6 +1,6 @@
 # pupitre
 
-Rewrite of [pupitre](../../pupitre). Functional specs: `../../pupitre/docs/spec`.
+Rewrite of [pupitre](../../pupitre). Original functional specs: `../../pupitre/docs/spec`. Specs of this rewrite, as implemented: [`docs/specs`](docs/specs).
 
 ## Stack
 
@@ -21,7 +21,7 @@ pnpm exec playwright install chromium   # once
 pnpm dev                                # app http://localhost:3000, api http://localhost:3001
 ```
 
-API config is read from env vars (and `apps/api/.env`, see `.env.example`). Migrations run at API startup.
+API config is read from env vars (and `apps/api/.env`, see `.env.example`). Migrations run at API startup, then the `admin` account (`admin@pupitre.local`) is ensured: password from `ADMIN_PASSWORD` / `ADMIN_PASSWORD_FILE`, else `Admin@1234` on first start only.
 
 ## Scripts
 
@@ -38,5 +38,8 @@ API config is read from env vars (and `apps/api/.env`, see `.env.example`). Migr
 ## Conventions
 
 - Errors are `{ "error": "<message>" }` (spec 005); unknown routes return 404 in that shape.
-- `c.var.user` / `c.var.session` are filled on every `/api/*` request; use `requireAuth` to guard a route.
+- `c.var.user` / `c.var.session` are filled on every `/api/*` request (deactivated users count as signed out); guard routes with `requireAuth` or `requireRole('admin')`.
+- Users have a `role` (`student` | `manager` | `admin`) and `isActive`, declared as better-auth `additionalFields` with `input: false`.
+- Pages: wrap in `<RequireAuth roles={[...]}>` (redirects to `/login?redirect=…`, or shows "Accès refusé").
+- e2e: use the `createUser({ role, isActive })` fixture from `e2e/fixtures.ts`.
 - Chain feature routers onto `routes` in `apps/api/src/app.ts` so `AppType` exposes them to `api` in `apps/app/src/lib/api.ts`.
