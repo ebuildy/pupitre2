@@ -1,4 +1,6 @@
 @import 'tailwindcss';
 @source '../../../packages/auth-ui/src';
+@source '../../../packages/ui/src';
+@source '../../../packages/i18n/src';
 
 @custom-variant dark (&:where(.dark, .dark *));

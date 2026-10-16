@@ -14,6 +14,7 @@ TypeScript everywhere (`tsc` 7, strict, `.ts` extensions in relative imports).
 | `apps/app` | Learner frontend at `/` (React 19, Vite, React Router, Tailwind v4) |
 | `apps/admin` | Admin frontend at `/admin/` (same stack, Vite `base: '/admin/'`, router `basename: '/admin'`) |
 | `packages/auth-ui` | Shared login page, better-auth client, `RequireAuth`, `AccessDenied`, `signOutTo`, `useGoTo` |
+| `packages/ui` | Shared UI pieces: `unwrap`, course badges, category labels, `useDebouncedValue` |
 | `packages/i18n` | i18next setup, `fr`/`en` catalogues, `LanguageSwitcher` |
 | `packages/shared` | Types, constants and pure helpers used by API and frontends |
 | `e2e` | Playwright tests |
@@ -61,6 +62,12 @@ pnpm auth:generate  # regenerate the better-auth schema after changing auth conf
   `pnpm auth:generate`, then `pnpm db:generate --name <change>`.
 - User fields that clients must not set (`role`, `isActive`) are `additionalFields` with `input: false`.
 - Schema changes: edit `src/db/schema/*`, run `pnpm db:generate --name <change>`, commit the SQL. Migrations run at startup.
+  drizzle-kit asks interactively about renames (fails without a TTY): split the change (add the new column, then drop the old
+  one in a second generate) and put any data migration SQL at the end of the first file. Never edit a migration that
+  may already be applied (anything merged into `master`).
+- Validate inputs with `validate('json' | 'query', schema)` from `src/lib/validate.ts` (answers 400 `{ error }`). Shared
+  request schemas and response types live in `@pupitre/shared`; type responses with `c.json<T>(...)`.
+- Business queries go in `src/services/`, routes stay thin.
 - Guards: `requireAuth`, `requireRole('admin' | 'manager', …)` from `src/middleware/session.ts`. `c.var.user` is
   `null` for signed-out and deactivated users.
 - Learner endpoints: chain onto `routes` in `src/app.ts` (typed client `api` in `apps/app`).
@@ -70,6 +77,10 @@ pnpm auth:generate  # regenerate the better-auth schema after changing auth conf
 
 ## Frontends (apps/app, apps/admin)
 
+- Data fetching: TanStack Query + the typed Hono clients (`api` / `adminApi`), unwrapped with `unwrap()` from
+  `@pupitre/ui` (throws `ApiRequestError` with the API's `error` message). After a mutation, invalidate the affected
+  query keys.
+- Keep filters that users may want to share in the URL search params.
 - Auth UI comes from `@pupitre/auth-ui`; do not reimplement login, guards or logout in an app.
 - Protect pages with `<RequireAuth roles={[…]}>`.
 - Paths that may cross apps (`/courses` ↔ `/admin/…`) are origin-absolute: navigate with `useGoTo()`, link
@@ -88,7 +99,8 @@ All UI text is translated (spec 018). **Never hard-code a user-visible string**,
 - Namespaces: `common` (default: shell, shared words, roles, difficulty), `auth`, `app` (learner pages),
   `admin` (admin pages). Add a namespace to both locales and to `namespaces` in `packages/i18n/src/i18n.ts`.
 - In components: `import { useTranslation } from '@pupitre/i18n'` (never from `react-i18next` directly),
-  `const { t } = useTranslation('app')`, `t('pages.catalogue')`; other namespace: `t('common:logout')`.
+  `const { t } = useTranslation('app')`, `t('catalogue.title')`. To use another namespace's keys, list it:
+  `useTranslation(['app', 'common'])` then `t('common:cancel')` (otherwise typecheck fails).
   Keys are typed: an unknown key fails typecheck.
 - Write the French first, reusing the original app's wording (the original specs quote it), then the English.
 - Interpolation `{{name}}`; plurals with `_one` / `_other` suffixes; dates and numbers with i18next formatters
@@ -106,6 +118,11 @@ Playwright is the only test runner. Every feature ships with e2e tests covering 
 - Import `test`, `expect` and `login` from `./fixtures.ts`, never from another spec file.
 - Users: `const user = await createUser({ role: 'manager', isActive: false })` creates a unique user through the
   real sign-up endpoint (password `user.password`). The bootstrapped admin is `admin` / `ADMIN_PASSWORD`.
+- `await signIn(page, user)` logs in and waits until the session is set; use it before `page.goto(...)` or
+  `page.request` calls (navigating away right after `login()` can cancel the sign-in).
+- Courses and categories: `await createCategory({ title, parentId })`, `await createCourse({ categoryId, visibility, status, ... })` (admin API; defaults: unique slug/title, published,
+  public). `adminRequest` is an API client signed in as admin.
+- The catalogue is shared by parallel tests: put a `uid()` token in titles/categories and filter with `?search=<token>`.
 - Tests run in parallel against one database: create your own users, never depend on data from another test,
   use unique values.
 - Select by role and accessible name (`getByRole('button', { name: 'Se connecter' })`, `getByLabel(...)`),

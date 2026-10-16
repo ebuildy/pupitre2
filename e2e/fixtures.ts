@@ -1,14 +1,28 @@
 import { randomUUID } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
-import { test as base, type Page, request } from '@playwright/test'
-import type { Role } from '@pupitre/shared'
-import { API_DB_PATH, BASE_URL } from './env.ts'
+import { type APIRequestContext, test as base, type Page, request } from '@playwright/test'
+import type { AdminCategory, AdminCourse, CategoryCreateInput, CourseCreateInput, Role } from '@pupitre/shared'
+import { ADMIN_PASSWORD, API_DB_PATH, BASE_URL } from './env.ts'
 
 export type TestUser = { username: string; email: string; password: string; role: Role }
 
 type Fixtures = {
   /** Creates a user through the real sign-up endpoint, then sets role / active flag in the database. */
   createUser: (opts?: { role?: Role; isActive?: boolean }) => Promise<TestUser>
+  /** An API client signed in as the bootstrapped admin. */
+  adminRequest: APIRequestContext
+  /**
+   * Creates a course through the admin API. Defaults: unique slug and title, published, public.
+   * Put a unique token in the title to find it with the catalogue search.
+   */
+  createCourse: (input?: Partial<CourseCreateInput>) => Promise<AdminCourse>
+  /** Creates a category through the admin API. Defaults: unique slug and title, top-level. */
+  createCategory: (input?: Partial<CategoryCreateInput>) => Promise<AdminCategory>
+}
+
+/** A short random token for unique slugs, titles and categories. */
+export function uid() {
+  return randomUUID().slice(0, 8)
 }
 
 export const test = base.extend<Fixtures>({
@@ -34,9 +48,54 @@ export const test = base.extend<Fixtures>({
     })
     db.close()
   },
+
+  adminRequest: async ({}, use) => {
+    const api = await request.newContext({ baseURL: BASE_URL })
+    const res = await api.post('/api/auth/sign-in/username', { data: { username: 'admin', password: ADMIN_PASSWORD } })
+    if (!res.ok()) throw new Error(`admin sign-in failed: ${res.status()} ${await res.text()}`)
+    await use(api)
+    await api.dispose()
+  },
+
+  createCourse: async ({ adminRequest }, use) => {
+    await use(async (input = {}) => {
+      const id = uid()
+      const res = await adminRequest.post('/api/admin/courses', {
+        data: {
+          slug: `course-${id}`,
+          title: `Course ${id}`,
+          visibility: 'public',
+          status: 'published',
+          ...input,
+        },
+      })
+      if (!res.ok()) throw new Error(`course creation failed: ${res.status()} ${await res.text()}`)
+      return (await res.json()) as AdminCourse
+    })
+  },
+
+  createCategory: async ({ adminRequest }, use) => {
+    await use(async (input = {}) => {
+      const id = uid()
+      const res = await adminRequest.post('/api/admin/categories', {
+        data: { slug: `cat-${id}`, title: `Cat ${id}`, ...input },
+      })
+      if (!res.ok()) throw new Error(`category creation failed: ${res.status()} ${await res.text()}`)
+      return (await res.json()) as AdminCategory
+    })
+  },
 })
 
-export { expect } from '@playwright/test'
+import { expect } from '@playwright/test'
+
+export { expect }
+
+/** Logs in from the learner login page and waits until the user has landed (session cookie set). */
+export async function signIn(page: Page, user: { email: string; password: string }) {
+  await page.goto('/login')
+  await login(page, user.email, user.password)
+  await expect(page).not.toHaveURL(/\/login/)
+}
 
 /** Fills and submits the shared login page (spec 023), in any frontend. */
 export async function login(page: Page, identifier: string, password: string) {

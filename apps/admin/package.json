@@ -13,6 +13,8 @@
     "@pupitre/auth-ui": "workspace:*",
     "@pupitre/i18n": "workspace:*",
     "@pupitre/shared": "workspace:*",
+    "@pupitre/ui": "workspace:*",
+    "@tanstack/react-query": "^5.104.3",
     "better-auth": "^1.7.10",
     "hono": "^4.13.13",
     "react": "^19.3.1",

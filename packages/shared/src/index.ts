@@ -31,3 +31,5 @@ export function landingPath(role: Role | undefined, redirect: string | null | un
   if (redirect && /^\/(?![/\\])/.test(redirect)) return redirect
   return role === 'admin' ? '/admin' : '/courses'
 }
+
+export * from './courses.ts'

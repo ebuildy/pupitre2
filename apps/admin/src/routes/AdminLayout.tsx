@@ -4,7 +4,11 @@ import { LanguageSwitcher, useTranslation } from '@pupitre/i18n'
 import { NavLink, Outlet } from 'react-router'
 
 // Admin shell (spec 011): left sidebar "Administration". Sections are added with their features.
-const sections = [{ to: '/', label: 'nav.dashboard', end: true }] as const
+const sections = [
+  { to: '/', label: 'nav.dashboard', end: true },
+  { to: '/courses', label: 'nav.courses', end: false },
+  { to: '/categories', label: 'nav.categories', end: false },
+] as const
 
 export function AdminLayout() {
   const { t } = useTranslation(['admin', 'common'])
