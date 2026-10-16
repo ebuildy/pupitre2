@@ -10,6 +10,7 @@ Rewrite of [pupitre](../../pupitre). Original functional specs: `../../pupitre/d
 | `apps/app` | Learner frontend, served at `/`: React 19 + Vite, React Router, Tailwind CSS v4, Hono RPC client |
 | `apps/admin` | Admin frontend, served at `/admin/` (Vite `base`), same stack; only calls `/api/admin/*` |
 | `packages/auth-ui` | Shared login page, better-auth client, `RequireAuth`, "Accès refusé", cross-app navigation |
+| `packages/i18n` | i18next setup, French/English catalogues, typed keys, `LanguageSwitcher` |
 | `packages/shared` | Wire types / schemas / helpers shared by every package |
 | `e2e` | Playwright tests (they start both servers themselves) |
 
@@ -46,4 +47,5 @@ API config is read from env vars (and `apps/api/.env`, see `.env.example`). Migr
 - e2e: use the `createUser({ role, isActive })` fixture from `e2e/fixtures.ts`.
 - Learner endpoints: chain routers onto `routes` in `apps/api/src/app.ts` (`AppType`, client `api` in `apps/app/src/lib/api.ts`).
 - Admin endpoints: chain routers onto `adminRoutes` in `apps/api/src/routes/admin/index.ts`. They live under `/api/admin/*`, are admin-only before routing, and are typed separately (`AdminAppType`, client `adminApi` in `apps/admin/src/lib/api.ts`).
+- UI text: never hard-code it. Add the key to `packages/i18n/src/locales/fr/index.ts` (reference) and `en/index.ts`, then `const { t } = useTranslation('<ns>')` from `@pupitre/i18n` (spec 018). Missing translations or unknown keys fail `pnpm typecheck`.
 - Pages use `useGoTo()` from `@pupitre/auth-ui` for origin-absolute paths: client-side within the current app, full page load across apps.

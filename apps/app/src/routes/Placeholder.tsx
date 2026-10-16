@@ -1,4 +1,7 @@
+import { useTranslation } from '@pupitre/i18n'
+
 // Stand-in for pages that later features will build.
-export function Placeholder({ title }: { title: string }) {
-  return <h1 className="text-2xl font-semibold">{title}</h1>
+export function Placeholder({ page }: { page: 'catalogue' | 'myCourses' }) {
+  const { t } = useTranslation('app')
+  return <h1 className="text-2xl font-semibold">{t(`pages.${page}`)}</h1>
 }

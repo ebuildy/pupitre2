@@ -11,12 +11,12 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/courses" replace /> },
       { path: 'dashboard', element: <Navigate to="/courses" replace /> },
-      { path: 'courses', element: <Placeholder title="Catalogue" /> },
+      { path: 'courses', element: <Placeholder page="catalogue" /> },
       {
         path: 'my-courses',
         element: (
           <RequireAuth>
-            <Placeholder title="Mes cours" />
+            <Placeholder page="myCourses" />
           </RequireAuth>
         ),
       },

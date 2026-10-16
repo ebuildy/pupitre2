@@ -11,6 +11,8 @@
         if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.classList.add('dark')
         }
+        // Spec 018: the persisted language, before first paint (French by default).
+        if (localStorage.getItem('locale') === 'en') document.documentElement.lang = 'en'
       } catch {}
     </script>
   </head>
