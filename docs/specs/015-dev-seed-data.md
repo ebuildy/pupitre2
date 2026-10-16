@@ -40,6 +40,20 @@ Known accounts:
 
 Generated students use `Student@1234`, generated managers `Manager@1234`.
 
+## Demo login buttons
+
+In dev only, the learner login page (`/login`) shows a "Comptes de démonstration" section under the form, with one
+button per account: Élise Étudiante (`etudiant`), Marc Manager (`manager`) and `admin`. Each button shows the
+account's name and role. Clicking it fills the form and submits it, so sign-in, errors and the landing redirect work
+exactly as with a manual login.
+
+- The list lives in `apps/app/src/lib/demo-accounts.ts`, behind `import.meta.env.DEV`. `vite build` removes it, so
+  production bundles contain neither the buttons nor the passwords.
+- The admin login page (`/admin/login`) has no demo buttons: `LoginPage` only shows them when it gets a
+  `demoAccounts` prop.
+- The admin button uses `Admin@1234`, or `VITE_DEMO_ADMIN_PASSWORD` when the API runs with another
+  `ADMIN_PASSWORD`. The e2e config sets it.
+
 ## Rules
 
 - **Deterministic**: the faker seed and the reference date are fixed, so two fresh databases get exactly the same data.
@@ -52,8 +66,10 @@ Generated students use `Student@1234`, generated managers `Manager@1234`.
 
 - One command and one variable (`SEED_DEV_DATA`) instead of `SEED_DEV_COURSES` (course-service) and `SEED_MOCK_DATA` (user-service).
 - Generated data is reproducible (seeded) and includes categories, managers and an inactive account.
+- New: one-click demo login buttons on the dev learner login page.
 
 ## Source
 
 `apps/api/src/fixtures/data.ts` (curated data, templates, known accounts), `apps/api/src/fixtures/index.ts` (generation),
-`apps/api/src/fixtures/cli.ts` (`db:seed`, `db:reset`).
+`apps/api/src/fixtures/cli.ts` (`db:seed`, `db:reset`), `apps/app/src/lib/demo-accounts.ts` and
+`packages/auth-ui/src/LoginPage.tsx` (demo login buttons), `e2e/demo-login.spec.ts`.

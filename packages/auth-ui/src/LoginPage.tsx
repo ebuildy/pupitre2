@@ -1,6 +1,6 @@
 import { LanguageSwitcher, useTranslation } from '@pupitre/i18n'
 import { landingPath, type Role } from '@pupitre/shared'
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { signInWithIdentifier, useSession } from './auth-client.ts'
 import { useGoTo } from './navigation.ts'
@@ -10,12 +10,19 @@ const INVALID_CREDENTIALS = new Set(['INVALID_EMAIL_OR_PASSWORD', 'INVALID_USERN
 
 type ErrorKey = 'emptyFields' | 'invalidCredentials' | 'generic'
 
+/** A known account the login page can sign in with in one click (dev only, see `demoAccounts`). */
+export type DemoAccount = { name: string; role: Role; identifier: string; password: string }
+
 /**
  * Spec 023, shared by every frontend (email tab only for now; SSO/LDAP tabs and the registration
  * link come with their features). `redirect` and landing paths are origin-absolute (spec 025).
+ *
+ * `demoAccounts` adds one-click sign-in buttons under the form (spec 015). Only pass them in dev
+ * (`import.meta.env.DEV`), so the credentials are not in production bundles.
  */
-export function LoginPage() {
-  const { t } = useTranslation('auth')
+export function LoginPage({ demoAccounts }: { demoAccounts?: readonly DemoAccount[] } = {}) {
+  const { t } = useTranslation(['auth', 'common'])
+  const formRef = useRef<HTMLFormElement>(null)
   const goTo = useGoTo()
   const [params] = useSearchParams()
   const { data: session, isPending: sessionPending } = useSession()
@@ -50,6 +57,15 @@ export function LoginPage() {
     goTo(landingPath(data.user.role as Role, redirect), { replace: true })
   }
 
+  // Fills the form and submits it, so a demo sign-in goes through the same path as a manual one.
+  function signInAs(account: DemoAccount) {
+    const form = formRef.current
+    if (!form) return
+    ;(form.elements.namedItem('identifier') as HTMLInputElement).value = account.identifier
+    ;(form.elements.namedItem('password') as HTMLInputElement).value = account.password
+    form.requestSubmit()
+  }
+
   const input =
     'h-11 w-full rounded-lg border border-zinc-300 bg-transparent px-3 outline-none focus:border-blue-500 dark:border-zinc-700'
 
@@ -71,7 +87,7 @@ export function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={onSubmit} noValidate className="flex flex-col gap-3">
+        <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-3">
           <input
             name="identifier"
             placeholder={t('login.identifierPlaceholder')}
@@ -95,6 +111,27 @@ export function LoginPage() {
             {pending ? t('login.submitting') : t('login.submit')}
           </button>
         </form>
+
+        {demoAccounts && demoAccounts.length > 0 && (
+          <section aria-labelledby="demo-accounts" className="flex flex-col gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+            <h2 id="demo-accounts" className="text-center text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+              {t('login.demo.title')}
+            </h2>
+            {demoAccounts.map((account) => (
+              <button
+                key={account.identifier}
+                type="button"
+                disabled={pending}
+                onClick={() => signInAs(account)}
+                aria-label={t('login.demo.signInAs', { name: account.name })}
+                className="flex h-11 items-center justify-between rounded-lg border border-zinc-300 px-3 text-sm hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-800"
+              >
+                <span className="font-medium">{account.name}</span>
+                <span className="text-zinc-500">{t(`common:roles.${account.role}`)}</span>
+              </button>
+            ))}
+          </section>
+        )}
       </div>
     </div>
   )

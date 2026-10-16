@@ -1,5 +1,6 @@
 import { LoginPage, RequireAuth } from '@pupitre/auth-ui'
 import { createBrowserRouter, Navigate } from 'react-router'
+import { demoAccounts } from './lib/demo-accounts.ts'
 import { Catalogue } from './routes/Catalogue.tsx'
 import { CourseDetail } from './routes/CourseDetail.tsx'
 import { Layout } from './routes/Layout.tsx'
@@ -9,7 +10,7 @@ import { MyXp } from './routes/MyXp.tsx'
 
 // `/admin/*` is the admin app (apps/admin), served on the same origin.
 export const router = createBrowserRouter([
-  { path: 'login', element: <LoginPage /> },
+  { path: 'login', element: <LoginPage demoAccounts={demoAccounts} /> },
   {
     element: <Layout />,
     children: [

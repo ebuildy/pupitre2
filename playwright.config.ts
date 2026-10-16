@@ -41,6 +41,7 @@ export default defineConfig({
         PORT: String(APP_PORT),
         API_URL: `http://localhost:${API_PORT}`,
         ADMIN_URL: `http://localhost:${ADMIN_PORT}`,
+        VITE_DEMO_ADMIN_PASSWORD: ADMIN_PASSWORD,
       },
     },
     {

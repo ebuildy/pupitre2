@@ -62,6 +62,10 @@ export const auth = {
       invalidCredentials: 'Invalid username or password',
       generic: 'Sign-in failed',
     },
+    demo: {
+      title: 'Demo accounts',
+      signInAs: 'Sign in as {{name}}',
+    },
   },
 } satisfies Messages<typeof fr.auth>
 

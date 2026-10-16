@@ -102,5 +102,5 @@ export async function signIn(page: Page, user: { email: string; password: string
 export async function login(page: Page, identifier: string, password: string) {
   await page.getByLabel('Identifiant ou e-mail').fill(identifier)
   await page.getByLabel('Mot de passe').fill(password)
-  await page.getByRole('button', { name: 'Se connecter' }).click()
+  await page.getByRole('button', { name: 'Se connecter', exact: true }).click()
 }

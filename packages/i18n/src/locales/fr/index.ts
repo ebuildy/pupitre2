@@ -63,6 +63,10 @@ export const auth = {
       invalidCredentials: 'Identifiant ou mot de passe incorrect',
       generic: 'Erreur de connexion',
     },
+    demo: {
+      title: 'Comptes de démonstration',
+      signInAs: 'Se connecter en tant que {{name}}',
+    },
   },
 }
 

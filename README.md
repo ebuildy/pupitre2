@@ -25,7 +25,7 @@ pnpm exec playwright install chromium   # once
 pnpm dev                                # http://localhost:3000 (admin: /admin/), api :3001, admin vite :3002
 ```
 
-`pnpm dev` loads mock data (spec 015): log in as `etudiant` / `Student@1234`, `manager` / `Manager@1234` or `admin` / `Admin@1234`. API config is read from env vars (and `apps/api/.env`, see `.env.example`). Migrations run at API startup, then the `admin` account (`admin@pupitre.local`) is ensured: password from `ADMIN_PASSWORD` / `ADMIN_PASSWORD_FILE`, else `Admin@1234` on first start only.
+`pnpm dev` loads mock data (spec 015): log in as `etudiant` / `Student@1234`, `manager` / `Manager@1234` or `admin` / `Admin@1234`; in dev, the buttons under the login form sign in as these accounts in one click. API config is read from env vars (and `apps/api/.env`, see `.env.example`). Migrations run at API startup, then the `admin` account (`admin@pupitre.local`) is ensured: password from `ADMIN_PASSWORD` / `ADMIN_PASSWORD_FILE`, else `Admin@1234` on first start only.
 
 ## Scripts
 

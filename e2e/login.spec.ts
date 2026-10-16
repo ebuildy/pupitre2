@@ -31,7 +31,7 @@ test.describe('login (spec 023)', () => {
 
   test('empty fields show a validation message', async ({ page }) => {
     await page.goto('/login')
-    await page.getByRole('button', { name: 'Se connecter' }).click()
+    await page.getByRole('button', { name: 'Se connecter', exact: true }).click()
     await expect(page.getByRole('alert')).toHaveText('Veuillez remplir tous les champs')
   })
 
