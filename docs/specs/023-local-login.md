@@ -6,8 +6,9 @@
 | Actors | User with a local account |
 | Related | [001](001-roles-and-permissions.md), [016](016-admin-bootstrap.md), [025](025-post-login-landing.md) |
 
-## UI — `/login`
+## UI — `/login` and `/admin/login`
 
+- One `LoginPage` component (`@pupitre/auth-ui`) mounted by both frontends.
 - Full-page card, outside the app shell: logo `pioupitre.png` + "pupitre".
 - One field "identifiant ou e-mail", one field "mot de passe", button "Se connecter" ("Connexion…" and disabled while pending).
 - Errors in a red banner (`role="alert"`):
@@ -47,4 +48,4 @@ All of the following answer 401 with the same code, so a response never reveals 
 
 ## Source
 
-`apps/app/src/routes/Login.tsx`, `apps/app/src/lib/auth-client.ts`, `apps/api/src/auth.ts`, `e2e/login.spec.ts`.
+`packages/auth-ui/src/LoginPage.tsx`, `packages/auth-ui/src/auth-client.ts`, `apps/api/src/auth.ts`, `e2e/login.spec.ts`.

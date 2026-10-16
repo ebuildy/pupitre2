@@ -1,25 +1,32 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, type ProxyOptions } from 'vite'
 
 const apiUrl = process.env.API_URL ?? 'http://localhost:3001'
+const adminUrl = process.env.ADMIN_URL ?? 'http://localhost:3002'
 
-// Single hostname (spec 004): the browser only talks to the app origin, /api is proxied to the API.
+// Single hostname (spec 004): the browser only talks to this origin, which proxies
+// /api to the API and /admin to the admin app (apps/admin, built with base `/admin/`).
+const proxy: Record<string, ProxyOptions> = {
+  '/api': { target: apiUrl },
+  '/health': { target: apiUrl },
+  '^/admin(/|$)': {
+    target: adminUrl,
+    ws: true, // admin app HMR
+    rewrite: (path) => (path === '/admin' ? '/admin/' : path),
+  },
+}
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     port: Number(process.env.PORT ?? 3000),
     strictPort: true,
-    proxy: {
-      '/api': { target: apiUrl, changeOrigin: false },
-      '/health': { target: apiUrl },
-    },
+    proxy,
   },
   preview: {
     port: Number(process.env.PORT ?? 3000),
     strictPort: true,
-    proxy: {
-      '/api': { target: apiUrl, changeOrigin: false },
-    },
+    proxy,
   },
 })

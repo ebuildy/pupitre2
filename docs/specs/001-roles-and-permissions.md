@@ -37,14 +37,16 @@ set through sign-up or update-user, only by the server.
 
 Errors use the `{ "error": "<message>" }` envelope.
 
+Every `/api/admin/*` route is behind `requireRole('admin')`, applied before routing: a non-admin gets 401/403 even for an unknown path ([004](004-frontends-and-routing.md)).
+
 ## Page guards
 
 `<RequireAuth roles?={[...]}>` wraps protected routes:
 
-- signed out → redirect to `/login?redirect=<path + query>`;
+- signed out → redirect to the current app's login page (`/login` or `/admin/login`) with `?redirect=<origin-absolute path + query>`;
 - signed in without one of `roles` → "Accès refusé" page with a "Retour au catalogue" button (→ `/courses`).
 
-Current routes: `/my-courses` (any signed-in user), `/admin` (admin). `/courses` is public.
+Current routes: `/my-courses` (any signed-in user), the whole admin app `/admin/*` (admin). `/courses` is public.
 
 ## Role-dependent UI
 
@@ -65,4 +67,4 @@ Current routes: `/my-courses` (any signed-in user), `/admin` (admin). `/courses`
 ## Source
 
 `apps/api/src/auth.ts`, `apps/api/src/middleware/session.ts`, `apps/api/src/app.ts`,
-`apps/app/src/components/RequireAuth.tsx`, `packages/shared/src/index.ts`.
+`apps/api/src/routes/admin/index.ts`, `packages/auth-ui/src/RequireAuth.tsx`, `packages/shared/src/index.ts`.

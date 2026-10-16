@@ -7,18 +7,20 @@ Rewrite of [pupitre](../../pupitre). Original functional specs: `../../pupitre/d
 | Path | What |
 | --- | --- |
 | `apps/api` | Hono on Node, Drizzle ORM + SQLite (better-sqlite3), better-auth |
-| `apps/app` | React 19 + Vite, React Router, Tailwind CSS v4, better-auth client, Hono RPC client |
-| `packages/shared` | Wire types / schemas shared by both apps |
+| `apps/app` | Learner frontend, served at `/`: React 19 + Vite, React Router, Tailwind CSS v4, Hono RPC client |
+| `apps/admin` | Admin frontend, served at `/admin/` (Vite `base`), same stack; only calls `/api/admin/*` |
+| `packages/auth-ui` | Shared login page, better-auth client, `RequireAuth`, "Accès refusé", cross-app navigation |
+| `packages/shared` | Wire types / schemas / helpers shared by every package |
 | `e2e` | Playwright tests (they start both servers themselves) |
 
-The browser only talks to the app origin. `/api/*` and `/health` are proxied by Vite to the API (spec 004), so auth cookies are same-origin.
+The browser only talks to one origin (spec 004): the learner app's Vite server proxies `/api/*` and `/health` to the API and `/admin/*` to the admin app's Vite server, so both frontends share the session cookie. See [docs/specs/004](docs/specs/004-frontends-and-routing.md).
 
 ## Getting started
 
 ```sh
 pnpm install
 pnpm exec playwright install chromium   # once
-pnpm dev                                # app http://localhost:3000, api http://localhost:3001
+pnpm dev                                # http://localhost:3000 (admin: /admin/), api :3001, admin vite :3002
 ```
 
 API config is read from env vars (and `apps/api/.env`, see `.env.example`). Migrations run at API startup, then the `admin` account (`admin@pupitre.local`) is ensured: password from `ADMIN_PASSWORD` / `ADMIN_PASSWORD_FILE`, else `Admin@1234` on first start only.
@@ -27,10 +29,10 @@ API config is read from env vars (and `apps/api/.env`, see `.env.example`). Migr
 
 | Command | |
 | --- | --- |
-| `pnpm dev` | API (tsx watch) + app (Vite) in parallel |
+| `pnpm dev` | API (tsx watch) + app + admin (Vite) in parallel |
 | `pnpm typecheck` | `tsc` across every package and the e2e tests |
-| `pnpm build` | Production build of the app |
-| `pnpm test:e2e` | Playwright (ports 3100/3101, fresh `apps/api/data/e2e.db`) |
+| `pnpm build` | Production build of both frontends |
+| `pnpm test:e2e` | Playwright (ports 3100 app / 3101 api / 3102 admin, fresh `apps/api/data/e2e.db`) |
 | `pnpm db:generate` | Drizzle migration from schema changes (`apps/api/drizzle/`) |
 | `pnpm db:migrate` | Apply migrations without starting the API |
 | `pnpm auth:generate` | Regenerate `apps/api/src/db/schema/auth.ts` after changing better-auth plugins/config, then `pnpm db:generate` |
@@ -40,6 +42,8 @@ API config is read from env vars (and `apps/api/.env`, see `.env.example`). Migr
 - Errors are `{ "error": "<message>" }` (spec 005); unknown routes return 404 in that shape.
 - `c.var.user` / `c.var.session` are filled on every `/api/*` request (deactivated users count as signed out); guard routes with `requireAuth` or `requireRole('admin')`.
 - Users have a `role` (`student` | `manager` | `admin`) and `isActive`, declared as better-auth `additionalFields` with `input: false`.
-- Pages: wrap in `<RequireAuth roles={[...]}>` (redirects to `/login?redirect=…`, or shows "Accès refusé").
+- Pages: wrap in `<RequireAuth roles={[...]}>` (redirects to the current app's `/login?redirect=…`, or shows "Accès refusé").
 - e2e: use the `createUser({ role, isActive })` fixture from `e2e/fixtures.ts`.
-- Chain feature routers onto `routes` in `apps/api/src/app.ts` so `AppType` exposes them to `api` in `apps/app/src/lib/api.ts`.
+- Learner endpoints: chain routers onto `routes` in `apps/api/src/app.ts` (`AppType`, client `api` in `apps/app/src/lib/api.ts`).
+- Admin endpoints: chain routers onto `adminRoutes` in `apps/api/src/routes/admin/index.ts`. They live under `/api/admin/*`, are admin-only before routing, and are typed separately (`AdminAppType`, client `adminApi` in `apps/admin/src/lib/api.ts`).
+- Pages use `useGoTo()` from `@pupitre/auth-ui` for origin-absolute paths: client-side within the current app, full page load across apps.

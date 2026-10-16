@@ -1,11 +1,11 @@
+import { LoginPage, RequireAuth } from '@pupitre/auth-ui'
 import { createBrowserRouter, Navigate } from 'react-router'
-import { RequireAuth } from './components/RequireAuth.tsx'
 import { Layout } from './routes/Layout.tsx'
-import { Login } from './routes/Login.tsx'
 import { Placeholder } from './routes/Placeholder.tsx'
 
+// `/admin/*` is the admin app (apps/admin), served on the same origin.
 export const router = createBrowserRouter([
-  { path: 'login', element: <Login /> },
+  { path: 'login', element: <LoginPage /> },
   {
     element: <Layout />,
     children: [
@@ -17,14 +17,6 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <Placeholder title="Mes cours" />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'admin',
-        element: (
-          <RequireAuth roles={['admin']}>
-            <Placeholder title="Administration" />
           </RequireAuth>
         ),
       },

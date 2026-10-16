@@ -7,9 +7,9 @@
 
 ## Behaviour
 
-- "Déconnexion" button in the top bar.
+- "Déconnexion" button in the top bar of both frontends (`signOutTo()` from `@pupitre/auth-ui`).
 - Calls `POST /api/auth/sign-out`: the session row is deleted server-side and the cookie cleared.
-- Then does a full page load of `/login`, which drops all client state (and avoids `/login` seeing a stale session and bouncing back).
+- Then does a full page load of the app's login page (`/login`, or `/admin/login` from the admin app), which drops all client state (and avoids `/login` seeing a stale session and bouncing back).
 
 ## Acceptance criteria
 
@@ -23,4 +23,4 @@
 
 ## Source
 
-`apps/app/src/routes/Layout.tsx`.
+`packages/auth-ui/src/auth-client.ts`, `apps/app/src/routes/Layout.tsx`, `apps/admin/src/routes/AdminLayout.tsx`.

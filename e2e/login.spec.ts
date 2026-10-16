@@ -1,11 +1,5 @@
-import type { Page } from '@playwright/test'
-import { expect, test } from './fixtures.ts'
-
-async function login(page: Page, identifier: string, password: string) {
-  await page.getByLabel('Identifiant ou e-mail').fill(identifier)
-  await page.getByLabel('Mot de passe').fill(password)
-  await page.getByRole('button', { name: 'Se connecter' }).click()
-}
+import { ADMIN_PASSWORD } from './env.ts'
+import { expect, login, test } from './fixtures.ts'
 
 test.describe('login (spec 023)', () => {
   test('a student logs in with their e-mail and lands on the catalogue', async ({ page, createUser }) => {
@@ -29,11 +23,10 @@ test.describe('login (spec 023)', () => {
 
   test('the bootstrapped admin logs in and lands on /admin (spec 016)', async ({ page }) => {
     await page.goto('/login')
-    await login(page, 'admin', 'Admin@e2e-1234')
+    await login(page, 'admin', ADMIN_PASSWORD)
 
     await expect(page).toHaveURL(/\/admin$/)
-    await expect(page.getByRole('heading', { name: 'Administration' })).toBeVisible()
-    await expect(page.getByRole('link', { name: '⚙ Admin' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible()
   })
 
   test('empty fields show a validation message', async ({ page }) => {

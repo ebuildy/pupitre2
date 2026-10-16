@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
-import { test as base, request } from '@playwright/test'
+import { test as base, type Page, request } from '@playwright/test'
 import type { Role } from '@pupitre/shared'
 import { API_DB_PATH, BASE_URL } from './env.ts'
 
@@ -37,3 +37,10 @@ export const test = base.extend<Fixtures>({
 })
 
 export { expect } from '@playwright/test'
+
+/** Fills and submits the shared login page (spec 023), in any frontend. */
+export async function login(page: Page, identifier: string, password: string) {
+  await page.getByLabel('Identifiant ou e-mail').fill(identifier)
+  await page.getByLabel('Mot de passe').fill(password)
+  await page.getByRole('button', { name: 'Se connecter' }).click()
+}

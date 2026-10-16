@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
-import { API_PORT, APP_PORT, BASE_URL } from './e2e/env.ts'
+import { ADMIN_PASSWORD, ADMIN_PORT, API_PORT, APP_PORT, BASE_URL } from './e2e/env.ts'
 
 export default defineConfig({
   testDir: './e2e',
@@ -28,7 +28,7 @@ export default defineConfig({
         BETTER_AUTH_URL: BASE_URL,
         CORS_ORIGINS: BASE_URL,
         LOG_REQUESTS: 'false',
-        ADMIN_PASSWORD: 'Admin@e2e-1234',
+        ADMIN_PASSWORD,
       },
     },
     {
@@ -39,6 +39,18 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       env: {
         PORT: String(APP_PORT),
+        API_URL: `http://localhost:${API_PORT}`,
+        ADMIN_URL: `http://localhost:${ADMIN_PORT}`,
+      },
+    },
+    {
+      name: 'admin',
+      command: 'pnpm dev',
+      cwd: './apps/admin',
+      url: `http://localhost:${ADMIN_PORT}/admin/`,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        PORT: String(ADMIN_PORT),
         API_URL: `http://localhost:${API_PORT}`,
       },
     },

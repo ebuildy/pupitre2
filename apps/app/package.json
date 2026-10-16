@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@pupitre/auth-ui": "workspace:*",
     "@pupitre/shared": "workspace:*",
     "better-auth": "^1.7.10",
     "hono": "^4.13.13",

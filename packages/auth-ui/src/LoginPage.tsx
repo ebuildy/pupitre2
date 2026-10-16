@@ -1,13 +1,18 @@
 import { landingPath, type Role } from '@pupitre/shared'
-import { type FormEvent, useState } from 'react'
-import { Navigate, useNavigate, useSearchParams } from 'react-router'
-import { signInWithIdentifier, useSession } from '../lib/auth-client.ts'
+import { type FormEvent, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router'
+import { signInWithIdentifier, useSession } from './auth-client.ts'
+import { useGoTo } from './navigation.ts'
+import logo from './pioupitre.png'
 
 const INVALID_CREDENTIALS = new Set(['INVALID_EMAIL_OR_PASSWORD', 'INVALID_USERNAME_OR_PASSWORD'])
 
-/** Spec 023 (email tab only for now; SSO/LDAP tabs and the registration link come with their features). */
-export function Login() {
-  const navigate = useNavigate()
+/**
+ * Spec 023, shared by every frontend (email tab only for now; SSO/LDAP tabs and the registration
+ * link come with their features). `redirect` and landing paths are origin-absolute (spec 025).
+ */
+export function LoginPage() {
+  const goTo = useGoTo()
   const [params] = useSearchParams()
   const { data: session, isPending: sessionPending } = useSession()
   const [error, setError] = useState<string | null>(null)
@@ -15,8 +20,12 @@ export function Login() {
 
   const redirect = params.get('redirect')
 
-  if (sessionPending) return null
-  if (session) return <Navigate to={landingPath(session.user.role as Role, redirect)} replace />
+  const signedInRole = session?.user.role as Role | undefined
+  useEffect(() => {
+    if (signedInRole) goTo(landingPath(signedInRole, redirect), { replace: true })
+  }, [signedInRole, redirect, goTo])
+
+  if (sessionPending || session) return null
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -36,7 +45,7 @@ export function Login() {
           : (error.message ?? 'Erreur de connexion'),
       )
     }
-    navigate(landingPath(data.user.role as Role, redirect), { replace: true })
+    goTo(landingPath(data.user.role as Role, redirect), { replace: true })
   }
 
   const input =
@@ -46,7 +55,7 @@ export function Login() {
     <div className="flex min-h-screen items-start justify-center bg-zinc-100 px-4 py-10 text-zinc-900 sm:items-center dark:bg-zinc-950 dark:text-zinc-100">
       <div className="flex w-full max-w-[430px] flex-col gap-5 rounded-2xl border border-zinc-200 bg-white px-5 pt-7 pb-6 shadow-lg sm:px-9 sm:pt-9 sm:pb-8 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-center justify-center gap-3">
-          <img src="/pioupitre.png" alt="" className="h-12 w-12 object-contain" />
+          <img src={logo} alt="" className="h-12 w-12 object-contain" />
           <span className="text-3xl font-bold">pupitre</span>
         </div>
 

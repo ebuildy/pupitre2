@@ -9,6 +9,7 @@ import { secureHeaders } from 'hono/secure-headers'
 import { auth } from './auth.ts'
 import { env } from './env.ts'
 import { type AppEnv, sessionMiddleware } from './middleware/session.ts'
+import { adminRoutes } from './routes/admin/index.ts'
 import { meRoutes } from './routes/me.ts'
 
 const app = new Hono<AppEnv>()
@@ -45,8 +46,12 @@ app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 
 app.use('/api/*', sessionMiddleware)
 
-// Feature routers are chained here so `AppType` carries their types to the web client.
+// Learner app routes. Chained so `AppType` carries their types to apps/app.
 const routes = app.basePath('/api').route('/me', meRoutes)
+
+// Admin app routes, all under /api/admin and admin-only. Typed separately (`AdminAppType`)
+// so each frontend's client only sees its own endpoints.
+app.route('/api/admin', adminRoutes)
 
 app.notFound((c) => c.json<ApiError>({ error: 'Not found' }, 404))
 
@@ -60,3 +65,4 @@ app.onError((err, c) => {
 
 export default app
 export type AppType = typeof routes
+export type AdminAppType = typeof adminRoutes

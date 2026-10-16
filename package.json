@@ -6,7 +6,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter @pupitre/api --filter @pupitre/app dev",
+    "dev": "pnpm --parallel --filter @pupitre/api --filter @pupitre/app --filter @pupitre/admin dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck && tsc -p e2e",
     "db:generate": "pnpm --filter @pupitre/api db:generate",
