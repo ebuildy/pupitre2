@@ -1,0 +1,55 @@
+title: Quiz final — Docker
+description: Validez vos connaissances sur les conteneurs, les images et les volumes.
+passingScore: 70
+# Spec 080: 5 s, 10 s, 20 s… after each wrong answer to the same question (capped at 60 s).
+cooldown:
+  strategy: exponential
+  baseSeconds: 5
+  multiplier: 2
+  maxSeconds: 60
+maxAttemptsPerQuestion: 5
+lockOnMaxAttempts: true
+questions:
+  - id: noyau
+    type: single
+    points: 1
+    question: Qu'est-ce qu'un conteneur partage avec sa machine hôte ?
+    answers:
+      - { id: noyau, text: Le noyau, correct: true }
+      - { id: bios, text: Le BIOS }
+      - { id: rien, text: Rien, il est totalement isolé }
+    feedback:
+      correct: Oui, c'est ce qui le rend si léger.
+      wrong: Un conteneur partage le **noyau** de l'hôte, contrairement à une VM.
+
+  - id: options
+    type: multiple
+    points: 2
+    question: "Que font les options de `docker run --rm -it alpine sh` ? (plusieurs réponses)"
+    partialScoring: { enabled: true }
+    answers:
+      - { id: rm, text: "`--rm` supprime le conteneur à sa sortie", correct: true }
+      - { id: it, text: "`-it` attache un terminal interactif", correct: true }
+      - { id: detach, text: "`-it` lance le conteneur en arrière-plan" }
+    feedback:
+      wrong: "`-d` détache le conteneur ; `-it` fait l'inverse."
+
+  - id: volume
+    type: boolean
+    question: Les données écrites dans un conteneur survivent à sa suppression, même sans volume.
+    correctAnswer: false
+    feedback:
+      wrong: Sans volume, le système de fichiers du conteneur disparaît avec lui.
+
+  - id: dockerfile
+    type: order
+    points: 2
+    question: Remettez ces instructions dans l'ordre qui tire le mieux parti du cache.
+    items:
+      - { id: code, text: "`COPY . .`" }
+      - { id: cmd, text: "`CMD [\"node\", \"server.js\"]`" }
+      - { id: from, text: "`FROM node:24-alpine`" }
+      - { id: deps, text: "`COPY package.json ./` puis `RUN pnpm install`" }
+    correctOrder: [from, deps, code, cmd]
+    feedback:
+      wrong: "Les dépendances changent moins souvent que le code : copiez-les en premier."

@@ -1,0 +1,30 @@
+title: Quiz — les bases de Linux
+passingScore: 75
+questions:
+  - id: chmod
+    type: single
+    question: Que fait `chmod 750 deploy.sh` ?
+    answers:
+      - { id: a, text: "rwx pour le propriétaire, r-x pour le groupe, rien pour les autres", correct: true }
+      - { id: b, text: Change le propriétaire du fichier }
+      - { id: c, text: Rend le fichier exécutable par tout le monde }
+    feedback:
+      wrong: "7 = rwx, 5 = r-x, 0 = aucun droit."
+  - id: redirection
+    type: single
+    question: Quel opérateur **ajoute** la sortie à la fin d'un fichier ?
+    answers:
+      - { id: gt, text: "`>`" }
+      - { id: gtgt, text: "`>>`", correct: true }
+      - { id: pipe, text: "`|`" }
+  - id: rm
+    type: boolean
+    question: "`rm` envoie les fichiers supprimés dans une corbeille."
+    correctAnswer: false
+  - id: navigation
+    type: multiple
+    question: Quelles commandes affichent ou changent le dossier courant ?
+    answers:
+      - { id: pwd, text: "`pwd`", correct: true }
+      - { id: cd, text: "`cd`", correct: true }
+      - { id: cp, text: "`cp`" }

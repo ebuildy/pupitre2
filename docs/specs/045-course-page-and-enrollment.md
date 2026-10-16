@@ -45,7 +45,9 @@ deleted with the course or the user.
   - archived → "Ce cours est archivé.";
   - completed → "✓ Cours terminé le …"; XP card "⚡ XP de ce cours" ([103](103-xp.md));
   - XP-gated → "⚡ N XP requis pour s’inscrire", and when the user lacks XP "Il vous manque M XP (vous en avez K)." with the button disabled.
-- Right column "Contenu du cours": "📭 Inscrivez-vous pour accéder aux modules." / "Aucun contenu disponible pour le moment." (modules come later).
+- Right column "Contenu du cours": for enrolled learners and admins, the progress block and the module list
+  ([053](053-course-content-and-quizzes.md)); otherwise "📭 Inscrivez-vous pour accéder aux modules."; "Aucun contenu
+  disponible pour le moment." for a course without modules.
 - Unknown or hidden course → "😕 Cours introuvable" + "Retour au catalogue".
 
 ## Acceptance criteria
@@ -59,7 +61,7 @@ deleted with the course or the user.
 
 - Enrollment checks visibility and status (the original accepted any slug).
 - The learner can unenroll from the UI (the original had only the API).
-- Not yet: modules list and progress (053, 068), auto-enrollment on module access (048), prerequisites (050), badge card (106), sessions (152).
+- Not yet: auto-enrollment on module access (048), prerequisites (050), badge card (106), sessions (152).
 
 ## Source
 

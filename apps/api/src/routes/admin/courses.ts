@@ -2,6 +2,7 @@ import {
   type AdminCourse,
   type AdminCourseEnrollment,
   courseCreateSchema,
+  courseModulesSchema,
   courseUpdateSchema,
   type EnrollmentSource,
 } from '@pupitre/shared'
@@ -22,6 +23,7 @@ import {
   toAdminCourse,
 } from '../../services/courses.ts'
 import { CategoryTree } from '../../services/categories.ts'
+import { adminModules, replaceModules } from '../../services/modules-admin.ts'
 import { completeCourse, uncompleteCourse } from '../../services/xp.ts'
 
 const NOT_FOUND = 'Course not found'
@@ -134,6 +136,17 @@ export const adminCourseRoutes = new Hono<AppEnv>()
     // Removes the direct grants (the learner's own and admin ones). Group/path grants will stay.
     await revoke(c.req.param('userId'), found.id, ['self', 'admin'])
     return c.json({ message: 'User unenrolled' })
+  })
+
+  // Module list (spec 169 style): read, and replace as a whole. The module editor UI comes later.
+  .get('/:id/modules', async (c) => {
+    const found = await requireCourse(c.req.param('id'))
+    return c.json({ modules: await adminModules(found.id) })
+  })
+  .put('/:id/modules', validate('json', courseModulesSchema), async (c) => {
+    const found = await requireCourse(c.req.param('id'))
+    replaceModules(found.id, c.req.valid('json').modules)
+    return c.json({ modules: await adminModules(found.id) })
   })
 
   // Course completion, marked by hand until modules exist (spec 068 will complete courses automatically).

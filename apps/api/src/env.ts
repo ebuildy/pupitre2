@@ -17,6 +17,10 @@ const schema = z.object({
   /** Admin bootstrap (spec 016). `_FILE` (mounted secret) wins over the plain variable. */
   ADMIN_PASSWORD: z.string().optional(),
   ADMIN_PASSWORD_FILE: z.string().optional(),
+  /** Where module files (repo, ref, path) are read from (spec 064). `git` is not implemented yet. */
+  CONTENT_LOADER: z.enum(['fake', 'git']).default('fake'),
+  /** Fake loader: folder holding one sub-folder per repository (default `apps/api/content-samples`). */
+  CONTENT_SAMPLES_DIR: z.string().optional(),
   /** Spec 015: load the mock data (`src/fixtures`) at startup. Development only. */
   SEED_DEV_DATA: z.stringbool().default(false),
 })

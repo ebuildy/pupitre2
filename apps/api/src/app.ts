@@ -12,6 +12,7 @@ import { type AppEnv, sessionMiddleware } from './middleware/session.ts'
 import { adminRoutes } from './routes/admin/index.ts'
 import { courseRoutes, enrollmentRoutes, leaderboardRoutes, myRoutes } from './routes/courses.ts'
 import { meRoutes } from './routes/me.ts'
+import { moduleRoutes } from './routes/modules.ts'
 
 const app = new Hono<AppEnv>()
 
@@ -52,6 +53,7 @@ const routes = app
   .basePath('/api')
   .route('/me', meRoutes)
   .route('/courses', courseRoutes)
+  .route('/courses/:slug/modules', moduleRoutes)
   .route('/enrollments', enrollmentRoutes)
   .route('/my', myRoutes)
   .route('/leaderboard', leaderboardRoutes)

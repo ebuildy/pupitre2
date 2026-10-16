@@ -1,4 +1,4 @@
-import type { CourseStatus, CourseVisibility, Difficulty } from '@pupitre/shared'
+import type { CourseStatus, CourseVisibility, Difficulty, ModuleInput } from '@pupitre/shared'
 
 /** Category tree, parents first. */
 export const CATEGORIES: { slug: string; title: string; parent?: string }[] = [
@@ -27,6 +27,8 @@ export type CourseFixture = {
   xpRequired?: number
   /** Default 200. */
   completionXp?: number
+  /** Generated courses: what the template modules talk about. */
+  topic?: string
 }
 
 /** Hand-written courses, one per visibility/status case; stable slugs to use in docs and manual tests. */
@@ -180,3 +182,97 @@ export const XP_BONUSES = [
 /** Spec 015: generated students share this password. */
 export const STUDENT_PASSWORD = 'Student@1234'
 export const MANAGER_PASSWORD = 'Manager@1234'
+
+// ─── Modules (spec 191) ───────────────────────────────────────────────────────
+
+const repo = (name: string) => `https://git.example.com/pupitre/${name}.git`
+const source = (name: string, path: string) => ({ kind: 'source' as const, repo: repo(name), ref: 'main', path })
+
+/** Modules of the curated courses: files of `content-samples/` (fake loader) and text written in the platform. */
+export const CURATED_MODULES: Record<string, ModuleInput[]> = {
+  'docker-intro': [
+    { slug: 'conteneurs', name: 'Qu’est-ce qu’un conteneur ?', type: 'text', content: source('pupitre-docker', '01-conteneurs.md') },
+    { slug: 'images', name: 'Les images', type: 'text', content: source('pupitre-docker', '02-images.md') },
+    { slug: 'mini-quiz-images', name: 'Mini-quiz : les images', type: 'quiz', inline: true, content: source('pupitre-docker', 'mini-quiz-images.yaml') },
+    { slug: 'volumes', name: 'Volumes et réseaux', type: 'text', content: source('pupitre-docker', '03-volumes.md') },
+    {
+      slug: 'notes-formateur',
+      name: 'Notes du formateur',
+      type: 'text',
+      hidden: true,
+      content: { kind: 'inline', body: '# Notes du formateur\n\nPrévoir 10 minutes de démonstration sur `docker ps -a`.' },
+    },
+    { slug: 'quiz-final', name: 'Quiz final', type: 'quiz', prerequisites: ['volumes'], content: source('pupitre-docker', 'quiz-docker.yaml') },
+  ],
+  'linux-basics': [
+    { slug: 'shell', name: 'Le shell', type: 'text', content: source('pupitre-linux', '01-shell.md') },
+    { slug: 'permissions', name: 'Droits et utilisateurs', type: 'text', content: source('pupitre-linux', '02-permissions.md') },
+    { slug: 'quiz', name: 'Quiz', type: 'quiz', content: source('pupitre-linux', 'quiz-linux.yaml') },
+  ],
+  'git-essentials': [
+    { slug: 'commits', name: 'Commits', type: 'text', content: source('pupitre-git', '01-commits.md') },
+    { slug: 'branches', name: 'Branches', type: 'text', content: source('pupitre-git', '02-branches.md') },
+    { slug: 'quiz', name: 'Quiz', type: 'quiz', content: source('pupitre-git', 'quiz-git.yaml') },
+  ],
+  'kubernetes-basics': [
+    {
+      slug: 'pods',
+      name: 'Les pods',
+      type: 'text',
+      content: {
+        kind: 'inline',
+        body: '# Les pods\n\nUn **pod** regroupe un ou plusieurs conteneurs qui partagent le réseau et le stockage.\n\n```yaml\napiVersion: v1\nkind: Pod\nmetadata:\n  name: web\nspec:\n  containers:\n    - name: nginx\n      image: nginx:1.27\n```\n',
+      },
+    },
+    // A source that doesn't exist: shows the "content unavailable" state (spec 064).
+    { slug: 'services', name: 'Les services', type: 'text', content: source('pupitre-kubernetes', '02-services.md') },
+  ],
+}
+
+/** Modules of every other course: two lessons and a quiz, written in the platform from templates. */
+export function templateModules(topic: string, difficulty: Difficulty): ModuleInput[] {
+  const levels = { beginner: 'débutant', intermediate: 'intermédiaire', advanced: 'avancé' } as const
+  return [
+    {
+      slug: 'presentation',
+      name: 'Présentation',
+      type: 'text',
+      content: {
+        kind: 'inline',
+        body: `# Présentation\n\nCe cours de niveau **${levels[difficulty]}** vous fait découvrir ${topic}.\n\n## Objectifs\n\n- comprendre à quoi sert ${topic} ;\n- l’installer et le configurer ;\n- l’utiliser sur un cas concret.\n\n:::tip Prérequis\nSavoir utiliser un terminal et un éditeur de texte.\n:::\n`,
+      },
+    },
+    {
+      slug: 'pratique',
+      name: 'Mise en pratique',
+      type: 'text',
+      content: {
+        kind: 'inline',
+        body: `# Mise en pratique\n\nInstallons ${topic} dans un conteneur jetable :\n\n\`\`\`bash\ndocker run --rm -it ubuntu:24.04 bash\n\`\`\`\n\n## Exercice\n\nReproduisez l’exemple du cours, puis adaptez-le à votre projet.\n`,
+      },
+    },
+    {
+      slug: 'quiz',
+      name: 'Quiz',
+      type: 'quiz',
+      content: {
+        kind: 'inline',
+        body: [
+          'passingScore: 60',
+          'questions:',
+          '  - id: sujet',
+          '    type: boolean',
+          `    question: "Ce cours porte sur ${topic}."`,
+          '    correctAnswer: true',
+          '  - id: niveau',
+          '    type: single',
+          '    question: "Quel est le niveau de ce cours ?"',
+          '    answers:',
+          ...(['beginner', 'intermediate', 'advanced'] as const).map(
+            (d) => `      - { id: ${d}, text: "${levels[d]}"${d === difficulty ? ', correct: true' : ''} }`,
+          ),
+        ].join('\n'),
+      },
+    },
+  ]
+}

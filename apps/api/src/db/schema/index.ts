@@ -2,3 +2,4 @@
 export * from './auth.ts'
 export * from './courses.ts'
 export * from './xp.ts'
+export * from './content.ts'

@@ -73,6 +73,11 @@ pnpm auth:generate  # regenerate the better-auth schema after changing auth conf
   `.all()` / `.get()` / `.run()` query methods (an `async` callback commits before its awaits run). See `services/xp.ts`.
 - Schema columns: call the builder helpers (`createdAt()`, `timestamps()`) per table; never share a column builder
   object between tables (it keeps the column name of the first table).
+- Course content (spec 053): module bodies come from `body` or a source read through `contentLoader` (`src/content/loader.ts`;
+  fake loader = `apps/api/content-samples/<repo>/<path>`). Render markdown only with `renderMarkdown` / `renderFragment`
+  (sanitized); the front end displays that HTML. Never put correct answers or feedback in a learner view before
+  submission (`quizView`). Progress, attempts and submissions reference module ids. Quiz documents are validated by
+  `quizDocumentSchema`; add sample quizzes there and check them with it.
 - Anything a learner earns goes through `awardXp()` / `completeCourse()` (`services/xp.ts`): at most once per thing
   earned, history kept when the course is deleted (spec 103).
 - Guards: `requireAuth`, `requireRole('admin' | 'manager', …)` from `src/middleware/session.ts`. `c.var.user` is
@@ -131,6 +136,8 @@ Playwright is the only test runner. Every feature ships with e2e tests covering 
   real sign-up endpoint (password `user.password`). The bootstrapped admin is `admin` / `ADMIN_PASSWORD`.
 - `await signIn(page, user)` logs in and waits until the session is set; use it before `page.goto(...)` or
   `page.request` calls (navigating away right after `login()` can cancel the sign-in).
+- Content: `await setModules(course.id, [...])` (admin API `PUT …/modules`) with inline bodies, or sources pointing at
+  `content-samples` repos (e.g. `https://git.example.com/pupitre/pupitre-linux.git`).
 - Courses and categories: `await createCategory({ title, parentId })`, `await createCourse({ categoryId, visibility, status, ... })` (admin API; defaults: unique slug/title, published,
   public). `adminRequest` is an API client signed in as admin.
 - The catalogue is shared by parallel tests: put a `uid()` token in titles/categories and filter with `?search=<token>`.
@@ -140,6 +147,8 @@ Playwright is the only test runner. Every feature ships with e2e tests covering 
   `data-testid` only when there is no accessible name. The default language is French, so assertions use the
   French catalogue text; test English explicitly (see `e2e/i18n.spec.ts`).
 - API checks: `page.request` shares the page's cookies (`await page.request.get('/api/me')`).
+- In React effects, use a braced body: `useEffect(() => { window.scrollTo(0, 0) }, …)`. Scroll methods return a Promise in
+  recent browsers, and an effect returning a non-function crashes React ("destroy is not a function").
 - Use web-first assertions (`await expect(locator).toBeVisible()`, `toHaveURL`); no fixed waits.
 - `toHaveURL` for admin app roots: `/\/admin\/?$/` (the router may drop the trailing slash).
 - Direct database access from tests (`node:sqlite`) must open the file with a busy `timeout`.

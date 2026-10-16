@@ -1,7 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
 import { type APIRequestContext, test as base, type Page, request } from '@playwright/test'
-import type { AdminCategory, AdminCourse, CategoryCreateInput, CourseCreateInput, Role } from '@pupitre/shared'
+import type {
+  AdminCategory,
+  AdminCourse,
+  CategoryCreateInput,
+  CourseCreateInput,
+  ModuleInput,
+  Role,
+} from '@pupitre/shared'
 import { ADMIN_PASSWORD, API_DB_PATH, BASE_URL } from './env.ts'
 
 export type TestUser = { id: string; username: string; email: string; password: string; role: Role }
@@ -18,6 +25,8 @@ type Fixtures = {
   createCourse: (input?: Partial<CourseCreateInput>) => Promise<AdminCourse>
   /** Creates a category through the admin API. Defaults: unique slug and title, top-level. */
   createCategory: (input?: Partial<CategoryCreateInput>) => Promise<AdminCategory>
+  /** Replaces a course's modules through the admin API. */
+  setModules: (courseId: string, modules: ModuleInput[]) => Promise<void>
 }
 
 /** A short random token for unique slugs, titles and categories. */
@@ -72,6 +81,13 @@ export const test = base.extend<Fixtures>({
       })
       if (!res.ok()) throw new Error(`course creation failed: ${res.status()} ${await res.text()}`)
       return (await res.json()) as AdminCourse
+    })
+  },
+
+  setModules: async ({ adminRequest }, use) => {
+    await use(async (courseId, modules) => {
+      const res = await adminRequest.put(`/api/admin/courses/${courseId}/modules`, { data: { modules } })
+      if (!res.ok()) throw new Error(`setting modules failed: ${res.status()} ${await res.text()}`)
     })
   },
 

@@ -27,7 +27,9 @@ Both commands refuse to run with `NODE_ENV=production`. Faker is a dev dependenc
 | Courses | 9 hand-written ones with stable slugs (`linux-basics`, `docker-intro`, …; one private `internal-onboarding`, one draft `terraform-draft`, one archived `legacy-svn`), plus 44 generated from topic × title templates ("Premiers pas avec Helm", "Maîtriser Redis", …) with mixed difficulty, visibility and status |
 | Users | known accounts below, 25 students and 3 managers with French names (`prenom.nom@example.com`) |
 | Enrollments | each learner self-enrolled in 0–6 public courses; 4 students granted each private course by the admin |
-| XP ([103](103-xp.md)) | about a third of the enrollments completed (with the course's completion XP); three admin bonuses/corrections given to a few learners; advanced generated courses and `web-security` are XP-gated |
+| Modules ([053](053-course-content-and-quizzes.md)) | `docker-intro`, `linux-basics`, `git-essentials` read lessons and quizzes from `apps/api/content-samples/` (fake loader), `docker-intro` with an inline mini-quiz, a hidden module and a prerequisite; `kubernetes-basics` has a missing source (placeholder); every other course gets two template lessons and a template quiz. Only courses without modules get them. |
+| Progress | per enrollment, in module order: about a third finished (course completed), some started, the rest untouched |
+| XP ([103](103-xp.md)) | lesson, quiz and course XP matching the progress; three admin bonuses/corrections given to a few learners; advanced generated courses and `web-security` are XP-gated |
 
 Known accounts:
 

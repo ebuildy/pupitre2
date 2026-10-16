@@ -43,6 +43,13 @@
       "when": 1792174507709,
       "tag": "0005_xp",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792177337129,
+      "tag": "0006_content_quiz",
+      "breakpoints": true
     }
   ]
 }

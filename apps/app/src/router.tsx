@@ -3,6 +3,8 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { demoAccounts } from './lib/demo-accounts.ts'
 import { Catalogue } from './routes/Catalogue.tsx'
 import { CourseDetail } from './routes/CourseDetail.tsx'
+import { LessonPage } from './routes/LessonPage.tsx'
+import { QuizPage } from './routes/QuizPage.tsx'
 import { Layout } from './routes/Layout.tsx'
 import { Leaderboard } from './routes/Leaderboard.tsx'
 import { MyCourses } from './routes/MyCourses.tsx'
@@ -18,6 +20,22 @@ export const router = createBrowserRouter([
       { path: 'dashboard', element: <Navigate to="/courses" replace /> },
       { path: 'courses', element: <Catalogue /> },
       { path: 'courses/:slug', element: <CourseDetail /> },
+      {
+        path: 'courses/:slug/lessons/:moduleSlug',
+        element: (
+          <RequireAuth>
+            <LessonPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'courses/:slug/quiz/:moduleSlug',
+        element: (
+          <RequireAuth>
+            <QuizPage />
+          </RequireAuth>
+        ),
+      },
       {
         path: 'my-courses',
         element: (

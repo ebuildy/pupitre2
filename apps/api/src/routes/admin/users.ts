@@ -4,7 +4,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { db } from '../../db/index.ts'
-import { course, courseCompletion, user, xpEvent } from '../../db/schema/index.ts'
+import { course, courseCompletion, questionAttemptState, user, xpEvent } from '../../db/schema/index.ts'
 import { validate } from '../../lib/validate.ts'
 import type { AppEnv } from '../../middleware/session.ts'
 import { adjustXp, totalXp, xpHistory } from '../../services/xp.ts'
@@ -80,6 +80,11 @@ export const adminUserRoutes = new Hono<AppEnv>()
         course: r.slug ? { slug: r.slug, title: r.currentTitle! } : null,
       })),
     })
+  })
+  // Spec 191 "QuestionAttemptState": an admin can reset a learner's quiz attempts (cooldowns and locks).
+  .delete('/:id/quiz-attempts', async (c) => {
+    const removed = db.delete(questionAttemptState).where(eq(questionAttemptState.userId, c.req.param('id'))).run()
+    return c.json({ message: 'Quiz attempts reset', count: removed.changes })
   })
   .post('/:id/xp', validate('json', xpAdjustmentSchema), async (c) => {
     const found = await db.query.user.findFirst({ columns: { id: true }, where: eq(user.id, c.req.param('id')) })

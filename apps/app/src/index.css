@@ -1,6 +1,64 @@
 @import 'tailwindcss';
+@plugin '@tailwindcss/typography';
 @source '../../../packages/auth-ui/src';
 @source '../../../packages/ui/src';
 @source '../../../packages/i18n/src';
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* Rendered course content (sanitized HTML from the API, spec 058). */
+.content :where(h1, h2, h3) {
+  scroll-margin-top: 1rem;
+}
+/* The typography plugin wraps inline code in literal backticks. */
+.content code::before,
+.content code::after {
+  content: none;
+}
+.content :not(pre) > code {
+  border-radius: 0.25rem;
+  background: var(--color-zinc-100);
+  padding: 0.1rem 0.3rem;
+  font-weight: 500;
+}
+.dark .content :not(pre) > code {
+  background: var(--color-zinc-800);
+}
+
+/* Admonitions (spec 059). */
+.content .admonition {
+  margin: 1.25rem 0;
+  border-left: 4px solid var(--admonition-color);
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--admonition-color) 10%, transparent);
+  padding: 0.25rem 1rem;
+}
+.content .admonition-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.content .admonition-note { --admonition-color: var(--color-zinc-500); }
+.content .admonition-tip { --admonition-color: var(--color-green-600); }
+.content .admonition-info { --admonition-color: var(--color-blue-600); }
+.content .admonition-warning { --admonition-color: var(--color-amber-500); }
+.content .admonition-caution { --admonition-color: var(--color-orange-600); }
+.content .admonition-danger { --admonition-color: var(--color-red-600); }
+
+/* Code highlighting (highlight.js classes), light and dark. */
+.content pre {
+  background: var(--color-zinc-100);
+  color: var(--color-zinc-800);
+}
+.dark .content pre {
+  background: var(--color-zinc-900);
+  color: var(--color-zinc-100);
+}
+.hljs-comment, .hljs-quote { color: var(--color-zinc-500); font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-meta { color: var(--color-violet-700); }
+.hljs-string, .hljs-attr, .hljs-symbol, .hljs-bullet { color: var(--color-green-700); }
+.hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable { color: var(--color-orange-700); }
+.hljs-title, .hljs-section, .hljs-name, .hljs-type { color: var(--color-blue-700); }
+.dark .hljs-keyword, .dark .hljs-selector-tag, .dark .hljs-built_in, .dark .hljs-meta { color: var(--color-violet-300); }
+.dark .hljs-string, .dark .hljs-attr, .dark .hljs-symbol, .dark .hljs-bullet { color: var(--color-green-300); }
+.dark .hljs-number, .dark .hljs-literal, .dark .hljs-variable, .dark .hljs-template-variable { color: var(--color-orange-300); }
+.dark .hljs-title, .dark .hljs-section, .dark .hljs-name, .dark .hljs-type { color: var(--color-blue-300); }

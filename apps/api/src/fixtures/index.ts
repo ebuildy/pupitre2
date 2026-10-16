@@ -1,18 +1,32 @@
 import { base, en, Faker, fr } from '@faker-js/faker'
 import type { Role } from '@pupitre/shared'
+import { courseModulesSchema, XP_AMOUNTS } from '@pupitre/shared'
 import { asc, eq, inArray } from 'drizzle-orm'
 import { auth } from '../auth.ts'
 import { db } from '../db/index.ts'
-import { category, course, courseCompletion, enrollmentGrant, user, xpEvent } from '../db/schema/index.ts'
+import {
+  category,
+  course,
+  courseCompletion,
+  courseModule,
+  enrollmentGrant,
+  moduleProgress,
+  user,
+  xpEvent,
+} from '../db/schema/index.ts'
+import { loadModules, moduleBody, parseQuiz } from '../services/learning.ts'
+import { replaceModules } from '../services/modules-admin.ts'
 import {
   CATEGORIES,
   COURSE_TEMPLATES,
   CURATED_COURSES,
+  CURATED_MODULES,
   type CourseFixture,
   KNOWN_USERS,
   MANAGER_PASSWORD,
   STUDENT_PASSWORD,
   TOPICS,
+  templateModules,
   XP_BONUSES,
 } from './data.ts'
 
@@ -46,6 +60,7 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
       faker.helpers.arrayElements(COURSE_TEMPLATES, 2).map((tpl) => {
         const title = tpl.title(topic)
         return {
+          topic,
           slug: slugify(title),
           title,
           description: tpl.description(topic),
@@ -70,7 +85,7 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
   await db
     .insert(course)
     .values(
-      courseFixtures.map(({ category: cat, ...c }) => ({
+      courseFixtures.map(({ category: cat, topic: _topic, ...c }) => ({
         ...c,
         categoryId: categoryIds.get(cat) ?? null,
         createdAt: faker.date.past({ years: 1, refDate }),
@@ -80,6 +95,7 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
   const courses = await db
     .select({
       id: course.id,
+      slug: course.slug,
       title: course.title,
       visibility: course.visibility,
       status: course.status,
@@ -93,6 +109,16 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
       ),
     )
     .orderBy(asc(course.slug)) // stable order: random picks below must not depend on row order
+
+  // 2b. Modules (spec 191): only for courses without any, so admin edits are kept.
+  const fixtureBySlug = new Map(courseFixtures.map((c) => [c.slug, c]))
+  for (const c of courses) {
+    const existing = await db.select({ id: courseModule.id }).from(courseModule).where(eq(courseModule.courseId, c.id)).limit(1)
+    if (existing.length) continue
+    const fixture = fixtureBySlug.get(c.slug)!
+    const modules = CURATED_MODULES[c.slug] ?? templateModules(fixture.topic ?? fixture.title, fixture.difficulty)
+    replaceModules(c.id, courseModulesSchema.parse({ modules }).modules)
+  }
 
   // 3. Users: known accounts, then generated students and managers (French names).
   type UserFixture = { username: string; name: string; email: string; role: Role; password: string; isActive?: boolean }
@@ -183,31 +209,51 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
       .onConflictDoNothing({ target: [enrollmentGrant.userId, enrollmentGrant.courseId, enrollmentGrant.source] })
   }
 
-  // 5. Completions (marked by an admin until modules exist) and their XP, then a few admin bonuses (specs 103, 191).
+  // 5. Progress (spec 191 "ModuleProgress"), in module order: about a third of the enrollments finished (every
+  // module done, course completed), some started, the rest untouched; with their lesson, quiz and course XP.
   const completions: (typeof courseCompletion.$inferInsert)[] = []
+  const progressRows: (typeof moduleProgress.$inferInsert)[] = []
   const xp: (typeof xpEvent.$inferInsert)[] = []
   const coursesById = new Map(courses.map((c) => [c.id, c]))
+  const modulesByCourse = new Map<string, { id: string; name: string; type: string; maxScore: number }[]>()
+  for (const c of courses) {
+    const { modules } = await loadModules(c.id)
+    const visible = []
+    for (const m of modules.filter((x) => !x.hidden)) {
+      let maxScore = 0
+      if (m.type === 'quiz') {
+        try {
+          maxScore = parseQuiz(await moduleBody(m)).questions.reduce((sum, q) => sum + q.points, 0)
+        } catch {
+          continue // unreadable quiz: leave it out of the fixtures
+        }
+      }
+      visible.push({ id: m.id, name: m.name, type: m.type, maxScore })
+    }
+    modulesByCourse.set(c.id, visible)
+  }
   for (const g of grants) {
     const c = coursesById.get(g.courseId)!
-    if (c.status === 'draft' || !faker.datatype.boolean({ probability: 0.35 })) continue
-    const completedAt = faker.date.between({ from: g.createdAt!, to: refDate })
-    completions.push({
-      userId: g.userId,
-      courseId: c.id,
-      courseTitle: c.title,
-      completedBy: admin?.id ?? null,
-      completedAt,
-    })
-    xp.push({
-      userId: g.userId,
-      source: 'course',
-      sourceKey: c.id,
-      amount: c.completionXp,
-      label: c.title,
-      courseId: c.id,
-      grantedBy: admin?.id ?? null,
-      createdAt: completedAt,
-    })
+    const modules = modulesByCourse.get(c.id) ?? []
+    if (c.status === 'draft' || modules.length === 0) continue
+    const roll = faker.number.float()
+    const doneCount = roll < 0.35 ? modules.length : roll < 0.75 ? faker.number.int({ min: 1, max: modules.length - 1 }) : 0
+    let at = g.createdAt!
+    for (const m of modules.slice(0, doneCount)) {
+      at = faker.date.between({ from: at, to: refDate })
+      const label = `${c.title} — ${m.name}`
+      if (m.type === 'quiz') {
+        progressRows.push({ userId: g.userId, moduleId: m.id, attempts: faker.number.int({ min: 1, max: 3 }), bestScore: m.maxScore, maxScore: m.maxScore, passedAt: at, lastActivityAt: at })
+        xp.push({ userId: g.userId, source: 'quiz', sourceKey: m.id, amount: XP_AMOUNTS.quiz, label, courseId: c.id, createdAt: at })
+      } else {
+        progressRows.push({ userId: g.userId, moduleId: m.id, viewedAt: at, lastActivityAt: at })
+        xp.push({ userId: g.userId, source: 'lesson', sourceKey: m.id, amount: XP_AMOUNTS.lesson, label, courseId: c.id, createdAt: at })
+      }
+    }
+    if (doneCount === modules.length) {
+      completions.push({ userId: g.userId, courseId: c.id, courseTitle: c.title, completedAt: at })
+      xp.push({ userId: g.userId, source: 'course', sourceKey: c.id, amount: c.completionXp, label: c.title, courseId: c.id, createdAt: at })
+    }
   }
   const learners = userIds.filter((u) => u.role !== 'admin' && u.isActive)
   for (const [i, bonus] of XP_BONUSES.entries()) {
@@ -223,6 +269,12 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
         createdAt: faker.date.between({ from: learner.createdAt, to: refDate }),
       })
     }
+  }
+  if (progressRows.length) {
+    await db
+      .insert(moduleProgress)
+      .values(progressRows)
+      .onConflictDoNothing({ target: [moduleProgress.userId, moduleProgress.moduleId] })
   }
   if (completions.length) {
     await db
@@ -242,6 +294,7 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
     courses: courseFixtures.length,
     users: userFixtures.length,
     grants: grants.length,
+    moduleProgress: progressRows.length,
     completions: completions.length,
     xpEvents: xp.length,
   }

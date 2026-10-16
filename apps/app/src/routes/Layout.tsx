@@ -63,7 +63,7 @@ export function Layout() {
             ))}
         </div>
       </header>
-      <main className="mx-auto max-w-5xl p-4">
+      <main className="mx-auto max-w-6xl p-4">
         <Outlet />
       </main>
     </div>

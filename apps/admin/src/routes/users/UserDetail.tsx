@@ -32,6 +32,11 @@ export function UserDetail() {
     },
   })
 
+  // Spec 191 "QuestionAttemptState": clears the learner's cooldowns and locked questions.
+  const resetAttempts = useMutation({
+    mutationFn: () => unwrap(adminApi.users[':id']['quiz-attempts'].$delete({ param: { id } })),
+  })
+
   function submit(e: FormEvent) {
     e.preventDefault()
     const n = Number(amount)
@@ -101,6 +106,22 @@ export function UserDetail() {
               <p role="status" className="text-sm text-green-700 dark:text-green-400">
                 {t('users.adjusted', { total: newTotal })}
               </p>
+            )}
+          </section>
+
+          <section className="flex max-w-3xl flex-wrap items-center gap-3">
+            <button
+              type="button"
+              disabled={resetAttempts.isPending}
+              onClick={() => resetAttempts.mutate()}
+              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+            >
+              {t('users.resetAttempts')}
+            </button>
+            {resetAttempts.data && (
+              <span role="status" className="text-sm text-green-700 dark:text-green-400">
+                {t('users.resetAttemptsDone', { count: resetAttempts.data.count })}
+              </span>
             )}
           </section>
 

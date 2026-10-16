@@ -1,0 +1,25 @@
+title: Quiz — Git au quotidien
+passingScore: 60
+questions:
+  - id: branche
+    type: boolean
+    question: Créer une branche copie tous les fichiers du projet.
+    correctAnswer: false
+    feedback:
+      wrong: Une branche n'est qu'un pointeur vers un commit.
+  - id: revert
+    type: single
+    question: Comment annuler proprement un commit **déjà publié** ?
+    answers:
+      - { id: reset, text: "`git reset --hard`" }
+      - { id: revert, text: "`git revert <sha>`", correct: true }
+      - { id: rebase, text: "`git rebase -i`" }
+  - id: cycle
+    type: order
+    question: Remettez le cycle de travail dans l'ordre.
+    items:
+      - { id: commit, text: "`git commit`" }
+      - { id: push, text: "`git push`" }
+      - { id: add, text: "`git add`" }
+      - { id: edit, text: Modifier les fichiers }
+    correctOrder: [edit, add, commit, push]

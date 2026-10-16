@@ -1,10 +1,13 @@
 import { useGoTo, useSession } from '@pupitre/auth-ui'
 import { useTranslation } from '@pupitre/i18n'
+import type { CourseModulesResponse } from '@pupitre/shared'
 import { CategoryLabel, categoryIcon, DifficultyBadge, isNotFound, unwrap } from '@pupitre/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
+import { ModuleList } from '../components/ModuleList.tsx'
 import { api } from '../lib/api.ts'
+import { moduleHref, nextModule, useCourseModules } from '../lib/learning.ts'
 
 /** Spec 045 (enrollment area; modules come with their feature). */
 export function CourseDetail() {
@@ -19,12 +22,16 @@ export function CourseDetail() {
     queryKey: ['course', slug],
     queryFn: () => unwrap(api.api.courses[':slug'].$get({ param: { slug } })),
   })
+  // Content is for enrolled learners and admins (spec 053).
+  const canSeeContent = !!course?.enrollment || session?.user.role === 'admin'
+  const { data: content } = useCourseModules(slug, canSeeContent)
 
   const onChanged = async () => {
     setConfirmUnenroll(false)
     await queryClient.invalidateQueries({ queryKey: ['course', slug] })
     await queryClient.invalidateQueries({ queryKey: ['courses'] })
     await queryClient.invalidateQueries({ queryKey: ['my-courses'] })
+    await queryClient.invalidateQueries({ queryKey: ['modules', slug] })
   }
   const enroll = useMutation({
     mutationFn: () => unwrap(api.api.enrollments[':slug'].$post({ param: { slug } })),
@@ -156,11 +163,50 @@ export function CourseDetail() {
       </aside>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">{t('course.contentTitle')}</h2>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          {course.enrollment ? t('course.contentEmpty') : `📭 ${t('course.contentLocked')}`}
-        </p>
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-lg font-semibold">{t('course.contentTitle')}</h2>
+          {content && (
+            <span className="text-sm text-zinc-500">
+              {t('course.modulesCount', { count: content.modules.filter((m) => !m.inline).length })}
+            </span>
+          )}
+        </div>
+        {!canSeeContent ? (
+          <p className="text-zinc-600 dark:text-zinc-400">📭 {t('course.contentLocked')}</p>
+        ) : content && content.modules.length > 0 ? (
+          <>
+            <ProgressBlock courseSlug={slug} content={content} />
+            <ModuleList courseSlug={slug} modules={content.modules} />
+          </>
+        ) : content ? (
+          <p className="text-zinc-600 dark:text-zinc-400">{t('course.contentEmpty')}</p>
+        ) : null}
       </section>
+    </div>
+  )
+}
+
+/** Spec 045: "x/y complétés", progress bar, and the button to the next module. */
+function ProgressBlock({ courseSlug, content }: { courseSlug: string; content: CourseModulesResponse }) {
+  const { t } = useTranslation('app')
+  const { done, total } = content.progress
+  const target = nextModule(content.modules)
+  const label = done === 0 ? t('course.start') : done === total ? t('course.review') : t('course.continue')
+  return (
+    <div className="flex flex-wrap items-center gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+      <div className="flex min-w-48 flex-1 flex-col gap-1">
+        <span className="text-sm text-zinc-600 dark:text-zinc-400" data-testid="course-progress">
+          {t('course.progress', { done, total })}
+        </span>
+        <div className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+          <div className="h-full rounded-full bg-green-600" style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
+        </div>
+      </div>
+      {target && (
+        <Link to={moduleHref(courseSlug, target)} className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white">
+          {label}
+        </Link>
+      )}
     </div>
   )
 }

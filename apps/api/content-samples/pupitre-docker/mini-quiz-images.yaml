@@ -1,0 +1,19 @@
+title: Les images
+passingScore: 100
+questions:
+  - id: couches
+    type: boolean
+    question: Chaque instruction d'un `Dockerfile` produit une couche.
+    correctAnswer: true
+    feedback:
+      correct: Exact, et chaque couche est mise en cache.
+      wrong: Si ! `FROM`, `RUN`, `COPY`… ajoutent chacune une couche.
+  - id: immuable
+    type: single
+    question: Quelle référence désigne une image **immuable** ?
+    answers:
+      - { id: tag, text: "Un tag, par exemple `api:1.0`" }
+      - { id: digest, text: "Un digest `sha256:…`", correct: true }
+      - { id: latest, text: "Le tag `latest`" }
+    feedback:
+      wrong: Un tag peut être déplacé vers une autre image ; un digest, jamais.
