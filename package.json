@@ -11,6 +11,8 @@
     "typecheck": "pnpm -r typecheck && tsc -p e2e",
     "db:generate": "pnpm --filter @pupitre/api db:generate",
     "db:migrate": "pnpm --filter @pupitre/api db:migrate",
+    "db:seed": "pnpm --filter @pupitre/api db:seed",
+    "db:reset": "pnpm --filter @pupitre/api db:reset",
     "auth:generate": "pnpm --filter @pupitre/api auth:generate",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"

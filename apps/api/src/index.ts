@@ -7,6 +7,11 @@ import { env } from './env.ts'
 
 runMigrations()
 await ensureAdmin()
+if (env.SEED_DEV_DATA) {
+  // Dynamic import: the fixtures (and faker, a dev dependency) are never loaded otherwise.
+  const { seedFixtures } = await import('./fixtures/index.ts')
+  console.log('fixtures loaded:', await seedFixtures())
+}
 
 const server = serve({ fetch: app.fetch, port: env.PORT }, (info) => {
   console.log(`api listening on http://localhost:${info.port}`)

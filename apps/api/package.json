@@ -8,15 +8,18 @@
     "./auth": "./src/auth.ts"
   },
   "scripts": {
-    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
+    "dev": "SEED_DEV_DATA=${SEED_DEV_DATA:-true} tsx watch --env-file-if-exists=.env src/index.ts",
     "start": "tsx --env-file-if-exists=.env src/index.ts",
     "typecheck": "tsc -p tsconfig.json",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
     "db:studio": "drizzle-kit studio",
-    "auth:generate": "better-auth generate --config src/auth.ts --output src/db/schema/auth.ts --yes"
+    "auth:generate": "better-auth generate --config src/auth.ts --output src/db/schema/auth.ts --yes",
+    "db:seed": "tsx --env-file-if-exists=.env src/fixtures/cli.ts",
+    "db:reset": "tsx --env-file-if-exists=.env src/fixtures/cli.ts --reset"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.6.5",
     "auth": "^1.7.10",

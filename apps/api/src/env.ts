@@ -17,6 +17,8 @@ const schema = z.object({
   /** Admin bootstrap (spec 016). `_FILE` (mounted secret) wins over the plain variable. */
   ADMIN_PASSWORD: z.string().optional(),
   ADMIN_PASSWORD_FILE: z.string().optional(),
+  /** Spec 015: load the mock data (`src/fixtures`) at startup. Development only. */
+  SEED_DEV_DATA: z.stringbool().default(false),
 })
 
 export const env = schema.parse(process.env)

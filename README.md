@@ -25,7 +25,7 @@ pnpm exec playwright install chromium   # once
 pnpm dev                                # http://localhost:3000 (admin: /admin/), api :3001, admin vite :3002
 ```
 
-API config is read from env vars (and `apps/api/.env`, see `.env.example`). Migrations run at API startup, then the `admin` account (`admin@pupitre.local`) is ensured: password from `ADMIN_PASSWORD` / `ADMIN_PASSWORD_FILE`, else `Admin@1234` on first start only.
+`pnpm dev` loads mock data (spec 015): log in as `etudiant` / `Student@1234`, `manager` / `Manager@1234` or `admin` / `Admin@1234`. API config is read from env vars (and `apps/api/.env`, see `.env.example`). Migrations run at API startup, then the `admin` account (`admin@pupitre.local`) is ensured: password from `ADMIN_PASSWORD` / `ADMIN_PASSWORD_FILE`, else `Admin@1234` on first start only.
 
 ## Scripts
 
@@ -37,6 +37,8 @@ API config is read from env vars (and `apps/api/.env`, see `.env.example`). Migr
 | `pnpm test:e2e` | Playwright (ports 3100 app / 3101 api / 3102 admin, fresh `apps/api/data/e2e.db`) |
 | `pnpm db:generate` | Drizzle migration from schema changes (`apps/api/drizzle/`) |
 | `pnpm db:migrate` | Apply migrations without starting the API |
+| `pnpm db:seed` | Load the mock data (fixtures) into the dev database |
+| `pnpm db:reset` | Delete the dev database, then migrate and load the mock data |
 | `pnpm auth:generate` | Regenerate `apps/api/src/db/schema/auth.ts` after changing better-auth plugins/config, then `pnpm db:generate` |
 
 ## Conventions

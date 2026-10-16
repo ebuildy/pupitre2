@@ -47,6 +47,7 @@ pnpm typecheck      # every package + e2e
 pnpm build          # both frontends
 pnpm test:e2e       # Playwright, starts its own servers (see below)
 pnpm db:generate    # Drizzle migration from schema changes
+pnpm db:seed        # load mock data into the dev database (pnpm db:reset: start from scratch)
 pnpm auth:generate  # regenerate the better-auth schema after changing auth config/plugins
 ```
 
@@ -87,6 +88,10 @@ pnpm auth:generate  # regenerate the better-auth schema after changing auth conf
   with a plain `<a href>` (full page load). `<Link>` / `navigate()` only inside the current app.
 - Logout: `signOutTo('/login')` (or `'/admin/login'`); it does a full page load on purpose.
 - Tailwind: a package with components must be listed with `@source` in each app's `src/index.css`.
+- Mock data (spec 015): `apps/api/src/fixtures` (faker, French locale, fixed seed). `pnpm dev` loads it; `pnpm db:seed`,
+  `pnpm db:reset`. When a feature adds a table, add realistic fixtures for it, keeping them deterministic (seeded faker,
+  fixed reference date, stable ordering before random picks) and idempotent (match by slug/e-mail, `onConflictDoNothing`).
+  Known accounts: `etudiant` / `Student@1234`, `manager` / `Manager@1234`, `inactif` (deactivated).
 
 ## Localization (locales)
 

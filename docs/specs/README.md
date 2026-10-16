@@ -8,6 +8,7 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | --- | --- | --- |
 | [001](001-roles-and-permissions.md) | Roles, account status and guards | Implemented |
 | [004](004-frontends-and-routing.md) | Frontends, routing and admin API prefix | Implemented |
+| [015](015-dev-seed-data.md) | Mock data (fixtures) | Implemented |
 | [016](016-admin-bootstrap.md) | Admin account bootstrap | Implemented |
 | [018](018-localization.md) | Localization (French default, English) | Implemented |
 | [023](023-local-login.md) | Local login (username or e-mail + password) | Implemented |
