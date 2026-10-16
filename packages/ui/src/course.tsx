@@ -1,5 +1,12 @@
 import { i18next, useTranslation } from '@pupitre/i18n'
-import type { CategoryRef, CourseCategory, CourseStatus, CourseVisibility, Difficulty } from '@pupitre/shared'
+import {
+  type CategoryRef,
+  type CourseCategory,
+  type CourseStatus,
+  type CourseVisibility,
+  type Difficulty,
+  xpLevel,
+} from '@pupitre/shared'
 
 // Icons of well-known category slugs (spec 041). A category without one uses its nearest ancestor's, else 📖.
 const CATEGORY_ICONS: Record<string, string> = {
@@ -75,4 +82,18 @@ const STATUS_COLORS: Record<CourseStatus, string> = {
 export function StatusBadge({ status }: { status: CourseStatus }) {
   const { t } = useTranslation()
   return <span className={`${pill} ${STATUS_COLORS[status]}`}>{t(`status.${status}`)}</span>
+}
+
+/** "🌱 Niveau 1 — Novice" (spec 104). */
+export function LevelBadge({ xp, className = '' }: { xp: number; className?: string }) {
+  const { t } = useTranslation()
+  const { current } = xpLevel(xp)
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800 dark:bg-violet-950 dark:text-violet-300 ${className}`}
+    >
+      <span aria-hidden="true">{current.icon}</span>
+      {t('levelLabel', { level: current.level, name: t(`levels.${current.key}`) })}
+    </span>
+  )
 }

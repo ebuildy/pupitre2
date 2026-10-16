@@ -4,6 +4,7 @@ export {
   CategoryLabel,
   categoryIcon,
   DifficultyBadge,
+  LevelBadge,
   StatusBadge,
   sortByTitle,
   VisibilityBadge,

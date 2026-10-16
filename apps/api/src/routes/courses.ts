@@ -2,7 +2,9 @@ import {
   type CourseDetail,
   type CourseListResponse,
   DIFFICULTIES,
+  type LeaderboardResponse,
   type MyCoursesResponse,
+  type MyXpResponse,
   type Role,
 } from '@pupitre/shared'
 import { Hono } from 'hono'
@@ -23,6 +25,7 @@ import {
   toSummary,
 } from '../services/courses.ts'
 import { CategoryTree } from '../services/categories.ts'
+import { completionsFor, totalXp, xpHistory, xpRanking } from '../services/xp.ts'
 
 const NOT_FOUND = 'Course not found'
 
@@ -42,15 +45,14 @@ export const courseRoutes = new Hono<AppEnv>()
     const result = await listCatalogue(tree, { search, difficulty, categories })
 
     const user = c.get('user')
-    const enrolled = user
-      ? await enrolledCourseIds(
-          user.id,
-          result.courses.map((x) => x.id),
-        )
-      : new Set<string>()
+    const ids = result.courses.map((x) => x.id)
+    const enrolled = user ? await enrolledCourseIds(user.id, ids) : new Set<string>()
+    const completed = user ? await completionsFor(user.id, ids) : new Map<string, Date>()
 
     return c.json<CourseListResponse>({
-      courses: result.courses.map((x) => toSummary(x, enrolled.has(x.id), tree)),
+      courses: result.courses.map((x) =>
+        toSummary(x, tree, { enrolled: enrolled.has(x.id), completed: completed.has(x.id) }),
+      ),
       total: result.courses.length,
       categories: result.categories,
     })
@@ -65,8 +67,9 @@ export const courseRoutes = new Hono<AppEnv>()
     // Existence of a course the user may not see is not revealed.
     if (!canView(found, user?.role as Role | undefined, enrolled)) throw new HTTPException(404, { message: NOT_FOUND })
 
+    const completedAt = user ? (await completionsFor(user.id, [found.id])).get(found.id) : undefined
     return c.json<CourseDetail>({
-      ...toSummary(found, enrolled, await CategoryTree.load()),
+      ...toSummary(found, await CategoryTree.load(), { enrolled, completed: !!completedAt }),
       visibility: found.visibility,
       status: found.status,
       enrollment: enrolled
@@ -75,6 +78,8 @@ export const courseRoutes = new Hono<AppEnv>()
             canUnenroll: grants.every((g) => g.source === 'self'),
           }
         : null,
+      completedAt: completedAt?.toISOString() ?? null,
+      userXp: user ? totalXp(user.id) : null,
     })
   })
 
@@ -87,6 +92,10 @@ export const enrollmentRoutes = new Hono<AppEnv>()
     const enrolled = found ? (await grantsFor(user.id, found.id)).length > 0 : false
     if (!found || !canView(found, user.role as Role, enrolled)) throw new HTTPException(404, { message: NOT_FOUND })
     if (!canSelfEnroll(found)) throw new HTTPException(403, { message: 'Enrollment is not open for this course' })
+    // Spec 049: the XP gate applies to self-enrollment only (not to admin grants).
+    if (found.xpRequired > 0 && !enrolled && totalXp(user.id) < found.xpRequired) {
+      throw new HTTPException(403, { message: 'Not enough XP to enroll in this course' })
+    }
 
     await grant(user.id, found.id, 'self', user.id)
     return c.json({ message: 'Enrolled successfully' })
@@ -101,15 +110,53 @@ export const enrollmentRoutes = new Hono<AppEnv>()
     return c.json({ message: 'Unenrolled successfully' })
   })
 
-/** Spec 052: the signed-in user's courses. */
-export const myRoutes = new Hono<AppEnv>().use(requireAuth).get('/courses', async (c) => {
-  const rows = await listMyCourses(c.get('user')!.id)
-  const tree = await CategoryTree.load()
-  return c.json<MyCoursesResponse>({
-    courses: rows.map(({ course, enrolledAt }) => ({
-      ...toSummary(course, true, tree),
-      status: course.status,
-      enrolledAt: new Date(enrolledAt).toISOString(),
-    })),
+/** The signed-in user's courses (spec 052) and XP (specs 104, 105). */
+export const myRoutes = new Hono<AppEnv>()
+  .use(requireAuth)
+  .get('/courses', async (c) => {
+    const userId = c.get('user')!.id
+    const rows = await listMyCourses(userId)
+    const tree = await CategoryTree.load()
+    const completed = await completionsFor(
+      userId,
+      rows.map((r) => r.course.id),
+    )
+    return c.json<MyCoursesResponse>({
+      courses: rows.map(({ course, enrolledAt }) => ({
+        ...toSummary(course, tree, { enrolled: true, completed: completed.has(course.id) }),
+        status: course.status,
+        enrolledAt: new Date(enrolledAt).toISOString(),
+        completedAt: completed.get(course.id)?.toISOString() ?? null,
+      })),
+    })
+  })
+  .get('/xp', async (c) => {
+    const userId = c.get('user')!.id
+    const rows = await listMyCourses(userId)
+    const completed = await completionsFor(
+      userId,
+      rows.map((r) => r.course.id),
+    )
+    return c.json<MyXpResponse>({
+      total: totalXp(userId),
+      history: await xpHistory(userId),
+      inProgress: rows
+        .filter(({ course }) => !completed.has(course.id) && course.status === 'published')
+        .map(({ course }) => ({ slug: course.slug, title: course.title, completionXp: course.completionXp })),
+    })
+  })
+
+const LEADERBOARD_SIZE = 20
+
+/** XP leaderboard (public). */
+export const leaderboardRoutes = new Hono<AppEnv>().get('/', async (c) => {
+  const ranking = await xpRanking()
+  const user = c.get('user')
+  const mine = user ? ranking.find((r) => r.userId === user.id) : undefined
+  return c.json<LeaderboardResponse>({
+    leaderboard: ranking
+      .slice(0, LEADERBOARD_SIZE)
+      .map(({ rank, username, name, image, xp }) => ({ rank, username: username ?? name, name, image, xp })),
+    me: mine ? { rank: mine.rank, xp: mine.xp } : null,
   })
 })

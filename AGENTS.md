@@ -69,6 +69,12 @@ pnpm auth:generate  # regenerate the better-auth schema after changing auth conf
 - Validate inputs with `validate('json' | 'query', schema)` from `src/lib/validate.ts` (answers 400 `{ error }`). Shared
   request schemas and response types live in `@pupitre/shared`; type responses with `c.json<T>(...)`.
 - Business queries go in `src/services/`, routes stay thin.
+- Transactions: better-sqlite3 is synchronous, so `db.transaction(cb)` needs a **synchronous** callback using the
+  `.all()` / `.get()` / `.run()` query methods (an `async` callback commits before its awaits run). See `services/xp.ts`.
+- Schema columns: call the builder helpers (`createdAt()`, `timestamps()`) per table; never share a column builder
+  object between tables (it keeps the column name of the first table).
+- Anything a learner earns goes through `awardXp()` / `completeCourse()` (`services/xp.ts`): at most once per thing
+  earned, history kept when the course is deleted (spec 103).
 - Guards: `requireAuth`, `requireRole('admin' | 'manager', …)` from `src/middleware/session.ts`. `c.var.user` is
   `null` for signed-out and deactivated users.
 - Learner endpoints: chain onto `routes` in `src/app.ts` (typed client `api` in `apps/app`).

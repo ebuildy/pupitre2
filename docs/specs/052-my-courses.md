@@ -15,7 +15,7 @@ holds a grant on, drafts excluded, archived included.
 
 - Title "Mes cours" + "Parcourir le catalogue".
 - Text filter "Filtrer mes cours…" (title or description), count "N cours".
-- Course cards sorted by title, with "Inscrit le …", an "Archivé" badge when relevant, and "Détails" (→ course page).
+- Course cards sorted by title, with "Inscrit le …" (or "✓ Terminé le …" once completed, [103](103-xp.md)), an "Archivé" badge when relevant, and "Détails" (→ course page).
 - Empty: "Vous n'êtes inscrit à aucun cours" + "Découvrir le catalogue"; filtered empty: "Aucun cours ne correspond à votre filtre.".
 
 ## Differences from the original

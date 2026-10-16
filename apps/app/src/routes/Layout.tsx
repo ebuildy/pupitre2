@@ -23,10 +23,18 @@ export function Layout() {
             {t('app:nav.catalogue')}
           </NavLink>
           {session && (
-            <NavLink to="/my-courses" className={navClass}>
-              {t('app:nav.myCourses')}
-            </NavLink>
+            <>
+              <NavLink to="/my-courses" className={navClass}>
+                {t('app:nav.myCourses')}
+              </NavLink>
+              <NavLink to="/my-xp" className={navClass}>
+                {t('app:nav.myXp')}
+              </NavLink>
+            </>
           )}
+          <NavLink to="/leaderboard" className={navClass}>
+            {t('app:nav.leaderboard')}
+          </NavLink>
         </nav>
         <div className="flex items-center gap-3">
           <LanguageSwitcher />

@@ -69,7 +69,9 @@ export function MyCourses() {
                     footer={
                       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                         <span className="text-zinc-600 dark:text-zinc-400">
-                          {t('common:enrolledOn', { date: new Date(course.enrolledAt) })}
+                          {course.completedAt
+                            ? `✓ ${t('myCourses.completedOn', { date: new Date(course.completedAt) })}`
+                            : t('common:enrolledOn', { date: new Date(course.enrolledAt) })}
                         </span>
                         {course.status === 'archived' && <StatusBadge status="archived" />}
                         <Link to={`/courses/${course.slug}`} className="underline">

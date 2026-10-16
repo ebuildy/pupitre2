@@ -19,14 +19,20 @@ function textSearch(search: string | undefined, ...columns: Parameters<typeof li
   return or(...columns.map((col) => sql`${col} LIKE ${pattern} ESCAPE '\\'`))
 }
 
-export function toSummary(c: Course, enrolled: boolean, tree: CategoryTree): CourseSummary {
+export function toSummary(
+  c: Course,
+  tree: CategoryTree,
+  state: { enrolled: boolean; completed: boolean } = { enrolled: false, completed: false },
+): CourseSummary {
   return {
     slug: c.slug,
     title: c.title,
     description: c.description,
     category: tree.courseCategory(c.categoryId),
     difficulty: c.difficulty,
-    enrolled,
+    xpRequired: c.xpRequired,
+    completionXp: c.completionXp,
+    ...state,
   }
 }
 
@@ -39,6 +45,8 @@ export function toAdminCourse(c: Course, enrollmentCount: number, tree: Category
     categoryId: c.categoryId,
     category: tree.courseCategory(c.categoryId),
     difficulty: c.difficulty,
+    xpRequired: c.xpRequired,
+    completionXp: c.completionXp,
     visibility: c.visibility,
     status: c.status,
     enrollmentCount,

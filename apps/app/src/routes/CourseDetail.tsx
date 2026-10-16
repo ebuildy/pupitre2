@@ -52,6 +52,9 @@ export function CourseDetail() {
   }
 
   const mutationError = enroll.error ?? unenroll.error
+  // Spec 049: the gate only matters before enrolling. Signed out, the button leads to login anyway.
+  const missingXp =
+    !course.enrollment && course.userXp !== null ? Math.max(0, course.xpRequired - course.userXp) : 0
   const button = 'rounded-lg px-4 py-2 font-semibold disabled:opacity-60'
 
   return (
@@ -66,6 +69,27 @@ export function CourseDetail() {
           {course.category && <CategoryLabel category={course.category} />}
         </div>
         {course.description && <p className="whitespace-pre-line text-zinc-700 dark:text-zinc-300">{course.description}</p>}
+
+        {course.completedAt && (
+          <p className="rounded-lg bg-green-50 px-3 py-2 font-medium text-green-800 dark:bg-green-950 dark:text-green-300">
+            ✓ {t('course.completedOn', { date: new Date(course.completedAt) })}
+          </p>
+        )}
+
+        {course.completionXp > 0 && (
+          <Link
+            to="/my-xp"
+            className="flex flex-col rounded-lg border border-violet-200 px-3 py-2 dark:border-violet-900"
+            data-testid="course-xp"
+          >
+            <span className="text-xs text-zinc-500">⚡ {t('course.xpTitle')}</span>
+            <span className="font-semibold text-violet-700 dark:text-violet-300">
+              {course.completedAt
+                ? `${t('course.xpEarned', { amount: course.completionXp })} ✓`
+                : t('course.xpToEarn', { amount: course.completionXp })}
+            </span>
+          </Link>
+        )}
 
         {course.status === 'archived' && (
           <p className="rounded-lg bg-zinc-100 px-3 py-2 text-sm dark:bg-zinc-900">{t('course.archived')}</p>
@@ -100,16 +124,28 @@ export function CourseDetail() {
               )}
             </>
           ) : (
-            <button
-              type="button"
-              className={`${button} bg-blue-600 text-white`}
-              disabled={enroll.isPending}
-              onClick={() =>
-                session ? enroll.mutate() : goTo(`/login?redirect=${encodeURIComponent(`/courses/${slug}`)}`)
-              }
-            >
-              {enroll.isPending ? t('course.enrolling') : t('course.enroll')}
-            </button>
+            <>
+              {course.xpRequired > 0 && (
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                  ⚡ {t('course.xpGate', { amount: course.xpRequired })}
+                </p>
+              )}
+              {missingXp > 0 && (
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  {t('course.xpMissing', { missing: missingXp, current: course.userXp })}
+                </p>
+              )}
+              <button
+                type="button"
+                className={`${button} bg-blue-600 text-white`}
+                disabled={enroll.isPending || missingXp > 0}
+                onClick={() =>
+                  session ? enroll.mutate() : goTo(`/login?redirect=${encodeURIComponent(`/courses/${slug}`)}`)
+                }
+              >
+                {enroll.isPending ? t('course.enrolling') : t('course.enroll')}
+              </button>
+            </>
           )}
           {mutationError && (
             <p role="alert" className="text-sm text-red-600">

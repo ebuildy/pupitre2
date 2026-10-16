@@ -10,7 +10,7 @@ import { auth } from './auth.ts'
 import { env } from './env.ts'
 import { type AppEnv, sessionMiddleware } from './middleware/session.ts'
 import { adminRoutes } from './routes/admin/index.ts'
-import { courseRoutes, enrollmentRoutes, myRoutes } from './routes/courses.ts'
+import { courseRoutes, enrollmentRoutes, leaderboardRoutes, myRoutes } from './routes/courses.ts'
 import { meRoutes } from './routes/me.ts'
 
 const app = new Hono<AppEnv>()
@@ -54,6 +54,7 @@ const routes = app
   .route('/courses', courseRoutes)
   .route('/enrollments', enrollmentRoutes)
   .route('/my', myRoutes)
+  .route('/leaderboard', leaderboardRoutes)
 
 // Admin app routes, all under /api/admin and admin-only. Typed separately (`AdminAppType`)
 // so each frontend's client only sees its own endpoints.

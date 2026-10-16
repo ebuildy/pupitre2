@@ -43,6 +43,10 @@ export const courseCreateSchema = z.object({
   description: optionalText,
   categoryId: z.string().min(1).nullable().optional(),
   difficulty: z.enum(DIFFICULTIES).nullable().optional(),
+  /** Spec 049: minimum XP to self-enroll; 0 = no gate. */
+  xpRequired: z.number().int().min(0).max(1_000_000).optional(),
+  /** Spec 191: XP granted on completion. */
+  completionXp: z.number().int().min(0).max(100_000).optional(),
   visibility: z.enum(COURSE_VISIBILITIES).default('private'),
   status: z.enum(COURSE_STATUSES).default('draft'),
 })
@@ -69,8 +73,12 @@ export type CourseSummary = {
   description: string | null
   category: CourseCategory | null
   difficulty: Difficulty | null
+  xpRequired: number
+  completionXp: number
   /** Signed-in user is enrolled. Always `false` for anonymous visitors. */
   enrolled: boolean
+  /** Signed-in user completed the course. */
+  completed: boolean
 }
 
 /** `GET /api/courses` */
@@ -93,11 +101,14 @@ export type CourseDetail = CourseSummary & {
     /** The learner can withdraw: every grant is their own. */
     canUnenroll: boolean
   }
+  completedAt: string | null
+  /** Signed-in user's total XP (for the enrollment gate), null when signed out. */
+  userXp: number | null
 }
 
 /** `GET /api/my/courses` */
 export type MyCoursesResponse = {
-  courses: (CourseSummary & { status: CourseStatus; enrolledAt: string })[]
+  courses: (CourseSummary & { status: CourseStatus; enrolledAt: string; completedAt: string | null })[]
 }
 
 /** A course as shown to admins. */
@@ -109,6 +120,8 @@ export type AdminCourse = {
   categoryId: string | null
   category: CourseCategory | null
   difficulty: Difficulty | null
+  xpRequired: number
+  completionXp: number
   visibility: CourseVisibility
   status: CourseStatus
   enrollmentCount: number
@@ -123,6 +136,7 @@ export type AdminCourseEnrollment = {
   email: string
   enrolledAt: string
   sources: EnrollmentSource[]
+  completedAt: string | null
 }
 
 export type AdminUserSearchResult = {

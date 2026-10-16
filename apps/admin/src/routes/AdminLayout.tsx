@@ -8,6 +8,7 @@ const sections = [
   { to: '/', label: 'nav.dashboard', end: true },
   { to: '/courses', label: 'nav.courses', end: false },
   { to: '/categories', label: 'nav.categories', end: false },
+  { to: '/users', label: 'nav.users', end: false },
 ] as const
 
 export function AdminLayout() {

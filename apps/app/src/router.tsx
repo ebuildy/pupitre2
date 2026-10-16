@@ -3,7 +3,9 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { Catalogue } from './routes/Catalogue.tsx'
 import { CourseDetail } from './routes/CourseDetail.tsx'
 import { Layout } from './routes/Layout.tsx'
+import { Leaderboard } from './routes/Leaderboard.tsx'
 import { MyCourses } from './routes/MyCourses.tsx'
+import { MyXp } from './routes/MyXp.tsx'
 
 // `/admin/*` is the admin app (apps/admin), served on the same origin.
 export const router = createBrowserRouter([
@@ -23,6 +25,15 @@ export const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
+      {
+        path: 'my-xp',
+        element: (
+          <RequireAuth>
+            <MyXp />
+          </RequireAuth>
+        ),
+      },
+      { path: 'leaderboard', element: <Leaderboard /> },
     ],
   },
 ])

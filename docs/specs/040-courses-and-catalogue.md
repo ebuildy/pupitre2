@@ -20,6 +20,8 @@ Table `course` (spec 191 "Course", without modules, XP, badge or thumbnail yet):
 | `description` | optional |
 | `categoryId` | optional; a [category](#categories) |
 | `difficulty` | optional: `beginner`, `intermediate`, `advanced` |
+| `xpRequired` | ≥ 0, default 0: minimum XP to self-enroll ([103](103-xp.md)) |
+| `completionXp` | ≥ 0, default 200: XP granted on completion ([103](103-xp.md)) |
 | `visibility` | `public` (listed, open to self-enrollment) or `private` (granted access only); default `private` |
 | `status` | `draft` (admins only), `published`, `archived` (unlisted, no new enrollments, enrolled learners keep access); default `draft` |
 
@@ -82,7 +84,7 @@ A course the user may not see answers 404 `Course not found` (its existence is n
 
 ### Course card
 
-Category icon, category path ("DevOps › Docker"), title (link to `/courses/:slug`), difficulty badge (green Débutant / orange Intermédiaire / red Avancé), "✓ Inscrit" when enrolled.
+Category icon, category path ("DevOps › Docker"), title, "⚡ N XP requis" when gated, "+N XP" reward, "✓ Terminé" when completed (else "✓ Inscrit") — (link to `/courses/:slug`), difficulty badge (green Débutant / orange Intermédiaire / red Avancé), "✓ Inscrit" when enrolled.
 
 ## Acceptance criteria
 
@@ -97,7 +99,7 @@ Category icon, category path ("DevOps › Docker"), title (link to `/courses/:sl
 - Visibility is the target model (spec 191: visibility + status) instead of `public` + an unused `hidden` flag.
 - Courses have an id and a mutable slug (the original slug was immutable).
 - Categories are managed objects (a tree with titles) instead of free-text slugs with built-in French labels.
-- Not yet: thumbnails, skills and the skill filter (042), XP gate (049), prerequisites (050), in-person sessions, badges, module count, progress bar on cards, "continue learning" hero (043).
+- Not yet: thumbnails, skills and the skill filter (042), prerequisites (050), in-person sessions, badges, module count, progress bar on cards, "continue learning" hero (043).
 
 ## Source
 

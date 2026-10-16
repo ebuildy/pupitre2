@@ -18,4 +18,5 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | [040](040-courses-and-catalogue.md) | Courses, categories, visibility and catalogue | Implemented (no modules yet) |
 | [045](045-course-page-and-enrollment.md) | Course page and enrollment | Implemented (no modules yet) |
 | [052](052-my-courses.md) | "Mes cours" | Implemented (no progress yet) |
+| [103](103-xp.md) | XP, levels, course completion, XP gate and leaderboard | Implemented (completion marked by admins) |
 | [165](165-admin-courses.md) | Admin: courses, categories and enrollments | Basic version |

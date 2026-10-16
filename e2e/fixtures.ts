@@ -4,7 +4,7 @@ import { type APIRequestContext, test as base, type Page, request } from '@playw
 import type { AdminCategory, AdminCourse, CategoryCreateInput, CourseCreateInput, Role } from '@pupitre/shared'
 import { ADMIN_PASSWORD, API_DB_PATH, BASE_URL } from './env.ts'
 
-export type TestUser = { username: string; email: string; password: string; role: Role }
+export type TestUser = { id: string; username: string; email: string; password: string; role: Role }
 
 type Fixtures = {
   /** Creates a user through the real sign-up endpoint, then sets role / active flag in the database. */
@@ -31,7 +31,7 @@ export const test = base.extend<Fixtures>({
     const db = new DatabaseSync(API_DB_PATH, { timeout: 5000 })
     await use(async ({ role = 'student', isActive = true } = {}) => {
       const id = randomUUID().slice(0, 8)
-      const user: TestUser = {
+      const user: Omit<TestUser, 'id'> = {
         username: `user_${id}`,
         email: `user-${id}@example.test`,
         password: 'Password123!',
@@ -44,7 +44,8 @@ export const test = base.extend<Fixtures>({
       if (!res.ok()) throw new Error(`sign-up failed: ${res.status()} ${await res.text()}`)
       await api.dispose()
       db.prepare('UPDATE user SET role = ?, is_active = ? WHERE email = ?').run(role, isActive ? 1 : 0, user.email)
-      return user
+      const row = db.prepare('SELECT id FROM user WHERE email = ?').get(user.email) as { id: string }
+      return { ...user, id: row.id }
     })
     db.close()
   },

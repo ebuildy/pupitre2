@@ -33,17 +33,17 @@ Admin URLs use **ids** (course and category slugs can change). Body schemas live
 
 ## UI (admin app)
 
-- Sidebar entries "Cours" and "Catégories".
+- Sidebar entries "Cours", "Catégories" and "Utilisateurs" (XP, [103](103-xp.md)).
 - `/admin/courses`: title with count, "+ Nouveau cours", search "Rechercher un cours…", table (title + slug, category,
   difficulty, visibility Public/Privé, status Brouillon/Publié/Archivé, enrolled count) with "Modifier" and "Supprimer"
   (→ "Confirmer la suppression" / "Annuler"; then "Cours « … » supprimé").
-- `/admin/courses/new`: form "Nouveau cours" — Titre*, Slug* (help text), Description, Catégorie (select of the tree, "Parent › Enfant", or "— Aucune —"), Difficulté, Visibilité
+- `/admin/courses/new`: form "Nouveau cours" — Titre*, Slug* (help text), Description, Catégorie (select of the tree, "Parent › Enfant", or "— Aucune —"), Difficulté, "XP requis pour s’inscrire", "XP à l’achèvement", Visibilité
   (default Privé), Statut (default Brouillon); client checks "Le titre est requis", "Slug invalide"; API errors shown
   as returned. On success → the edit page with "Cours « slug » créé".
 - `/admin/courses/:id`: same form ("Modifier le cours", "Enregistrer" → "Cours « slug » mis à jour") and the
   "Inscriptions (N)" section: user search "Rechercher un utilisateur…" with suggestions, "Inscrire" ("Sélectionnez un
   utilisateur dans la liste" if none chosen), table of enrolled users (name, e-mail, date, origin Auto-inscription /
-  Administrateur) with "Retirer".
+  Administrateur), completion ("Marquer comme terminé" / "✓ Terminé le … · Annuler l’achèvement", [103](103-xp.md)) and "Retirer".
 - `/admin/categories`: title with count, "+ Nouvelle catégorie", the tree as an indented table (title, slug, direct
   course count) with "Modifier" and "Supprimer" (→ "Confirmer la suppression"; API refusals shown as returned).
 - `/admin/categories/new` and `/admin/categories/:id`: Titre*, Slug*, "Catégorie parente" ("— Aucune (catégorie

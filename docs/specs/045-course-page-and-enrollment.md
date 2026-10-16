@@ -29,6 +29,7 @@ deleted with the course or the user.
 | `POST /api/enrollments/:slug` | session | adds a `self` grant (idempotent) → `{message: "Enrolled successfully"}` |
 | `DELETE /api/enrollments/:slug` | session | removes the `self` grant only → `{message: "Unenrolled successfully"}` |
 
+- `POST` with less XP than the course's `xpRequired` → 403 `Not enough XP to enroll in this course` ([103](103-xp.md)).
 - `POST` on a course the user can't see → 404; on a visible course that is not published + public (archived, or private and already enrolled) → 403 `Enrollment is not open for this course`.
 - Signed out → 401.
 
@@ -41,7 +42,9 @@ deleted with the course or the user.
   - not enrolled → "S'inscrire au cours" (signed out → `/login?redirect=/courses/:slug`, back to the page after login);
   - enrolled → "✓ Inscrit le 16 octobre 2026", then "Se désinscrire" → "Confirmer la désinscription" / "Annuler";
   - enrolled by an admin → "Inscription gérée par un administrateur" (no unenroll button);
-  - archived → "Ce cours est archivé.".
+  - archived → "Ce cours est archivé.";
+  - completed → "✓ Cours terminé le …"; XP card "⚡ XP de ce cours" ([103](103-xp.md));
+  - XP-gated → "⚡ N XP requis pour s’inscrire", and when the user lacks XP "Il vous manque M XP (vous en avez K)." with the button disabled.
 - Right column "Contenu du cours": "📭 Inscrivez-vous pour accéder aux modules." / "Aucun contenu disponible pour le moment." (modules come later).
 - Unknown or hidden course → "😕 Cours introuvable" + "Retour au catalogue".
 
@@ -56,7 +59,7 @@ deleted with the course or the user.
 
 - Enrollment checks visibility and status (the original accepted any slug).
 - The learner can unenroll from the UI (the original had only the API).
-- Not yet: modules list and progress (053, 068), auto-enrollment on module access (048), XP gate (049), prerequisites (050), badge card (106), sessions (152).
+- Not yet: modules list and progress (053, 068), auto-enrollment on module access (048), prerequisites (050), badge card (106), sessions (152).
 
 ## Source
 

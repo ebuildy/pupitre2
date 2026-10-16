@@ -33,3 +33,4 @@ export function landingPath(role: Role | undefined, redirect: string | null | un
 }
 
 export * from './courses.ts'
+export * from './xp.ts'

@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
 import { type AppEnv, requireRole } from '../../middleware/session.ts'
 import { adminCategoryRoutes } from './categories.ts'
-import { adminCourseRoutes, adminUserRoutes } from './courses.ts'
+import { adminCourseRoutes } from './courses.ts'
+import { adminUserRoutes } from './users.ts'
 
 /**
  * Every endpoint used by the admin app lives here, mounted at `/api/admin` (spec 004).

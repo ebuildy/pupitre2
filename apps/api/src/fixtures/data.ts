@@ -23,6 +23,10 @@ export type CourseFixture = {
   difficulty: Difficulty
   visibility: CourseVisibility
   status: CourseStatus
+  /** Spec 049 (default 0). */
+  xpRequired?: number
+  /** Default 200. */
+  completionXp?: number
 }
 
 /** Hand-written courses, one per visibility/status case; stable slugs to use in docs and manual tests. */
@@ -80,6 +84,8 @@ export const CURATED_COURSES: CourseFixture[] = [
     difficulty: 'advanced',
     visibility: 'public',
     status: 'published',
+    xpRequired: 200,
+    completionXp: 300,
   },
   {
     slug: 'internal-onboarding',
@@ -163,6 +169,13 @@ export const KNOWN_USERS = [
   { username: 'manager', name: 'Marc Manager', email: 'manager@pupitre.local', role: 'manager', password: 'Manager@1234' },
   { username: 'inactif', name: 'Ines Inactive', email: 'inactif@pupitre.local', role: 'student', password: 'Student@1234', isActive: false },
 ] as const
+
+/** Reasons of the admin XP bonuses given to a few learners. */
+export const XP_BONUSES = [
+  { reason: 'Bonus : participation à l’atelier DevOps', amount: 50 },
+  { reason: 'Bonus : aide apportée sur le forum', amount: 30 },
+  { reason: 'Correction : XP attribués en double', amount: -20 },
+]
 
 /** Spec 015: generated students share this password. */
 export const STUDENT_PASSWORD = 'Student@1234'

@@ -4,13 +4,19 @@ import {
   COURSE_STATUSES,
   COURSE_VISIBILITIES,
   type CourseCreateInput,
+  DEFAULT_COMPLETION_XP,
   DIFFICULTIES,
   SLUG_PATTERN,
 } from '@pupitre/shared'
 import { type FormEvent, useState } from 'react'
 import { flattenTree, useCategories } from '../../lib/categories.ts'
 
-type Values = Required<{ [K in keyof CourseCreateInput]: NonNullable<CourseCreateInput[K]> | '' }>
+// Form state: text inputs hold strings (numbers are parsed on submit).
+type Values = Required<{
+  [K in keyof CourseCreateInput]: NonNullable<CourseCreateInput[K]> extends number
+    ? string
+    : NonNullable<CourseCreateInput[K]> | ''
+}>
 
 function initialValues(course?: AdminCourse): Values {
   return {
@@ -19,6 +25,8 @@ function initialValues(course?: AdminCourse): Values {
     description: course?.description ?? '',
     categoryId: course?.categoryId ?? '',
     difficulty: course?.difficulty ?? '',
+    xpRequired: String(course?.xpRequired ?? 0),
+    completionXp: String(course?.completionXp ?? DEFAULT_COMPLETION_XP),
     visibility: course?.visibility ?? 'private',
     status: course?.status ?? 'draft',
   }
@@ -39,7 +47,7 @@ export function CourseForm({
   const { t } = useTranslation(['admin', 'common'])
   const [values, setValues] = useState(() => initialValues(course))
   const categories = useCategories()
-  const [invalid, setInvalid] = useState<'titleRequired' | 'slugInvalid' | null>(null)
+  const [invalid, setInvalid] = useState<'titleRequired' | 'slugInvalid' | 'xpInvalid' | null>(null)
 
   const set = (key: keyof Values) => (e: { target: { value: string } }) =>
     setValues((v) => ({ ...v, [key]: e.target.value }))
@@ -48,6 +56,9 @@ export function CourseForm({
     e.preventDefault()
     if (!values.title.trim()) return setInvalid('titleRequired')
     if (!SLUG_PATTERN.test(values.slug.trim())) return setInvalid('slugInvalid')
+    const xpRequired = Number(values.xpRequired || 0)
+    const completionXp = Number(values.completionXp || 0)
+    if (![xpRequired, completionXp].every((n) => Number.isInteger(n) && n >= 0)) return setInvalid('xpInvalid')
     setInvalid(null)
     onSubmit({
       slug: values.slug.trim(),
@@ -55,6 +66,8 @@ export function CourseForm({
       description: values.description || null,
       categoryId: values.categoryId || null,
       difficulty: values.difficulty || null,
+      xpRequired,
+      completionXp,
       visibility: values.visibility || 'private',
       status: values.status || 'draft',
     })
@@ -127,6 +140,31 @@ export function CourseForm({
               </option>
             ))}
           </select>
+        </label>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className={label}>
+          {t('courses.form.xpRequired')}
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={values.xpRequired}
+            onChange={set('xpRequired')}
+            className={field}
+          />
+          <span className="text-xs font-normal text-zinc-500">{t('courses.form.xpRequiredHelp')}</span>
+        </label>
+        <label className={label}>
+          {t('courses.form.completionXp')}
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={values.completionXp}
+            onChange={set('completionXp')}
+            className={field}
+          />
         </label>
       </div>
       <button

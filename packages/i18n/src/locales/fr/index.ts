@@ -32,6 +32,22 @@ export const common = {
   },
   enrolledOn: 'Inscrit le {{date, datetime(dateStyle: long)}}',
   cancel: 'Annuler',
+  // Spec 104
+  levels: {
+    novice: 'Novice',
+    learner: 'Apprenant',
+    proficient: 'Confirmé',
+    expert: 'Expert',
+    master: 'Maître',
+  },
+  levelLabel: 'Niveau {{level}} — {{name}}',
+  xpAmount: '{{amount, number}} XP',
+  xpSources: {
+    lesson: 'Leçon terminée',
+    quiz: 'Quiz réussi',
+    course: 'Cours terminé',
+    admin: 'Ajustement',
+  },
 }
 
 export const auth = {
@@ -54,6 +70,8 @@ export const app = {
   nav: {
     catalogue: 'Catalogue',
     myCourses: 'Mes cours',
+    myXp: 'Mon XP',
+    leaderboard: 'Classement',
   },
   // Spec 041
   catalogue: {
@@ -70,6 +88,9 @@ export const app = {
     emptyTitle: 'Aucun cours trouvé',
     emptyBody: "Essayez d'ajuster votre recherche ou vos filtres",
     enrolledBadge: 'Inscrit',
+    completedBadge: 'Terminé',
+    xpRequired: '⚡ {{amount, number}} XP requis',
+    reward: '+{{amount, number}} XP',
   },
   // Specs 045, 047
   course: {
@@ -84,6 +105,12 @@ export const app = {
     contentLocked: 'Inscrivez-vous pour accéder aux modules.',
     notFound: 'Cours introuvable',
     loading: 'Chargement du cours…',
+    completedOn: 'Cours terminé le {{date, datetime(dateStyle: long)}}',
+    xpTitle: 'XP de ce cours',
+    xpToEarn: '+{{amount, number}} XP à l’achèvement',
+    xpEarned: '+{{amount, number}} XP obtenus',
+    xpGate: '{{amount, number}} XP requis pour s’inscrire',
+    xpMissing: 'Il vous manque {{missing, number}} XP (vous en avez {{current, number}}).',
   },
   // Spec 052
   myCourses: {
@@ -98,6 +125,32 @@ export const app = {
     emptyCta: 'Découvrir le catalogue',
     filteredEmpty: 'Aucun cours ne correspond à votre filtre.',
     details: 'Détails',
+    completedOn: 'Terminé le {{date, datetime(dateStyle: medium)}}',
+  },
+  // Spec 105
+  myXp: {
+    title: 'Mon XP',
+    subtitle_one: '{{count, number}} point accumulé',
+    subtitle_other: '{{count, number}} points accumulés',
+    totalLabel: "points d'expérience",
+    toNext: '{{missing, number}} XP jusqu’au niveau {{level}} ({{name}})',
+    maxLevel: 'Niveau maximum atteint 🏆',
+    ladderTitle: 'Niveaux',
+    start: 'Départ',
+    inProgressTitle_one: 'En cours ({{count}} cours)',
+    inProgressTitle_other: 'En cours ({{count}} cours)',
+    inProgressItem: 'Compléter pour +{{amount, number}} XP',
+    historyTitle: 'Historique',
+    empty: "Aucun XP gagné pour l'instant. Complète des leçons, modules et cours pour en gagner !",
+    loading: 'Chargement de votre XP…',
+  },
+  leaderboard: {
+    title: 'Classement',
+    subtitle: 'Les apprenants qui ont accumulé le plus d’XP',
+    empty: 'Personne n’a encore gagné d’XP.',
+    yourRank: 'Votre position : #{{rank}} ({{xp, number}} XP)',
+    notRanked: 'Gagnez de l’XP pour apparaître dans le classement.',
+    loading: 'Chargement du classement…',
   },
 }
 
@@ -107,6 +160,38 @@ export const admin = {
     dashboard: 'Tableau de bord',
     courses: 'Cours',
     categories: 'Catégories',
+    users: 'Utilisateurs',
+  },
+  users: {
+    title: 'Utilisateurs',
+    count_one: '{{count}} utilisateur',
+    count_other: '{{count}} utilisateurs',
+    searchLabel: 'Rechercher un utilisateur',
+    searchPlaceholder: 'Rechercher un utilisateur…',
+    loading: 'Chargement…',
+    empty: 'Aucun utilisateur',
+    notFound: 'Utilisateur introuvable',
+    back: '← Retour aux utilisateurs',
+    inactive: 'Désactivé',
+    columns: {
+      user: 'Utilisateur',
+      role: 'Rôle',
+      xp: 'XP',
+      level: 'Niveau',
+    },
+    xpTitle: 'Expérience',
+    historyTitle: 'Historique XP',
+    historyEmpty: 'Aucun XP',
+    completionsTitle: 'Cours terminés',
+    completionsEmpty: 'Aucun cours terminé',
+    deletedCourse: 'cours supprimé',
+    adjustTitle: 'Ajuster l’XP',
+    amount: 'Montant (négatif pour retirer)',
+    reason: 'Motif',
+    adjust: 'Appliquer',
+    adjusted: 'XP mis à jour : {{total, number}} XP au total',
+    amountInvalid: 'Saisissez un nombre entier non nul',
+    reasonRequired: 'Le motif est requis',
   },
   dashboard: {
     title: 'Tableau de bord',
@@ -183,6 +268,10 @@ export const admin = {
       difficulty: 'Difficulté',
       noDifficulty: '—',
       noCategory: '— Aucune —',
+      xpRequired: 'XP requis pour s’inscrire',
+      xpRequiredHelp: '0 = aucune condition',
+      completionXp: 'XP à l’achèvement',
+      xpInvalid: 'Les XP doivent être des nombres entiers positifs',
       visibility: 'Visibilité',
       status: 'Statut',
       create: 'Créer le cours',
@@ -205,6 +294,10 @@ export const admin = {
       user: 'Utilisateur',
       enrolledAt: 'Inscrit le',
       source: 'Origine',
+      completion: 'Achèvement',
+      completedOn: 'Terminé le {{date, datetime(dateStyle: medium)}}',
+      markCompleted: 'Marquer comme terminé',
+      undoCompleted: 'Annuler l’achèvement',
       sources: {
         self: 'Auto-inscription',
         admin: 'Administrateur',

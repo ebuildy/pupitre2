@@ -3,7 +3,7 @@ import type { Role } from '@pupitre/shared'
 import { asc, eq, inArray } from 'drizzle-orm'
 import { auth } from '../auth.ts'
 import { db } from '../db/index.ts'
-import { category, course, enrollmentGrant, user } from '../db/schema/index.ts'
+import { category, course, courseCompletion, enrollmentGrant, user, xpEvent } from '../db/schema/index.ts'
 import {
   CATEGORIES,
   COURSE_TEMPLATES,
@@ -13,6 +13,7 @@ import {
   MANAGER_PASSWORD,
   STUDENT_PASSWORD,
   TOPICS,
+  XP_BONUSES,
 } from './data.ts'
 
 /**
@@ -50,6 +51,8 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
           description: tpl.description(topic),
           category: cat,
           difficulty: tpl.difficulty,
+          // Advanced courses are XP-gated (spec 049) and pay more.
+          ...(tpl.difficulty === 'advanced' ? { xpRequired: 400, completionXp: 300 } : {}),
           visibility: faker.helpers.weightedArrayElement([
             { value: 'public' as const, weight: 9 },
             { value: 'private' as const, weight: 1 },
@@ -75,7 +78,13 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
     )
     .onConflictDoNothing({ target: course.slug })
   const courses = await db
-    .select({ id: course.id, visibility: course.visibility, status: course.status })
+    .select({
+      id: course.id,
+      title: course.title,
+      visibility: course.visibility,
+      status: course.status,
+      completionXp: course.completionXp,
+    })
     .from(course)
     .where(
       inArray(
@@ -174,7 +183,68 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
       .onConflictDoNothing({ target: [enrollmentGrant.userId, enrollmentGrant.courseId, enrollmentGrant.source] })
   }
 
-  return { categories: CATEGORIES.length, courses: courseFixtures.length, users: userFixtures.length, grants: grants.length }
+  // 5. Completions (marked by an admin until modules exist) and their XP, then a few admin bonuses (specs 103, 191).
+  const completions: (typeof courseCompletion.$inferInsert)[] = []
+  const xp: (typeof xpEvent.$inferInsert)[] = []
+  const coursesById = new Map(courses.map((c) => [c.id, c]))
+  for (const g of grants) {
+    const c = coursesById.get(g.courseId)!
+    if (c.status === 'draft' || !faker.datatype.boolean({ probability: 0.35 })) continue
+    const completedAt = faker.date.between({ from: g.createdAt!, to: refDate })
+    completions.push({
+      userId: g.userId,
+      courseId: c.id,
+      courseTitle: c.title,
+      completedBy: admin?.id ?? null,
+      completedAt,
+    })
+    xp.push({
+      userId: g.userId,
+      source: 'course',
+      sourceKey: c.id,
+      amount: c.completionXp,
+      label: c.title,
+      courseId: c.id,
+      grantedBy: admin?.id ?? null,
+      createdAt: completedAt,
+    })
+  }
+  const learners = userIds.filter((u) => u.role !== 'admin' && u.isActive)
+  for (const [i, bonus] of XP_BONUSES.entries()) {
+    for (const learner of faker.helpers.arrayElements(learners, 3)) {
+      xp.push({
+        userId: learner.id,
+        source: 'admin',
+        // Stable key: re-running the fixtures doesn't add the bonus again.
+        sourceKey: `fixture-bonus-${i}`,
+        amount: bonus.amount,
+        label: bonus.reason,
+        grantedBy: admin?.id ?? null,
+        createdAt: faker.date.between({ from: learner.createdAt, to: refDate }),
+      })
+    }
+  }
+  if (completions.length) {
+    await db
+      .insert(courseCompletion)
+      .values(completions)
+      .onConflictDoNothing({ target: [courseCompletion.userId, courseCompletion.courseId] })
+  }
+  if (xp.length) {
+    await db
+      .insert(xpEvent)
+      .values(xp)
+      .onConflictDoNothing({ target: [xpEvent.userId, xpEvent.source, xpEvent.sourceKey] })
+  }
+
+  return {
+    categories: CATEGORIES.length,
+    courses: courseFixtures.length,
+    users: userFixtures.length,
+    grants: grants.length,
+    completions: completions.length,
+    xpEvents: xp.length,
+  }
 }
 
 /** Lowercase ASCII slug: accents folded, other characters → `sep`, collapsed and trimmed. */

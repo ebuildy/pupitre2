@@ -32,6 +32,7 @@ export function EnrollmentsPanel({ courseId }: { courseId: string }) {
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['admin-enrollments', courseId] })
     await queryClient.invalidateQueries({ queryKey: ['admin-courses'] })
+    await queryClient.invalidateQueries({ queryKey: ['admin-users'] })
   }
 
   const enroll = useMutation({
@@ -50,8 +51,20 @@ export function EnrollmentsPanel({ courseId }: { courseId: string }) {
     onSuccess: refresh,
   })
 
+  // Course completion, marked by hand until modules exist; grants the course's completion XP.
+  const complete = useMutation({
+    mutationFn: (userId: string) =>
+      unwrap(adminApi.courses[':id'].completions.$post({ param: { id: courseId }, json: { userId } })),
+    onSuccess: refresh,
+  })
+  const uncomplete = useMutation({
+    mutationFn: (userId: string) =>
+      unwrap(adminApi.courses[':id'].completions[':userId'].$delete({ param: { id: courseId, userId } })),
+    onSuccess: refresh,
+  })
+
   const count = enrollments.data?.total ?? 0
-  const mutationError = enroll.error ?? remove.error
+  const mutationError = enroll.error ?? remove.error ?? complete.error ?? uncomplete.error
 
   return (
     <section className="flex max-w-3xl flex-col gap-3 border-t border-zinc-200 pt-6 dark:border-zinc-800">
@@ -132,6 +145,7 @@ export function EnrollmentsPanel({ courseId }: { courseId: string }) {
               <th className="py-2 pr-4 font-medium">{t('courses.enrollments.user')}</th>
               <th className="py-2 pr-4 font-medium">{t('courses.enrollments.enrolledAt')}</th>
               <th className="py-2 pr-4 font-medium">{t('courses.enrollments.source')}</th>
+              <th className="py-2 pr-4 font-medium">{t('courses.enrollments.completion')}</th>
               <th className="py-2" />
             </tr>
           </thead>
@@ -149,6 +163,32 @@ export function EnrollmentsPanel({ courseId }: { courseId: string }) {
                 </td>
                 <td className="py-2 pr-4">
                   {e.sources.map((s) => t(`courses.enrollments.sources.${s}`)).join(', ')}
+                </td>
+                <td className="py-2 pr-4">
+                  {e.completedAt ? (
+                    <div className="flex flex-col items-start gap-1">
+                      <span className="text-green-700 dark:text-green-400">
+                        ✓ {t('courses.enrollments.completedOn', { date: new Date(e.completedAt) })}
+                      </span>
+                      <button
+                        type="button"
+                        className="text-xs underline"
+                        disabled={uncomplete.isPending}
+                        onClick={() => uncomplete.mutate(e.userId)}
+                      >
+                        {t('courses.enrollments.undoCompleted')}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="rounded border px-2 py-1 text-xs"
+                      disabled={complete.isPending}
+                      onClick={() => complete.mutate(e.userId)}
+                    >
+                      {t('courses.enrollments.markCompleted')}
+                    </button>
+                  )}
                 </td>
                 <td className="py-2 text-right">
                   <button
