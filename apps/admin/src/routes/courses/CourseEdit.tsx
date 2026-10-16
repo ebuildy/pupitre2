@@ -1,6 +1,6 @@
 import { useTranslation } from '@pupitre/i18n'
 import type { CourseCreateInput } from '@pupitre/shared'
-import { isNotFound, unwrap } from '@pupitre/ui'
+import { isNotFound, LoadingState, unwrap } from '@pupitre/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
@@ -43,16 +43,16 @@ export function CourseEdit() {
         {t('courses.back')}
       </Link>
       {isPending ? (
-        <p>{t('courses.loading')}</p>
+        <LoadingState label={t('courses.loading')} />
       ) : error ? (
-        <p role="alert" className="text-red-600">
+        <p role="alert" className="text-destructive">
           {isNotFound(error) ? t('courses.notFound') : error.message}
         </p>
       ) : (
         <>
-          <h1 className="text-2xl font-semibold">{t('courses.form.editTitle')}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('courses.form.editTitle')}</h1>
           {notice && (
-            <p role="status" className="max-w-2xl rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800 dark:bg-green-950 dark:text-green-300">
+            <p role="status" className="max-w-2xl rounded-lg border border-success/30 bg-success-soft px-3 py-2 text-sm text-success-foreground">
               {notice}
             </p>
           )}

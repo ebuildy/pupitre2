@@ -25,7 +25,7 @@ export function CourseNew() {
       <Link to="/courses" className="text-sm underline">
         {t('courses.back')}
       </Link>
-      <h1 className="text-2xl font-semibold">{t('courses.form.newTitle')}</h1>
+      <h1 className="text-3xl font-bold tracking-tight">{t('courses.form.newTitle')}</h1>
       <CourseForm pending={create.isPending} error={create.error?.message} onSubmit={(input) => create.mutate(input)} />
     </div>
   )

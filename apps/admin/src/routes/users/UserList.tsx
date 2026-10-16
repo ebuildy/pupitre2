@@ -1,9 +1,12 @@
 import { useTranslation } from '@pupitre/i18n'
-import { LevelBadge, unwrap, useDebouncedValue } from '@pupitre/ui'
+import { ErrorState, LevelBadge, LoadingState, unwrap, useDebouncedValue } from '@pupitre/ui'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { adminApi } from '../../lib/api.ts'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@pupitre/ui/components/ui/table'
+import { Card } from '@pupitre/ui/components/ui/card'
+import { Input } from '@pupitre/ui/components/ui/input'
 
 /** Users with their XP and level (spec 103). User management (162/163) comes later. */
 export function UserList() {
@@ -19,59 +22,57 @@ export function UserList() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">
+      <h1 className="text-3xl font-bold tracking-tight">
         {t('users.title')}
-        {data && <span className="ml-2 text-base font-normal text-zinc-500">{t('users.count', { count: data.total })}</span>}
+        {data && <span className="ml-2 text-base font-normal text-muted-foreground">{t('users.count', { count: data.total })}</span>}
       </h1>
-      <input
+      <Input
         type="search"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder={t('users.searchPlaceholder')}
         aria-label={t('users.searchLabel')}
-        className="h-10 max-w-sm rounded-lg border border-zinc-300 bg-transparent px-3 dark:border-zinc-700"
+        className="h-10 max-w-sm"
       />
       {isPending ? (
-        <p>{t('users.loading')}</p>
+        <LoadingState label={t('users.loading')} />
       ) : isError ? (
-        <p role="alert" className="text-red-600">
-          {error.message}
-        </p>
+        <ErrorState message={error.message} />
       ) : data.users.length === 0 ? (
-        <p className="text-zinc-600 dark:text-zinc-400">{t('users.empty')}</p>
+        <p className="text-muted-foreground">{t('users.empty')}</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full max-w-4xl text-left text-sm">
-            <thead className="border-b border-zinc-200 text-zinc-500 dark:border-zinc-800">
-              <tr>
-                <th className="py-2 pr-4 font-medium">{t('users.columns.user')}</th>
-                <th className="py-2 pr-4 font-medium">{t('users.columns.role')}</th>
-                <th className="py-2 pr-4 font-medium">{t('users.columns.level')}</th>
-                <th className="py-2 pr-4 text-right font-medium">{t('users.columns.xp')}</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="py-0">
+          <Table className="w-full max-w-4xl text-left text-sm">
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('users.columns.user')}</TableHead>
+                <TableHead>{t('users.columns.role')}</TableHead>
+                <TableHead>{t('users.columns.level')}</TableHead>
+                <TableHead className="text-right font-medium">{t('users.columns.xp')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {data.users.map((u) => (
-                <tr key={u.id} className="border-b border-zinc-100 dark:border-zinc-900">
-                  <td className="py-2 pr-4">
+                <TableRow key={u.id}>
+                  <TableCell>
                     <Link to={`/users/${u.id}`} className="font-medium hover:underline">
                       {u.username ?? u.name}
                     </Link>
-                    <div className="text-xs text-zinc-500">{u.email}</div>
-                  </td>
-                  <td className="py-2 pr-4">
+                    <div className="text-xs text-muted-foreground">{u.email}</div>
+                  </TableCell>
+                  <TableCell>
                     {t(`common:roles.${u.role}`)}
-                    {!u.isActive && <span className="ml-2 text-xs text-red-600">{t('users.inactive')}</span>}
-                  </td>
-                  <td className="py-2 pr-4">
+                    {!u.isActive && <span className="ml-2 text-xs text-destructive">{t('users.inactive')}</span>}
+                  </TableCell>
+                  <TableCell>
                     <LevelBadge xp={u.xp} />
-                  </td>
-                  <td className="py-2 pr-4 text-right font-semibold">{t('common:xpAmount', { amount: u.xp })}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="text-right font-semibold">{t('common:xpAmount', { amount: u.xp })}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   )

@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "@pupitre/i18n": "workspace:*",
-    "@pupitre/shared": "workspace:*"
+    "@pupitre/shared": "workspace:*",
+    "@pupitre/ui": "workspace:*",
+    "lucide-react": "^1.57.0"
   },
   "devDependencies": {
     "@pupitre/api": "workspace:*",

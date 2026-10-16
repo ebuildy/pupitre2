@@ -1,5 +1,8 @@
 import { useTranslation } from '@pupitre/i18n'
-import { sortByTitle, StatusBadge, unwrap } from '@pupitre/ui'
+import { EmptyState, ErrorState, LoadingState, PageHeader, sortByTitle, StatusBadge, unwrap } from '@pupitre/ui'
+import { Button } from '@pupitre/ui/components/ui/button'
+import { Input } from '@pupitre/ui/components/ui/input'
+import { SearchIcon } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router'
@@ -22,61 +25,67 @@ export function MyCourses() {
   )
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t('myCourses.title')}</h1>
-        <Link to="/courses" className="text-sm underline">
-          {t('myCourses.browse')}
-        </Link>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={t('myCourses.title')}
+        actions={
+          <Button asChild variant="outline">
+            <Link to="/courses">{t('myCourses.browse')}</Link>
+          </Button>
+        }
+      />
 
       {isPending ? (
-        <p className="text-zinc-600 dark:text-zinc-400">{t('myCourses.loading')}</p>
+        <LoadingState label={t('myCourses.loading')} />
       ) : isError ? (
-        <p role="alert" className="text-red-600">
-          {error.message}
-        </p>
+        <ErrorState message={error.message} />
       ) : data.courses.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center gap-3 text-center">
-          <p className="font-semibold">{t('myCourses.emptyTitle')}</p>
-          <Link to="/courses" className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white">
-            {t('myCourses.emptyCta')}
-          </Link>
-        </div>
+        <EmptyState
+          icon="🎓"
+          title={t('myCourses.emptyTitle')}
+          action={
+            <Button asChild>
+              <Link to="/courses">{t('myCourses.emptyCta')}</Link>
+            </Button>
+          }
+        />
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-3">
-            <input
-              type="search"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              placeholder={t('myCourses.filterPlaceholder')}
-              aria-label={t('myCourses.filterLabel')}
-              className="h-10 min-w-0 flex-1 rounded-lg border border-zinc-300 bg-transparent px-3 sm:max-w-sm dark:border-zinc-700"
-            />
-            <span className="text-sm text-zinc-600 dark:text-zinc-400" role="status">
+            <div className="relative w-full sm:w-auto sm:min-w-0 sm:flex-1 sm:max-w-sm">
+              <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder={t('myCourses.filterPlaceholder')}
+                aria-label={t('myCourses.filterLabel')}
+                className="h-10 pl-9"
+              />
+            </div>
+            <span className="text-sm text-muted-foreground" role="status">
               {t('myCourses.count', { count: courses.length })}
             </span>
           </div>
           {courses.length === 0 ? (
-            <p className="text-zinc-600 dark:text-zinc-400">{t('myCourses.filteredEmpty')}</p>
+            <EmptyState title={t('myCourses.filteredEmpty')} />
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {courses.map((course) => (
                 <li key={course.slug}>
                   <CourseCard
                     course={course}
                     footer={
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                        <span className="text-zinc-600 dark:text-zinc-400">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-sm">
+                        <span className="text-muted-foreground">
                           {course.completedAt
                             ? `✓ ${t('myCourses.completedOn', { date: new Date(course.completedAt) })}`
                             : t('common:enrolledOn', { date: new Date(course.enrolledAt) })}
                         </span>
                         {course.status === 'archived' && <StatusBadge status="archived" />}
-                        <Link to={`/courses/${course.slug}`} className="underline">
-                          {t('myCourses.details')}
-                        </Link>
+                        <Button asChild variant="link" size="sm" className="h-auto px-0">
+                          <Link to={`/courses/${course.slug}`}>{t('myCourses.details')}</Link>
+                        </Button>
                       </div>
                     }
                   />

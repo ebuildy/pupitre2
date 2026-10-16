@@ -1,10 +1,14 @@
 import { useTranslation } from '@pupitre/i18n'
-import { categoryIcon, unwrap } from '@pupitre/ui'
+import { categoryIcon, ErrorState, LoadingState, unwrap } from '@pupitre/ui'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { adminApi } from '../../lib/api.ts'
 import { categoriesQueryKey, flattenTree, useCategories } from '../../lib/categories.ts'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@pupitre/ui/components/ui/table'
+import { Card } from '@pupitre/ui/components/ui/card'
+import { buttonVariants } from '@pupitre/ui/components/ui/button'
+import { cn } from '@pupitre/ui'
 
 /** Categories as an indented tree, with edit and delete. */
 export function CategoryList() {
@@ -25,60 +29,58 @@ export function CategoryList() {
     },
   })
 
-  const button = 'rounded border px-2 py-1 text-sm'
+  const button = buttonVariants({ variant: 'outline', size: 'sm' })
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('categories.title')}
           {data && (
-            <span className="ml-2 text-base font-normal text-zinc-500">{t('categories.count', { count: data.total })}</span>
+            <span className="ml-2 text-base font-normal text-muted-foreground">{t('categories.count', { count: data.total })}</span>
           )}
         </h1>
-        <Link to="/categories/new" className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white">
+        <Link to="/categories/new" className={buttonVariants()}>
           {t('categories.new')}
         </Link>
       </div>
 
       {deletedTitle && (
-        <p role="status" className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800 dark:bg-green-950 dark:text-green-300">
+        <p role="status" className="rounded-lg border border-success/30 bg-success-soft px-3 py-2 text-sm text-success-foreground">
           {t('categories.deleted', { title: deletedTitle })}
         </p>
       )}
       {remove.error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-destructive">
           {remove.error.message}
         </p>
       )}
 
       {isPending ? (
-        <p>{t('categories.loading')}</p>
+        <LoadingState label={t('categories.loading')} />
       ) : isError ? (
-        <p role="alert" className="text-red-600">
-          {error.message}
-        </p>
+        <ErrorState message={error.message} />
       ) : data.categories.length === 0 ? (
-        <p className="text-zinc-600 dark:text-zinc-400">{t('categories.empty')}</p>
+        <p className="text-muted-foreground">{t('categories.empty')}</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full max-w-4xl text-left text-sm">
-            <thead className="border-b border-zinc-200 text-zinc-500 dark:border-zinc-800">
-              <tr>
-                <th className="py-2 pr-4 font-medium">{t('categories.columns.title')}</th>
-                <th className="py-2 pr-4 font-medium">{t('categories.columns.slug')}</th>
-                <th className="py-2 pr-4 font-medium">{t('categories.columns.courses')}</th>
-                <th className="py-2 font-medium">
+        <Card className="py-0">
+          <Table className="w-full max-w-4xl text-left text-sm">
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('categories.columns.title')}</TableHead>
+                <TableHead>{t('categories.columns.slug')}</TableHead>
+                <TableHead>{t('categories.columns.courses')}</TableHead>
+                <TableHead>
                   <span className="sr-only">{t('categories.columns.actions')}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {flattenTree(data.categories).map(({ category, depth }) => (
-                <tr key={category.id} className="border-b border-zinc-100 dark:border-zinc-900">
-                  <td className="py-2 pr-4" style={{ paddingLeft: `${depth * 1.5}rem` }}>
+                <TableRow key={category.id}>
+                  <TableCell style={{ paddingLeft: `${depth * 1.5}rem` }}>
                     {depth > 0 && (
-                      <span className="mr-1 text-zinc-400" aria-hidden="true">
+                      <span className="mr-1 text-muted-foreground" aria-hidden="true">
                         └
                       </span>
                     )}
@@ -86,16 +88,16 @@ export function CategoryList() {
                     <Link to={`/categories/${category.id}`} className="font-medium hover:underline">
                       {category.title}
                     </Link>
-                  </td>
-                  <td className="py-2 pr-4 font-mono text-xs text-zinc-500">{category.slug}</td>
-                  <td className="py-2 pr-4">{category.courseCount}</td>
-                  <td className="py-2">
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{category.slug}</TableCell>
+                  <TableCell>{category.courseCount}</TableCell>
+                  <TableCell>
                     <div className="flex justify-end gap-2">
                       {confirmingId === category.id ? (
                         <>
                           <button
                             type="button"
-                            className={`${button} border-red-600 bg-red-600 text-white`}
+                            className={buttonVariants({ variant: 'destructive', size: 'sm' })}
                             disabled={remove.isPending}
                             onClick={() => remove.mutate(category)}
                           >
@@ -112,7 +114,7 @@ export function CategoryList() {
                           </Link>
                           <button
                             type="button"
-                            className={`${button} text-red-600`}
+                            className={cn(button, 'text-destructive')}
                             onClick={() => {
                               remove.reset()
                               setConfirmingId(category.id)
@@ -123,12 +125,12 @@ export function CategoryList() {
                         </>
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   )

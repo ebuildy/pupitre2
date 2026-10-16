@@ -1,6 +1,6 @@
 import { useTranslation } from '@pupitre/i18n'
 import type { CategoryCreateInput } from '@pupitre/shared'
-import { unwrap } from '@pupitre/ui'
+import { ErrorState, LoadingState, unwrap } from '@pupitre/ui'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
@@ -42,20 +42,18 @@ export function CategoryEdit() {
         {t('categories.back')}
       </Link>
       {isPending ? (
-        <p>{t('categories.loading')}</p>
+        <LoadingState label={t('categories.loading')} />
       ) : error ? (
-        <p role="alert" className="text-red-600">
-          {error.message}
-        </p>
+        <ErrorState message={error.message} />
       ) : !category ? (
-        <p role="alert" className="text-red-600">
+        <p role="alert" className="text-destructive">
           {t('categories.notFound')}
         </p>
       ) : (
         <>
-          <h1 className="text-2xl font-semibold">{t('categories.form.editTitle')}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('categories.form.editTitle')}</h1>
           {notice && (
-            <p role="status" className="max-w-2xl rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800 dark:bg-green-950 dark:text-green-300">
+            <p role="status" className="max-w-2xl rounded-lg border border-success/30 bg-success-soft px-3 py-2 text-sm text-success-foreground">
               {notice}
             </p>
           )}

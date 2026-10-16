@@ -11,6 +11,12 @@ export const common = {
     body: "You don't have permission to access this page.",
   },
   language: 'Language',
+  menu: 'Menu',
+  mainNavigation: 'Main navigation',
+  theme: {
+    toLight: 'Switch to light mode',
+    toDark: 'Switch to dark mode',
+  },
   roles: {
     student: 'Student',
     manager: 'Group manager',
@@ -271,6 +277,9 @@ export const admin = {
   },
   dashboard: {
     title: 'Dashboard',
+    coursesHint: 'Create, edit and publish courses, manage enrollments',
+    categoriesHint: 'Organize the catalogue into categories and subcategories',
+    usersHint: 'Browse learners, their XP and quiz attempts',
   },
   categories: {
     title: 'Categories',

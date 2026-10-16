@@ -25,7 +25,7 @@ export function CategoryNew() {
       <Link to="/categories" className="text-sm underline">
         {t('categories.back')}
       </Link>
-      <h1 className="text-2xl font-semibold">{t('categories.form.newTitle')}</h1>
+      <h1 className="text-3xl font-bold tracking-tight">{t('categories.form.newTitle')}</h1>
       <CategoryForm pending={create.isPending} error={create.error?.message} onSubmit={(input) => create.mutate(input)} />
     </div>
   )

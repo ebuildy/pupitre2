@@ -169,7 +169,7 @@ test.describe('admin: XP per user', () => {
 
   test('adjust a user’s XP with a reason; the total can’t go negative', async ({ page, createUser }) => {
     const user = await createUser()
-    await page.getByRole('link', { name: 'Utilisateurs' }).click()
+    await page.getByRole('link', { name: 'Utilisateurs', exact: true }).click()
     await page.getByLabel('Rechercher un utilisateur').fill(user.username)
     await page.getByRole('link', { name: user.username }).click()
     await expect(page.getByTestId('user-xp')).toHaveText('0 XP')

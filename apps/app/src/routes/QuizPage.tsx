@@ -1,5 +1,7 @@
 import { useTranslation } from '@pupitre/i18n'
-import { ApiRequestError, isNotFound } from '@pupitre/ui'
+import { ApiRequestError, isNotFound, LoadingState, PageHeader } from '@pupitre/ui'
+import { Button } from '@pupitre/ui/components/ui/button'
+import { ChevronRightIcon } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router'
 import { QuizForm } from '../components/quiz/QuizForm.tsx'
 import { moduleHref, useModule, useRefreshLearning } from '../lib/learning.ts'
@@ -11,39 +13,35 @@ export function QuizPage() {
   const refresh = useRefreshLearning(slug)
   const { data: detail, isPending, error } = useModule(slug, moduleSlug)
 
-  if (isPending) return <p className="text-zinc-600 dark:text-zinc-400">{t('quiz.loading')}</p>
+  if (isPending) return <LoadingState label={t('quiz.loading')} />
   if (error) {
     if (error instanceof ApiRequestError && error.status === 403) return <Navigate to={`/courses/${slug}`} replace />
     return (
       <div className="mx-auto mt-16 flex max-w-md flex-col items-center gap-4 text-center">
         <h1 className="text-2xl font-semibold">{isNotFound(error) ? t('quiz.notFound') : error.message}</h1>
-        <Link to="/courses" className="underline">
-          {t('common:backToCatalogue')}
-        </Link>
+        <Button asChild variant="outline">
+          <Link to="/courses">{t('common:backToCatalogue')}</Link>
+        </Button>
       </div>
     )
   }
   if (detail.hostSlug) return <Navigate to={`/courses/${slug}/lessons/${detail.hostSlug}`} replace />
   if (detail.type !== 'quiz' || !detail.quiz) return <Navigate to={moduleHref(slug, detail)} replace />
 
-  const link = 'rounded-lg border border-zinc-300 px-4 py-2 font-semibold dark:border-zinc-700'
-
   return (
     <div className="flex flex-col gap-6">
-      <nav className="text-sm text-zinc-500" aria-label="breadcrumb">
-        <Link to="/courses" className="hover:underline">
+      <nav className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground" aria-label="breadcrumb">
+        <Link to="/courses" className="hover:text-foreground">
           {t('nav.catalogue')}
-        </Link>{' '}
-        ›{' '}
-        <Link to={`/courses/${slug}`} className="hover:underline">
+        </Link>
+        <ChevronRightIcon className="size-3.5" />
+        <Link to={`/courses/${slug}`} className="hover:text-foreground">
           {slug}
-        </Link>{' '}
-        › <span>{detail.name}</span>
+        </Link>
+        <ChevronRightIcon className="size-3.5" />
+        <span className="text-foreground">{detail.name}</span>
       </nav>
-      <header>
-        <h1 className="text-2xl font-semibold">{detail.quiz.title ?? detail.name}</h1>
-        <p className="text-zinc-600 dark:text-zinc-400">{t('quiz.questionsCount', { count: detail.quiz.questions.length })}</p>
-      </header>
+      <PageHeader title={detail.quiz.title ?? detail.name} description={t('quiz.questionsCount', { count: detail.quiz.questions.length })} />
       <QuizForm
         key={moduleSlug}
         courseSlug={slug}
@@ -54,16 +52,16 @@ export function QuizPage() {
         resultActions={(result) => (
           <>
             {result.courseCompleted && (
-              <p className="w-full font-medium text-green-700 dark:text-green-400">{t('lesson.courseCompleted')}</p>
+              <p className="w-full font-medium text-success-foreground">{t('lesson.courseCompleted')}</p>
             )}
             {result.passed && detail.next && (
-              <Link to={moduleHref(slug, detail.next)} className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white">
-                {t('quiz.nextModule')}
-              </Link>
+              <Button asChild>
+                <Link to={moduleHref(slug, detail.next)}>{t('quiz.nextModule')}</Link>
+              </Button>
             )}
-            <Link to={`/courses/${slug}`} className={link}>
-              {t('quiz.backToCourse')}
-            </Link>
+            <Button asChild variant="outline">
+              <Link to={`/courses/${slug}`}>{t('quiz.backToCourse')}</Link>
+            </Button>
           </>
         )}
       />

@@ -1,5 +1,9 @@
 import { useTranslation } from '@pupitre/i18n'
-import { ApiRequestError, isNotFound } from '@pupitre/ui'
+import { ApiRequestError, cn, EmptyState, ErrorState, isNotFound, LoadingState } from '@pupitre/ui'
+import { Alert, AlertDescription } from '@pupitre/ui/components/ui/alert'
+import { Button } from '@pupitre/ui/components/ui/button'
+import { Progress } from '@pupitre/ui/components/ui/progress'
+import { CheckIcon, ChevronRightIcon, LockIcon } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
@@ -29,16 +33,16 @@ export function LessonPage() {
     window.scrollTo(0, 0)
   }, [moduleSlug])
 
-  if (isPending) return <p className="text-zinc-600 dark:text-zinc-400">{t('lesson.loading')}</p>
+  if (isPending) return <LoadingState label={t('lesson.loading')} rows={6} />
   if (error) {
     // A locked module sends back to the course page (spec 054).
     if (error instanceof ApiRequestError && error.status === 403) return <Navigate to={`/courses/${slug}`} replace />
     return (
       <div className="mx-auto mt-16 flex max-w-md flex-col items-center gap-4 text-center">
         <h1 className="text-2xl font-semibold">{isNotFound(error) ? t('lesson.notFound') : error.message}</h1>
-        <Link to="/courses" className="underline">
-          {t('common:backToCatalogue')}
-        </Link>
+        <Button asChild variant="outline">
+          <Link to="/courses">{t('common:backToCatalogue')}</Link>
+        </Button>
       </div>
     )
   }
@@ -55,28 +59,37 @@ export function LessonPage() {
     : detail.next!.type === 'quiz'
       ? t('lesson.nextQuiz')
       : t('lesson.next')
-  const button = 'rounded-lg px-4 py-2 font-semibold'
   const main = list?.modules.filter((m) => !m.inline) ?? []
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,1fr)_12rem]">
-      <aside className="hidden flex-col gap-2 self-start lg:sticky lg:top-4 lg:flex" aria-label={t('lesson.modules')}>
-        <h2 className="text-sm font-semibold text-zinc-500">{t('lesson.modules')}</h2>
+    <div className="grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_13rem]">
+      <aside className="hidden flex-col gap-3 self-start lg:sticky lg:top-24 lg:flex" aria-label={t('lesson.modules')}>
+        <h2 className="text-sm font-semibold">{t('lesson.modules')}</h2>
         {list && (
-          <p className="text-xs text-zinc-500">{t('course.progress', { done: list.progress.done, total: list.progress.total })}</p>
+          <div className="flex flex-col gap-1.5">
+            <Progress value={list.progress.total ? (list.progress.done / list.progress.total) * 100 : 0} className="h-1.5" />
+            <p className="text-xs text-muted-foreground">
+              {t('course.progress', { done: list.progress.done, total: list.progress.total })}
+            </p>
+          </div>
         )}
-        <ol className="flex flex-col gap-1 text-sm">
+        <ol className="flex flex-col gap-0.5 text-sm">
           {main.map((m) => (
             <li key={m.slug}>
               {m.locked ? (
-                <span className="flex gap-2 px-2 py-1 text-zinc-400">🔒 {m.name}</span>
+                <span className="flex items-center gap-2 px-2 py-1.5 text-muted-foreground">
+                  <LockIcon className="size-3.5 shrink-0" /> {m.name}
+                </span>
               ) : (
                 <Link
                   to={moduleHref(slug, m)}
                   aria-current={m.slug === moduleSlug ? 'page' : undefined}
-                  className={`flex gap-2 rounded px-2 py-1 ${m.slug === moduleSlug ? 'bg-zinc-100 font-semibold dark:bg-zinc-800' : 'hover:bg-zinc-50 dark:hover:bg-zinc-900'}`}
+                  className={cn(
+                    'flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors',
+                    m.slug === moduleSlug ? 'bg-secondary font-medium text-secondary-foreground' : 'hover:bg-muted',
+                  )}
                 >
-                  <span className="w-4 text-green-600">{m.done ? '✓' : ''}</span>
+                  <span className="flex w-3.5 shrink-0 justify-center text-success">{m.done ? <CheckIcon className="size-3.5" /> : null}</span>
                   {m.name}
                 </Link>
               )}
@@ -86,27 +99,30 @@ export function LessonPage() {
       </aside>
 
       <article className="flex min-w-0 flex-col gap-6">
-        <nav className="text-sm text-zinc-500" aria-label="breadcrumb">
-          <Link to="/courses" className="hover:underline">
+        <nav className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground" aria-label="breadcrumb">
+          <Link to="/courses" className="hover:text-foreground">
             {t('nav.catalogue')}
-          </Link>{' '}
-          ›{' '}
-          <Link to={`/courses/${slug}`} className="hover:underline">
+          </Link>
+          <ChevronRightIcon className="size-3.5" />
+          <Link to={`/courses/${slug}`} className="hover:text-foreground">
             {slug}
-          </Link>{' '}
-          › <span>{detail.name}</span>
+          </Link>
+          <ChevronRightIcon className="size-3.5" />
+          <span className="text-foreground">{detail.name}</span>
         </nav>
 
         {detail.lesson?.unavailable ? (
-          <p className="rounded-lg bg-amber-50 px-4 py-3 text-amber-800 dark:bg-amber-950 dark:text-amber-300">{t('lesson.unavailable')}</p>
+          <Alert variant="warning">
+            <AlertDescription className="text-current">{t('lesson.unavailable')}</AlertDescription>
+          </Alert>
         ) : detail.lesson?.html ? (
           <div
-            className="content prose prose-zinc max-w-none dark:prose-invert"
+            className="content prose prose-neutral max-w-none dark:prose-invert prose-headings:tracking-tight prose-a:text-primary"
             data-testid="lesson-content"
             dangerouslySetInnerHTML={{ __html: detail.lesson.html }}
           />
         ) : (
-          <p className="text-zinc-500">{t('lesson.empty')}</p>
+          <EmptyState title={t('lesson.empty')} />
         )}
 
         {detail.inlineQuiz && (
@@ -120,45 +136,35 @@ export function LessonPage() {
           />
         )}
 
-        <div className="flex flex-col gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-          {isLast && inlinePending && <p className="text-sm text-violet-700 dark:text-violet-300">{t('lesson.pendingInlineQuiz')}</p>}
+        <div className="flex flex-col gap-2 border-t pt-5">
+          {isLast && inlinePending && <p className="text-sm text-xp">{t('lesson.pendingInlineQuiz')}</p>}
           <div className="flex items-center justify-between gap-3">
-            <Link
-              to={detail.previous ? moduleHref(slug, detail.previous) : `/courses/${slug}`}
-              className={`${button} border border-zinc-300 dark:border-zinc-700`}
-            >
-              {detail.previous ? t('lesson.previous') : t('lesson.backToCourse')}
-            </Link>
-            {!detail.done || isLast ? (
-              <button
-                type="button"
-                disabled={complete.isPending}
-                onClick={() => complete.mutate()}
-                className={`${button} bg-blue-600 text-white disabled:opacity-60`}
-              >
-                {nextLabel}
-              </button>
-            ) : (
-              <Link to={moduleHref(slug, detail.next!)} className={`${button} bg-blue-600 text-white`}>
-                {nextLabel}
+            <Button asChild variant="outline">
+              <Link to={detail.previous ? moduleHref(slug, detail.previous) : `/courses/${slug}`}>
+                {detail.previous ? t('lesson.previous') : t('lesson.backToCourse')}
               </Link>
+            </Button>
+            {!detail.done || isLast ? (
+              <Button disabled={complete.isPending} onClick={() => complete.mutate()}>
+                {nextLabel}
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link to={moduleHref(slug, detail.next!)}>{nextLabel}</Link>
+              </Button>
             )}
           </div>
-          {complete.isError && (
-            <p role="alert" className="text-sm text-red-600">
-              {t('lesson.updateError')}
-            </p>
-          )}
+          {complete.isError && <ErrorState message={t('lesson.updateError')} />}
         </div>
       </article>
 
       {detail.lesson && detail.lesson.toc.length > 0 && (
-        <aside className="hidden self-start xl:sticky xl:top-4 xl:block" aria-label={t('lesson.toc')}>
-          <h2 className="mb-2 text-sm font-semibold text-zinc-500">{t('lesson.toc')}</h2>
-          <ul className="flex flex-col gap-1 text-sm">
+        <aside className="hidden self-start xl:sticky xl:top-24 xl:block" aria-label={t('lesson.toc')}>
+          <h2 className="mb-2 text-sm font-semibold">{t('lesson.toc')}</h2>
+          <ul className="flex flex-col gap-1 border-l text-sm">
             {detail.lesson.toc.map((entry) => (
-              <li key={entry.id} className={entry.level === 3 ? 'pl-3' : ''}>
-                <a href={`#${entry.id}`} className="text-zinc-600 hover:underline dark:text-zinc-400">
+              <li key={entry.id} className={entry.level === 3 ? 'pl-6' : 'pl-3'}>
+                <a href={`#${entry.id}`} className="text-muted-foreground transition-colors hover:text-foreground">
                   {entry.text}
                 </a>
               </li>

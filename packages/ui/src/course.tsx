@@ -1,4 +1,5 @@
 import { i18next, useTranslation } from '@pupitre/i18n'
+import { Badge } from '@pupitre/ui/components/ui/badge'
 import {
   type CategoryRef,
   type CourseCategory,
@@ -51,49 +52,37 @@ export function sortByTitle<T extends { title: string }>(items: T[]) {
   return [...items].sort((a, b) => collator.compare(a.title, b.title))
 }
 
-const pill = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium'
-
-const DIFFICULTY_COLORS: Record<Difficulty, string> = {
-  beginner: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300',
-  intermediate: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
-  advanced: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
-}
+const DIFFICULTY_VARIANTS = { beginner: 'success', intermediate: 'warning', advanced: 'destructive' } as const
 
 export function DifficultyBadge({ difficulty }: { difficulty: Difficulty }) {
   const { t } = useTranslation()
-  return <span className={`${pill} ${DIFFICULTY_COLORS[difficulty]}`}>{t(`difficulty.${difficulty}`)}</span>
+  return (
+    <Badge variant={DIFFICULTY_VARIANTS[difficulty]} className={difficulty === 'advanced' ? 'bg-destructive/15 text-destructive dark:bg-destructive/25' : ''}>
+      {t(`difficulty.${difficulty}`)}
+    </Badge>
+  )
 }
 
 export function VisibilityBadge({ visibility }: { visibility: CourseVisibility }) {
   const { t } = useTranslation()
-  const color =
-    visibility === 'public'
-      ? 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300'
-      : 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-  return <span className={`${pill} ${color}`}>{t(`visibility.${visibility}`)}</span>
+  return <Badge variant={visibility === 'public' ? 'success' : 'muted'}>{t(`visibility.${visibility}`)}</Badge>
 }
 
-const STATUS_COLORS: Record<CourseStatus, string> = {
-  draft: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-  published: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
-  archived: 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
-}
+const STATUS_VARIANTS = { draft: 'warning', published: 'info', archived: 'muted' } as const
 
 export function StatusBadge({ status }: { status: CourseStatus }) {
   const { t } = useTranslation()
-  return <span className={`${pill} ${STATUS_COLORS[status]}`}>{t(`status.${status}`)}</span>
+  return <Badge variant={STATUS_VARIANTS[status]}>{t(`status.${status}`)}</Badge>
 }
 
 /** "🌱 Niveau 1 — Novice" (spec 104). */
-export function LevelBadge({ xp, className = '' }: { xp: number; className?: string }) {
+export function LevelBadge({ xp, className }: { xp: number; className?: string }) {
   const { t } = useTranslation()
   const { current } = xpLevel(xp)
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800 dark:bg-violet-950 dark:text-violet-300 ${className}`}
-    >
+    <Badge variant="xp" className={className}>
       <span aria-hidden="true">{current.icon}</span>
       {t('levelLabel', { level: current.level, name: t(`levels.${current.key}`) })}
-    </span>
+    </Badge>
   )
 }

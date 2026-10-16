@@ -1,9 +1,13 @@
 import { useTranslation } from '@pupitre/i18n'
 import type { AdminUserSearchResult } from '@pupitre/shared'
-import { unwrap, useDebouncedValue } from '@pupitre/ui'
+import { ErrorState, LoadingState, unwrap, useDebouncedValue } from '@pupitre/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { adminApi } from '../../lib/api.ts'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@pupitre/ui/components/ui/table'
+import { Input } from '@pupitre/ui/components/ui/input'
+import { buttonVariants } from '@pupitre/ui/components/ui/button'
+import { cn } from '@pupitre/ui'
 
 function userLabel(u: { username: string | null; name: string }) {
   return u.username ?? u.name
@@ -67,8 +71,8 @@ export function EnrollmentsPanel({ courseId }: { courseId: string }) {
   const mutationError = enroll.error ?? remove.error ?? complete.error ?? uncomplete.error
 
   return (
-    <section className="flex max-w-3xl flex-col gap-3 border-t border-zinc-200 pt-6 dark:border-zinc-800">
-      <h2 className="text-lg font-semibold">{t('courses.enrollments.title', { count })}</h2>
+    <section className="flex max-w-3xl flex-col gap-3 border-t pt-6">
+      <h2 className="text-xl font-semibold tracking-tight">{t('courses.enrollments.title', { count })}</h2>
 
       <form
         className="relative flex flex-wrap items-start gap-2"
@@ -79,7 +83,7 @@ export function EnrollmentsPanel({ courseId }: { courseId: string }) {
         }}
       >
         <div className="relative min-w-64 flex-1">
-          <input
+          <Input
             type="search"
             role="combobox"
             aria-expanded={!!suggestions.data?.users.length}
@@ -92,23 +96,23 @@ export function EnrollmentsPanel({ courseId }: { courseId: string }) {
               setMustSelect(false)
               setSearch(e.target.value)
             }}
-            className="h-10 w-full rounded-lg border border-zinc-300 bg-transparent px-3 dark:border-zinc-700"
+            className="h-10 max-w-sm"
           />
           {!selected && q && suggestions.data && suggestions.data.users.length > 0 && (
             <ul
               id="user-suggestions"
               role="listbox"
-              className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+              className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-lg"
             >
               {suggestions.data.users.map((u) => (
                 <li key={u.id} role="option" aria-selected={false}>
                   <button
                     type="button"
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
                     onClick={() => setSelected(u)}
                   >
                     <span className="font-medium">{userLabel(u)}</span>{' '}
-                    <span className="text-zinc-500">{u.email}</span>
+                    <span className="text-muted-foreground">{u.email}</span>
                   </button>
                 </li>
               ))}
@@ -118,56 +122,54 @@ export function EnrollmentsPanel({ courseId }: { courseId: string }) {
         <button
           type="submit"
           disabled={enroll.isPending}
-          className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white disabled:opacity-60"
+          className={buttonVariants({ className: 'h-10' })}
         >
           {t('courses.enrollments.enroll')}
         </button>
       </form>
 
       {(mustSelect || mutationError) && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-destructive">
           {mustSelect ? t('courses.enrollments.selectUser') : mutationError?.message}
         </p>
       )}
 
       {enrollments.isPending ? (
-        <p>{t('courses.loading')}</p>
+        <LoadingState label={t('courses.loading')} />
       ) : enrollments.isError ? (
-        <p role="alert" className="text-red-600">
-          {enrollments.error.message}
-        </p>
+        <ErrorState message={enrollments.error.message} />
       ) : enrollments.data.enrollments.length === 0 ? (
-        <p className="text-zinc-600 dark:text-zinc-400">{t('courses.enrollments.empty')}</p>
+        <p className="text-muted-foreground">{t('courses.enrollments.empty')}</p>
       ) : (
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-zinc-200 text-zinc-500 dark:border-zinc-800">
-            <tr>
-              <th className="py-2 pr-4 font-medium">{t('courses.enrollments.user')}</th>
-              <th className="py-2 pr-4 font-medium">{t('courses.enrollments.enrolledAt')}</th>
-              <th className="py-2 pr-4 font-medium">{t('courses.enrollments.source')}</th>
-              <th className="py-2 pr-4 font-medium">{t('courses.enrollments.completion')}</th>
-              <th className="py-2" />
-            </tr>
-          </thead>
-          <tbody>
+        <Table className="w-full text-left text-sm">
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t('courses.enrollments.user')}</TableHead>
+              <TableHead>{t('courses.enrollments.enrolledAt')}</TableHead>
+              <TableHead>{t('courses.enrollments.source')}</TableHead>
+              <TableHead>{t('courses.enrollments.completion')}</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {enrollments.data.enrollments.map((e) => (
-              <tr key={e.userId} className="border-b border-zinc-100 dark:border-zinc-900">
-                <td className="py-2 pr-4">
+              <TableRow key={e.userId}>
+                <TableCell>
                   <div className="font-medium">{userLabel(e)}</div>
-                  <div className="text-xs text-zinc-500">{e.email}</div>
-                </td>
-                <td className="py-2 pr-4">
+                  <div className="text-xs text-muted-foreground">{e.email}</div>
+                </TableCell>
+                <TableCell>
                   {new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(
                     new Date(e.enrolledAt),
                   )}
-                </td>
-                <td className="py-2 pr-4">
+                </TableCell>
+                <TableCell>
                   {e.sources.map((s) => t(`courses.enrollments.sources.${s}`)).join(', ')}
-                </td>
-                <td className="py-2 pr-4">
+                </TableCell>
+                <TableCell>
                   {e.completedAt ? (
                     <div className="flex flex-col items-start gap-1">
-                      <span className="text-green-700 dark:text-green-400">
+                      <span className="text-success-foreground">
                         ✓ {t('courses.enrollments.completedOn', { date: new Date(e.completedAt) })}
                       </span>
                       <button
@@ -182,29 +184,29 @@ export function EnrollmentsPanel({ courseId }: { courseId: string }) {
                   ) : (
                     <button
                       type="button"
-                      className="rounded border px-2 py-1 text-xs"
+                      className={buttonVariants({ variant: 'outline', size: 'sm' })}
                       disabled={complete.isPending}
                       onClick={() => complete.mutate(e.userId)}
                     >
                       {t('courses.enrollments.markCompleted')}
                     </button>
                   )}
-                </td>
-                <td className="py-2 text-right">
+                </TableCell>
+                <TableCell className="text-right">
                   <button
                     type="button"
-                    className="rounded border px-2 py-1 text-sm text-red-600"
+                    className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-destructive')}
                     disabled={remove.isPending}
                     onClick={() => remove.mutate(e.userId)}
                     aria-label={`${t('courses.enrollments.remove')} ${userLabel(e)}`}
                   >
                     {t('courses.enrollments.remove')}
                   </button>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
     </section>
   )

@@ -1,57 +1,56 @@
 import { useTranslation } from '@pupitre/i18n'
 import type { CourseSummary } from '@pupitre/shared'
 import { CategoryLabel, categoryIcon, DifficultyBadge } from '@pupitre/ui'
+import { Badge } from '@pupitre/ui/components/ui/badge'
+import { Card } from '@pupitre/ui/components/ui/card'
+import { CheckIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 
-/** Spec 044 (without progress and skills yet). */
-const pill = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium'
-
+/** Spec 044 (without progress and skills yet). The whole card is clickable through the title link. */
 export function CourseCard({ course, footer }: { course: CourseSummary; footer?: ReactNode }) {
   const { t } = useTranslation(['app', 'common'])
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
-      <div className="flex h-24 items-center justify-center bg-zinc-100 text-4xl dark:bg-zinc-900" aria-hidden="true">
-        {categoryIcon(course.category)}
+    <Card className="group relative h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
+      <div
+        className="flex h-28 items-center justify-center bg-gradient-to-br from-secondary to-muted text-5xl transition-transform"
+        aria-hidden="true"
+      >
+        <span className="transition-transform group-hover:scale-110">{categoryIcon(course.category)}</span>
       </div>
-      <div className="flex flex-1 flex-col gap-2 p-4">
+      <div className="flex flex-1 flex-col gap-2 p-5">
         {course.category && (
-          <span className="text-xs text-zinc-600 dark:text-zinc-400">
+          <span className="text-xs text-muted-foreground">
             <CategoryLabel category={course.category} />
           </span>
         )}
-        <h2 className="font-semibold">
-          <Link to={`/courses/${course.slug}`} className="hover:underline">
+        <h2 className="leading-snug font-semibold">
+          <Link to={`/courses/${course.slug}`} className="after:absolute after:inset-0 hover:text-primary">
             {course.title}
           </Link>
         </h2>
-        <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
+        <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-2">
           {course.difficulty && <DifficultyBadge difficulty={course.difficulty} />}
-          {course.xpRequired > 0 && (
-            <span className={`${pill} bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300`}>
-              {t('catalogue.xpRequired', { amount: course.xpRequired })}
-            </span>
-          )}
-          {course.completionXp > 0 && (
-            <span className={`${pill} bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300`}>
-              {t('catalogue.reward', { amount: course.completionXp })}
-            </span>
-          )}
+          {course.xpRequired > 0 && <Badge variant="warning">{t('catalogue.xpRequired', { amount: course.xpRequired })}</Badge>}
+          {course.completionXp > 0 && <Badge variant="xp">{t('catalogue.reward', { amount: course.completionXp })}</Badge>}
           {course.completed ? (
-            <span className={`${pill} bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300`}>
-              ✓ {t('catalogue.completedBadge')}
-            </span>
+            <Badge variant="success">
+              <CheckIcon />
+              {t('catalogue.completedBadge')}
+            </Badge>
           ) : (
             course.enrolled && (
-              <span className={`${pill} bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300`}>
-                ✓ {t('catalogue.enrolledBadge')}
-              </span>
+              <Badge variant="info">
+                <CheckIcon />
+                {t('catalogue.enrolledBadge')}
+              </Badge>
             )
           )}
         </div>
-        {footer}
+        {/* Above the stretched title link, so its own links stay clickable. */}
+        {footer && <div className="relative z-10">{footer}</div>}
       </div>
-    </article>
+    </Card>
   )
 }

@@ -10,6 +10,10 @@ import {
 } from '@pupitre/shared'
 import { type FormEvent, useState } from 'react'
 import { flattenTree, useCategories } from '../../lib/categories.ts'
+import { Input } from '@pupitre/ui/components/ui/input'
+import { Textarea } from '@pupitre/ui/components/ui/textarea'
+import { NativeSelect, NativeSelectOption } from '@pupitre/ui/components/ui/native-select'
+import { buttonVariants } from '@pupitre/ui/components/ui/button'
 
 // Form state: text inputs hold strings (numbers are parsed on submit).
 type Values = Required<{
@@ -73,79 +77,79 @@ export function CourseForm({
     })
   }
 
-  const field = 'w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700'
+  const field = 'w-full'
   const label = 'flex flex-col gap-1 text-sm font-medium'
 
   return (
     <form onSubmit={submit} noValidate className="flex max-w-2xl flex-col gap-4">
       {(invalid || error) && (
-        <p role="alert" className="rounded-lg border border-red-500 bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+        <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {invalid ? t(`courses.form.${invalid}`) : error}
         </p>
       )}
       <div className="grid gap-4 sm:grid-cols-2">
         <label className={label}>
           {t('courses.form.title')} *
-          <input value={values.title} onChange={set('title')} className={field} />
+          <Input value={values.title} onChange={set('title')} className={field} />
         </label>
         <label className={label}>
           {t('courses.form.slug')} *
-          <input value={values.slug} onChange={set('slug')} className={`${field} font-mono`} placeholder="mon-cours" />
-          <span className="text-xs font-normal text-zinc-500">{t('courses.form.slugHelp')}</span>
+          <Input value={values.slug} onChange={set('slug')} className={`${field} font-mono`} placeholder="mon-cours" />
+          <span className="text-xs font-normal text-muted-foreground">{t('courses.form.slugHelp')}</span>
         </label>
       </div>
       <label className={label}>
         {t('courses.form.description')}
-        <textarea value={values.description} onChange={set('description')} rows={4} className={field} />
+        <Textarea value={values.description} onChange={set('description')} rows={4} className={field} />
       </label>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className={label}>
           {t('courses.form.category')}
-          <select value={values.categoryId} onChange={set('categoryId')} className={field}>
-            <option value="">{t('courses.form.noCategory')}</option>
+          <NativeSelect containerClassName="w-full" value={values.categoryId} onChange={set('categoryId')} className={field}>
+            <NativeSelectOption value="">{t('courses.form.noCategory')}</NativeSelectOption>
             {flattenTree(categories.data?.categories ?? []).map((row) => (
-              <option key={row.category.id} value={row.category.id}>
+              <NativeSelectOption key={row.category.id} value={row.category.id}>
                 {row.path}
-              </option>
+              </NativeSelectOption>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label className={label}>
           {t('courses.form.difficulty')}
-          <select value={values.difficulty} onChange={set('difficulty')} className={field}>
-            <option value="">{t('courses.form.noDifficulty')}</option>
+          <NativeSelect containerClassName="w-full" value={values.difficulty} onChange={set('difficulty')} className={field}>
+            <NativeSelectOption value="">{t('courses.form.noDifficulty')}</NativeSelectOption>
             {DIFFICULTIES.map((d) => (
-              <option key={d} value={d}>
+              <NativeSelectOption key={d} value={d}>
                 {t(`common:difficulty.${d}`)}
-              </option>
+              </NativeSelectOption>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label className={label}>
           {t('courses.form.visibility')}
-          <select value={values.visibility} onChange={set('visibility')} className={field}>
+          <NativeSelect containerClassName="w-full" value={values.visibility} onChange={set('visibility')} className={field}>
             {COURSE_VISIBILITIES.map((v) => (
-              <option key={v} value={v}>
+              <NativeSelectOption key={v} value={v}>
                 {t(`common:visibility.${v}`)}
-              </option>
+              </NativeSelectOption>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label className={label}>
           {t('courses.form.status')}
-          <select value={values.status} onChange={set('status')} className={field}>
+          <NativeSelect containerClassName="w-full" value={values.status} onChange={set('status')} className={field}>
             {COURSE_STATUSES.map((s) => (
-              <option key={s} value={s}>
+              <NativeSelectOption key={s} value={s}>
                 {t(`common:status.${s}`)}
-              </option>
+              </NativeSelectOption>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className={label}>
           {t('courses.form.xpRequired')}
-          <input
+          <Input
             type="number"
             min={0}
             step={1}
@@ -153,11 +157,11 @@ export function CourseForm({
             onChange={set('xpRequired')}
             className={field}
           />
-          <span className="text-xs font-normal text-zinc-500">{t('courses.form.xpRequiredHelp')}</span>
+          <span className="text-xs font-normal text-muted-foreground">{t('courses.form.xpRequiredHelp')}</span>
         </label>
         <label className={label}>
           {t('courses.form.completionXp')}
-          <input
+          <Input
             type="number"
             min={0}
             step={1}
@@ -170,7 +174,7 @@ export function CourseForm({
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white disabled:opacity-60"
+        className={buttonVariants({ className: 'self-start' })}
       >
         {pending ? t('courses.form.saving') : course ? t('courses.form.save') : t('courses.form.create')}
       </button>

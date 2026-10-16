@@ -14,8 +14,8 @@ TypeScript everywhere (`tsc` 7, strict, `.ts` extensions in relative imports).
 | `apps/app` | Learner frontend at `/` (React 19, Vite, React Router, Tailwind v4) |
 | `apps/admin` | Admin frontend at `/admin/` (same stack, Vite `base: '/admin/'`, router `basename: '/admin'`) |
 | `packages/auth-ui` | Shared login page, better-auth client, `RequireAuth`, `AccessDenied`, `signOutTo`, `useGoTo` |
-| `packages/ui` | Shared UI pieces: `unwrap`, course badges, category labels, `useDebouncedValue` |
-| `packages/i18n` | i18next setup, `fr`/`en` catalogues, `LanguageSwitcher` |
+| `packages/ui` | shadcn/ui components, pupitre theme (`globals.css`), page blocks, badges, `unwrap`, `ThemeToggle`, `LanguageSwitcher` |
+| `packages/i18n` | i18next setup, `fr`/`en` catalogues |
 | `packages/shared` | Types, constants and pure helpers used by API and frontends |
 | `e2e` | Playwright tests |
 | `docs/specs` | Specs of this rewrite, as implemented |
@@ -98,7 +98,14 @@ pnpm auth:generate  # regenerate the better-auth schema after changing auth conf
 - Paths that may cross apps (`/courses` ↔ `/admin/…`) are origin-absolute: navigate with `useGoTo()`, link
   with a plain `<a href>` (full page load). `<Link>` / `navigate()` only inside the current app.
 - Logout: `signOutTo('/login')` (or `'/admin/login'`); it does a full page load on purpose.
-- Tailwind: a package with components must be listed with `@source` in each app's `src/index.css`.
+- UI (spec 010): build with the shadcn/ui components of `packages/ui` (`@pupitre/ui/components/ui/<name>`) and the
+  pupitre blocks (`PageHeader`, `EmptyState`, `LoadingState`, `ErrorState`, badges). Use theme tokens (`bg-primary`,
+  `text-muted-foreground`, `border-border`, `bg-success-soft`, `text-xp`…), never raw palette colors (`zinc-500`,
+  `blue-600`), so light and dark both work. Keep native `<select>` (`NativeSelect`) in forms.
+- New shadcn component: `cd packages/ui && pnpm dlx shadcn@latest add <name>`. The CLI writes `import { cn } from "cn"`:
+  replace it with `@pupitre/ui/lib/utils`. Editing generated components (variants…) is expected.
+- Tailwind: `packages/ui/src/styles/globals.css` lists the shared packages with `@source`; a new package with
+  components must be added there.
 - Mock data (spec 015): `apps/api/src/fixtures` (faker, French locale, fixed seed). `pnpm dev` loads it; `pnpm db:seed`,
   `pnpm db:reset`. When a feature adds a table, add realistic fixtures for it, keeping them deterministic (seeded faker,
   fixed reference date, stable ordering before random picks) and idempotent (match by slug/e-mail, `onConflictDoNothing`).

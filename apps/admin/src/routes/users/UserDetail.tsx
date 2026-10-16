@@ -1,10 +1,12 @@
 import { useTranslation } from '@pupitre/i18n'
 import type { XpAdjustmentInput } from '@pupitre/shared'
-import { isNotFound, LevelBadge, unwrap } from '@pupitre/ui'
+import { isNotFound, LevelBadge, LoadingState, unwrap } from '@pupitre/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { adminApi } from '../../lib/api.ts'
+import { Input } from '@pupitre/ui/components/ui/input'
+import { buttonVariants } from '@pupitre/ui/components/ui/button'
 
 /** A user's XP: total, level, history, completed courses, and the manual adjustment form (spec 191). */
 export function UserDetail() {
@@ -48,7 +50,7 @@ export function UserDetail() {
   }
 
   const date = (iso: string) => new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(new Date(iso))
-  const field = 'rounded-lg border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700'
+  const field = 'w-full'
 
   return (
     <div className="flex flex-col gap-6">
@@ -56,23 +58,23 @@ export function UserDetail() {
         {t('users.back')}
       </Link>
       {isPending ? (
-        <p>{t('users.loading')}</p>
+        <LoadingState label={t('users.loading')} />
       ) : error ? (
-        <p role="alert" className="text-red-600">
+        <p role="alert" className="text-destructive">
           {isNotFound(error) ? t('users.notFound') : error.message}
         </p>
       ) : (
         <>
           <header className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold">{user.username ?? user.name}</h1>
-            <p className="text-sm text-zinc-500">
+            <h1 className="text-3xl font-bold tracking-tight">{user.username ?? user.name}</h1>
+            <p className="text-sm text-muted-foreground">
               {user.name} · {user.email} · {t(`common:roles.${user.role}`)}
-              {!user.isActive && <span className="ml-2 text-red-600">{t('users.inactive')}</span>}
+              {!user.isActive && <span className="ml-2 text-destructive">{t('users.inactive')}</span>}
             </p>
           </header>
 
           <section className="flex max-w-3xl flex-col gap-3">
-            <h2 className="text-lg font-semibold">{t('users.xpTitle')}</h2>
+            <h2 className="text-xl font-semibold tracking-tight">{t('users.xpTitle')}</h2>
             <div className="flex items-center gap-3">
               <span className="text-3xl font-bold" data-testid="user-xp">
                 {t('common:xpAmount', { amount: user.xp })}
@@ -83,27 +85,27 @@ export function UserDetail() {
             <form onSubmit={submit} noValidate className="flex flex-wrap items-end gap-2">
               <label className="flex flex-col gap-1 text-sm font-medium">
                 {t('users.amount')}
-                <input type="number" step={1} value={amount} onChange={(e) => setAmount(e.target.value)} className={`${field} w-48`} />
+                <Input type="number" step={1} value={amount} onChange={(e) => setAmount(e.target.value)} className={`${field} w-48`} />
               </label>
               <label className="flex min-w-64 flex-1 flex-col gap-1 text-sm font-medium">
                 {t('users.reason')}
-                <input value={reason} onChange={(e) => setReason(e.target.value)} className={field} />
+                <Input value={reason} onChange={(e) => setReason(e.target.value)} className={field} />
               </label>
               <button
                 type="submit"
                 disabled={adjust.isPending}
-                className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white disabled:opacity-60"
+                className={buttonVariants({ className: 'h-10' })}
               >
                 {t('users.adjust')}
               </button>
             </form>
             {(invalid || adjust.error) && (
-              <p role="alert" className="text-sm text-red-600">
+              <p role="alert" className="text-sm text-destructive">
                 {invalid ? t(`users.${invalid}`) : adjust.error?.message}
               </p>
             )}
             {newTotal !== null && (
-              <p role="status" className="text-sm text-green-700 dark:text-green-400">
+              <p role="status" className="text-sm text-success-foreground">
                 {t('users.adjusted', { total: newTotal })}
               </p>
             )}
@@ -114,30 +116,30 @@ export function UserDetail() {
               type="button"
               disabled={resetAttempts.isPending}
               onClick={() => resetAttempts.mutate()}
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+              className={buttonVariants({ variant: 'outline' })}
             >
               {t('users.resetAttempts')}
             </button>
             {resetAttempts.data && (
-              <span role="status" className="text-sm text-green-700 dark:text-green-400">
+              <span role="status" className="text-sm text-success-foreground">
                 {t('users.resetAttemptsDone', { count: resetAttempts.data.count })}
               </span>
             )}
           </section>
 
           <section className="flex max-w-3xl flex-col gap-2">
-            <h2 className="text-lg font-semibold">{t('users.completionsTitle')}</h2>
+            <h2 className="text-xl font-semibold tracking-tight">{t('users.completionsTitle')}</h2>
             {user.completions.length === 0 ? (
-              <p className="text-zinc-600 dark:text-zinc-400">{t('users.completionsEmpty')}</p>
+              <p className="text-muted-foreground">{t('users.completionsEmpty')}</p>
             ) : (
-              <ul className="flex flex-col divide-y divide-zinc-100 text-sm dark:divide-zinc-900">
+              <ul className="flex flex-col divide-y divide-border text-sm">
                 {user.completions.map((c, i) => (
                   <li key={i} className="flex justify-between gap-2 py-2">
                     <span>
                       {c.course?.title ?? c.title}
-                      {!c.course && <span className="ml-2 text-xs text-zinc-500">({t('users.deletedCourse')})</span>}
+                      {!c.course && <span className="ml-2 text-xs text-muted-foreground">({t('users.deletedCourse')})</span>}
                     </span>
-                    <span className="text-zinc-500">{date(c.completedAt)}</span>
+                    <span className="text-muted-foreground">{date(c.completedAt)}</span>
                   </li>
                 ))}
               </ul>
@@ -145,17 +147,17 @@ export function UserDetail() {
           </section>
 
           <section className="flex max-w-3xl flex-col gap-2">
-            <h2 className="text-lg font-semibold">{t('users.historyTitle')}</h2>
+            <h2 className="text-xl font-semibold tracking-tight">{t('users.historyTitle')}</h2>
             {user.history.length === 0 ? (
-              <p className="text-zinc-600 dark:text-zinc-400">{t('users.historyEmpty')}</p>
+              <p className="text-muted-foreground">{t('users.historyEmpty')}</p>
             ) : (
-              <ul className="flex flex-col divide-y divide-zinc-100 text-sm dark:divide-zinc-900" data-testid="user-xp-history">
+              <ul className="flex flex-col divide-y divide-border text-sm" data-testid="user-xp-history">
                 {user.history.map((e, i) => (
                   <li key={i} className="flex items-center gap-3 py-2">
-                    <span className="w-28 text-xs text-zinc-500">{t(`common:xpSources.${e.source}`)}</span>
+                    <span className="w-28 text-xs text-muted-foreground">{t(`common:xpSources.${e.source}`)}</span>
                     <span className="min-w-0 flex-1 truncate">{e.course?.title ?? e.label}</span>
-                    <span className="text-zinc-500">{date(e.earnedAt)}</span>
-                    <span className={`w-20 text-right font-semibold ${e.amount < 0 ? 'text-red-600' : ''}`}>
+                    <span className="text-muted-foreground">{date(e.earnedAt)}</span>
+                    <span className={`w-20 text-right font-semibold ${e.amount < 0 ? 'text-destructive' : ''}`}>
                       {e.amount > 0 ? '+' : ''}
                       {t('common:xpAmount', { amount: e.amount })}
                     </span>

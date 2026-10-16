@@ -1,4 +1,10 @@
-import { LanguageSwitcher, useTranslation } from '@pupitre/i18n'
+import { useTranslation } from '@pupitre/i18n'
+import { LanguageSwitcher, ThemeToggle } from '@pupitre/ui'
+import { Alert, AlertDescription } from '@pupitre/ui/components/ui/alert'
+import { Button } from '@pupitre/ui/components/ui/button'
+import { Card, CardContent } from '@pupitre/ui/components/ui/card'
+import { Input } from '@pupitre/ui/components/ui/input'
+import { CircleAlertIcon } from 'lucide-react'
 import { landingPath, type Role } from '@pupitre/shared'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
@@ -66,73 +72,70 @@ export function LoginPage({ demoAccounts }: { demoAccounts?: readonly DemoAccoun
     form.requestSubmit()
   }
 
-  const input =
-    'h-11 w-full rounded-lg border border-zinc-300 bg-transparent px-3 outline-none focus:border-blue-500 dark:border-zinc-700'
-
   return (
-    <div className="flex min-h-screen items-start justify-center bg-zinc-100 px-4 py-10 text-zinc-900 sm:items-center dark:bg-zinc-950 dark:text-zinc-100">
-      <div className="flex w-full max-w-[430px] flex-col gap-5 rounded-2xl border border-zinc-200 bg-white px-5 pt-7 pb-6 shadow-lg sm:px-9 sm:pt-9 sm:pb-8 dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex items-center justify-center gap-3">
-          <img src={logo} alt="" className="h-12 w-12 object-contain" />
-          <span className="text-3xl font-bold">pupitre</span>
-        </div>
-        <LanguageSwitcher className="self-center" />
-
-        {error && (
-          <div
-            role="alert"
-            className="rounded-lg border border-red-500 bg-red-50 px-3.5 py-2.5 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
-          >
-            {'key' in error ? t(`login.errors.${error.key}`) : error.message}
+    <div className="flex min-h-screen items-start justify-center bg-gradient-to-b from-secondary to-background px-4 py-10 sm:items-center">
+      <Card className="w-full max-w-[430px] gap-5 px-2 py-7 shadow-xl sm:px-4 sm:py-9">
+        <CardContent className="flex flex-col gap-5">
+          <div className="flex items-center justify-center gap-3">
+            <img src={logo} alt="" className="h-12 w-12 object-contain" />
+            <span className="text-3xl font-bold tracking-tight">pupitre</span>
           </div>
-        )}
+          <div className="flex items-center justify-center gap-2">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
 
-        <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-3">
-          <input
-            name="identifier"
-            placeholder={t('login.identifierPlaceholder')}
-            aria-label={t('login.identifierLabel')}
-            autoComplete="username"
-            className={input}
-          />
-          <input
-            name="password"
-            type="password"
-            placeholder={t('login.passwordPlaceholder')}
-            aria-label={t('login.passwordLabel')}
-            autoComplete="current-password"
-            className={input}
-          />
-          <button
-            type="submit"
-            disabled={pending}
-            className="h-11 rounded-lg bg-blue-600 font-semibold text-white disabled:opacity-60"
-          >
-            {pending ? t('login.submitting') : t('login.submit')}
-          </button>
-        </form>
+          {error && (
+            <Alert variant="destructive">
+              <CircleAlertIcon />
+              <AlertDescription>{'key' in error ? t(`login.errors.${error.key}`) : error.message}</AlertDescription>
+            </Alert>
+          )}
 
-        {demoAccounts && demoAccounts.length > 0 && (
-          <section aria-labelledby="demo-accounts" className="flex flex-col gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-            <h2 id="demo-accounts" className="text-center text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-              {t('login.demo.title')}
-            </h2>
-            {demoAccounts.map((account) => (
-              <button
-                key={account.identifier}
-                type="button"
-                disabled={pending}
-                onClick={() => signInAs(account)}
-                aria-label={t('login.demo.signInAs', { name: account.name })}
-                className="flex h-11 items-center justify-between rounded-lg border border-zinc-300 px-3 text-sm hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-800"
-              >
-                <span className="font-medium">{account.name}</span>
-                <span className="text-zinc-500">{t(`common:roles.${account.role}`)}</span>
-              </button>
-            ))}
-          </section>
-        )}
-      </div>
+          <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-3">
+            <Input
+              name="identifier"
+              placeholder={t('login.identifierPlaceholder')}
+              aria-label={t('login.identifierLabel')}
+              autoComplete="username"
+              className="h-11"
+            />
+            <Input
+              name="password"
+              type="password"
+              placeholder={t('login.passwordPlaceholder')}
+              aria-label={t('login.passwordLabel')}
+              autoComplete="current-password"
+              className="h-11"
+            />
+            <Button type="submit" size="lg" disabled={pending} className="h-11">
+              {pending ? t('login.submitting') : t('login.submit')}
+            </Button>
+          </form>
+
+          {demoAccounts && demoAccounts.length > 0 && (
+            <section aria-labelledby="demo-accounts" className="flex flex-col gap-2 border-t pt-4">
+              <h2 id="demo-accounts" className="text-center text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                {t('login.demo.title')}
+              </h2>
+              {demoAccounts.map((account) => (
+                <Button
+                  key={account.identifier}
+                  type="button"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => signInAs(account)}
+                  aria-label={t('login.demo.signInAs', { name: account.name })}
+                  className="h-11 justify-between"
+                >
+                  <span className="font-medium">{account.name}</span>
+                  <span className="text-muted-foreground">{t(`common:roles.${account.role}`)}</span>
+                </Button>
+              ))}
+            </section>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

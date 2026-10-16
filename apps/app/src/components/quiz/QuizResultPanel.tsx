@@ -1,5 +1,9 @@
 import { useTranslation } from '@pupitre/i18n'
 import type { QuestionResult, QuizResult, QuizView } from '@pupitre/shared'
+import { cn } from '@pupitre/ui'
+import { Badge } from '@pupitre/ui/components/ui/badge'
+import { Button } from '@pupitre/ui/components/ui/button'
+import { RotateCcwIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 /** Spec 078: score, verdict, actions, then the correction with the expected answers and feedback. */
@@ -23,14 +27,15 @@ export function QuizResultPanel({
 
   return (
     <section
-      className={`flex flex-col gap-5 ${variant === 'inline' ? 'rounded-2xl border border-violet-200 p-5 dark:border-violet-900' : ''}`}
+      className={cn('flex flex-col gap-6', variant === 'inline' && 'rounded-2xl border border-xp/30 bg-xp-soft/40 p-5')}
       data-testid="quiz-result"
     >
       <div className="flex flex-wrap items-center gap-5">
         <div
-          className={`flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-full border-4 ${
-            result.passed ? 'border-green-600 text-green-700 dark:text-green-400' : 'border-red-500 text-red-600'
-          }`}
+          className={cn(
+            'flex size-24 shrink-0 flex-col items-center justify-center rounded-full border-4 bg-card',
+            result.passed ? 'border-success text-success-foreground' : 'border-destructive text-destructive',
+          )}
         >
           <span className="text-2xl font-bold">{percent} %</span>
           <span className="text-xs">
@@ -41,38 +46,26 @@ export function QuizResultPanel({
           <h2 className="text-xl font-semibold">
             {result.passed ? `✓ ${t('quiz.passedTitle')}` : `✗ ${t('quiz.failedTitle')}`}
           </h2>
-          <p className="text-zinc-600 dark:text-zinc-400">
+          <p className="text-muted-foreground">
             {result.passed
               ? t('quiz.passedSubtitle', { score: result.score, max: result.maxScore })
               : t('quiz.failedSubtitle', { percent, passing: result.passingScore })}
           </p>
-          <div className="flex gap-2 text-xs">
-            <span
-              className={`rounded-full px-2 py-0.5 font-medium ${
-                result.passed
-                  ? 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300'
-                  : 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300'
-              }`}
-            >
+          <div className="flex gap-2">
+            <Badge variant={result.passed ? 'success' : 'destructive'} className={result.passed ? '' : 'bg-destructive/15 text-destructive'}>
               {result.passed ? t('quiz.passedBadge') : t('quiz.failedBadge')}
-            </span>
-            <span className="rounded-full bg-zinc-100 px-2 py-0.5 dark:bg-zinc-800">
-              {t('quiz.scoreBadge', { score: result.score, max: result.maxScore })}
-            </span>
+            </Badge>
+            <Badge variant="muted">{t('quiz.scoreBadge', { score: result.score, max: result.maxScore })}</Badge>
           </div>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {!result.passed && (
-          <button
-            type="button"
-            onClick={onRetry}
-            disabled={retryDisabled}
-            className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white disabled:opacity-60"
-          >
+          <Button type="button" onClick={onRetry} disabled={retryDisabled}>
+            <RotateCcwIcon />
             {t('quiz.retry')}
-          </button>
+          </Button>
         )}
         {actions}
       </div>
@@ -85,24 +78,26 @@ export function QuizResultPanel({
             return (
               <li
                 key={r.key}
-                className={`rounded-xl border p-3 ${r.correct ? 'border-green-300 dark:border-green-900' : 'border-red-300 dark:border-red-900'}`}
+                className={cn('rounded-xl border bg-card p-4', r.correct ? 'border-success/40' : 'border-destructive/40')}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex gap-2">
-                    <span aria-hidden="true">{r.correct ? '✓' : '✗'}</span>
-                    <span className="font-semibold text-zinc-500">{i + 1}.</span>
+                    <span aria-hidden="true" className={r.correct ? 'text-success' : 'text-destructive'}>
+                      {r.correct ? '✓' : '✗'}
+                    </span>
+                    <span className="font-semibold text-muted-foreground">{i + 1}.</span>
                     {question && (
-                      <div className="content prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: question.prompt }} />
+                      <div className="content prose prose-sm max-w-none dark:prose-invert prose-p:my-0" dangerouslySetInnerHTML={{ __html: question.prompt }} />
                     )}
                   </div>
-                  <span className="shrink-0 text-xs text-zinc-500">
+                  <span className="shrink-0 text-xs text-muted-foreground">
                     {t('quiz.pointsOf', { earned: r.pointsEarned, max: r.pointsMax })}
                   </span>
                 </div>
                 {!r.correct && question && <ExpectedAnswer result={r} question={question} />}
                 {r.feedback && (
                   <div
-                    className="content prose prose-sm mt-2 max-w-none text-zinc-600 dark:prose-invert dark:text-zinc-400"
+                    className="content prose prose-sm mt-2 max-w-none text-muted-foreground dark:prose-invert"
                     dangerouslySetInnerHTML={{ __html: r.feedback }}
                   />
                 )}

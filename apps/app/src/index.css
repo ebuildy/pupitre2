@@ -1,12 +1,7 @@
-@import 'tailwindcss';
+@import '@pupitre/ui/globals.css';
 @plugin '@tailwindcss/typography';
-@source '../../../packages/auth-ui/src';
-@source '../../../packages/ui/src';
-@source '../../../packages/i18n/src';
 
-@custom-variant dark (&:where(.dark, .dark *));
-
-/* Rendered course content (sanitized HTML from the API, spec 058). */
+/* Rendered course content (sanitized HTML from the API, spec 058), on top of the typography plugin. */
 .content :where(h1, h2, h3) {
   scroll-margin-top: 1rem;
 }
@@ -17,12 +12,14 @@
 }
 .content :not(pre) > code {
   border-radius: 0.25rem;
-  background: var(--color-zinc-100);
+  background: var(--muted);
   padding: 0.1rem 0.3rem;
   font-weight: 500;
 }
-.dark .content :not(pre) > code {
-  background: var(--color-zinc-800);
+.content pre {
+  background: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
 }
 
 /* Admonitions (spec 059). */
@@ -37,23 +34,15 @@
   font-weight: 600;
   margin-bottom: 0.25rem;
 }
-.content .admonition-note { --admonition-color: var(--color-zinc-500); }
-.content .admonition-tip { --admonition-color: var(--color-green-600); }
-.content .admonition-info { --admonition-color: var(--color-blue-600); }
-.content .admonition-warning { --admonition-color: var(--color-amber-500); }
-.content .admonition-caution { --admonition-color: var(--color-orange-600); }
-.content .admonition-danger { --admonition-color: var(--color-red-600); }
+.content .admonition-note { --admonition-color: var(--muted-foreground); }
+.content .admonition-tip { --admonition-color: var(--success); }
+.content .admonition-info { --admonition-color: var(--primary); }
+.content .admonition-warning { --admonition-color: var(--warning); }
+.content .admonition-caution { --admonition-color: var(--color-orange-500); }
+.content .admonition-danger { --admonition-color: var(--destructive); }
 
 /* Code highlighting (highlight.js classes), light and dark. */
-.content pre {
-  background: var(--color-zinc-100);
-  color: var(--color-zinc-800);
-}
-.dark .content pre {
-  background: var(--color-zinc-900);
-  color: var(--color-zinc-100);
-}
-.hljs-comment, .hljs-quote { color: var(--color-zinc-500); font-style: italic; }
+.hljs-comment, .hljs-quote { color: var(--muted-foreground); font-style: italic; }
 .hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-meta { color: var(--color-violet-700); }
 .hljs-string, .hljs-attr, .hljs-symbol, .hljs-bullet { color: var(--color-green-700); }
 .hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable { color: var(--color-orange-700); }

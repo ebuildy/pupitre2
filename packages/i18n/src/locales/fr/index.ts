@@ -10,6 +10,12 @@ export const common = {
     body: "Vous n'avez pas les droits nécessaires pour accéder à cette page.",
   },
   language: 'Langue',
+  menu: 'Menu',
+  mainNavigation: 'Navigation principale',
+  theme: {
+    toLight: 'Passer en mode clair',
+    toDark: 'Passer en mode sombre',
+  },
   // Spec 018
   roles: {
     student: 'Étudiant',
@@ -279,6 +285,9 @@ export const admin = {
   },
   dashboard: {
     title: 'Tableau de bord',
+    coursesHint: 'Créer, modifier et publier les cours, gérer les inscriptions',
+    categoriesHint: 'Organiser le catalogue en catégories et sous-catégories',
+    usersHint: 'Consulter les apprenants, leur XP et leurs tentatives de quiz',
   },
   categories: {
     title: 'Catégories',

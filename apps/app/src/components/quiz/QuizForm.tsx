@@ -1,6 +1,11 @@
 import { useTranslation } from '@pupitre/i18n'
 import type { QuestionCooldown, QuizAnswer, QuizQuestionView, QuizResult, QuizView } from '@pupitre/shared'
+import { cn, ErrorState } from '@pupitre/ui'
+import { Badge } from '@pupitre/ui/components/ui/badge'
+import { Button } from '@pupitre/ui/components/ui/button'
+import { Progress } from '@pupitre/ui/components/ui/progress'
 import { useMutation } from '@tanstack/react-query'
+import { ArrowDownIcon, ArrowUpIcon, CheckIcon, GripVerticalIcon, PuzzleIcon } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
 import { CooldownActiveError, submitQuiz } from '../../lib/learning.ts'
 import { QuizResultPanel } from './QuizResultPanel.tsx'
@@ -100,14 +105,9 @@ export function QuizForm({
   }
 
   const submitButton = (
-    <button
-      type="button"
-      disabled={submit.isPending || cooling}
-      onClick={() => submit.mutate()}
-      className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white disabled:opacity-60"
-    >
+    <Button type="button" disabled={submit.isPending || cooling} onClick={() => submit.mutate()} className="w-full sm:w-auto">
       {submit.isPending ? t('quiz.submitting') : variant === 'full' ? t('quiz.submit') : t('quiz.submitInline')}
-    </button>
+    </Button>
   )
 
   const questions = (
@@ -116,9 +116,10 @@ export function QuizForm({
         <li
           key={q.key}
           id={`question-${i + 1}`}
-          className={`scroll-mt-4 rounded-xl border p-4 ${
-            answers[q.key] !== undefined ? 'border-blue-300 dark:border-blue-800' : 'border-zinc-200 dark:border-zinc-800'
-          }`}
+          className={cn(
+            'scroll-mt-24 rounded-xl border bg-card p-5 shadow-xs transition-colors',
+            answers[q.key] !== undefined && 'border-primary/40',
+          )}
         >
           <QuestionCard
             number={i + 1}
@@ -134,24 +135,21 @@ export function QuizForm({
     </ol>
   )
 
-  const error = submit.error && !(submit.error instanceof CooldownActiveError) && (
-    <p role="alert" className="text-sm text-red-600">
-      {submit.error.message}
-    </p>
-  )
+  const error = submit.error && !(submit.error instanceof CooldownActiveError) && <ErrorState message={submit.error.message} />
 
   if (variant === 'inline') {
     return (
       <section
-        className="flex flex-col gap-4 rounded-2xl border border-violet-200 bg-violet-50/50 p-5 dark:border-violet-900 dark:bg-violet-950/30"
+        className="flex flex-col gap-4 rounded-2xl border border-xp/30 bg-xp-soft/50 p-5"
         onCopy={preventCopy}
         onCut={preventCopy}
         onContextMenu={preventCopy}
         data-testid="inline-quiz"
       >
         <h2 className="flex items-center gap-2 text-lg font-semibold">
-          🧩 {t('quiz.miniQuiz')}
-          {quiz.title && <span className="font-normal text-zinc-600 dark:text-zinc-400">— {quiz.title}</span>}
+          <PuzzleIcon className="size-5 text-xp" aria-hidden="true" />
+          {t('quiz.miniQuiz')}
+          {quiz.title && <span className="font-normal text-muted-foreground">— {quiz.title}</span>}
         </h2>
         {questions}
         {error}
@@ -167,29 +165,28 @@ export function QuizForm({
         {error}
         <div className="lg:hidden">{submitButton}</div>
       </div>
-      <aside className="hidden flex-col gap-3 self-start rounded-xl border border-zinc-200 p-4 lg:sticky lg:top-4 lg:flex dark:border-zinc-800">
+      <aside className="hidden flex-col gap-3 self-start rounded-xl border bg-card p-4 shadow-xs lg:sticky lg:top-24 lg:flex">
         <h2 className="font-semibold">{t('quiz.navigation')}</h2>
         <div className="flex flex-wrap gap-2">
           {quiz.questions.map((q, i) => (
             <a
               key={q.key}
               href={`#question-${i + 1}`}
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-sm ${
-                answers[q.key] !== undefined ? 'bg-blue-600 text-white' : 'border border-zinc-300 dark:border-zinc-700'
-              }`}
+              className={cn(
+                'flex size-8 items-center justify-center rounded-full text-sm font-medium transition-colors',
+                answers[q.key] !== undefined ? 'bg-primary text-primary-foreground' : 'border hover:bg-muted',
+              )}
             >
               {i + 1}
             </a>
           ))}
         </div>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           {t('quiz.answered', { answered: answeredCount, total: quiz.questions.length })}
         </p>
-        <div className="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-          <div className="h-full bg-blue-600" style={{ width: `${(answeredCount / quiz.questions.length) * 100}%` }} />
-        </div>
+        <Progress value={(answeredCount / quiz.questions.length) * 100} className="h-1.5" />
         {submitButton}
-        <p className="text-xs text-zinc-500">{t('quiz.paletteHint')}</p>
+        <p className="text-xs text-muted-foreground">{t('quiz.paletteHint')}</p>
       </aside>
     </div>
   )
@@ -214,27 +211,36 @@ function QuestionCard({
 }) {
   const { t } = useTranslation('app')
   const option = (selected: boolean) =>
-    `flex w-full items-start gap-2 rounded-lg border px-3 py-2 text-left disabled:cursor-not-allowed disabled:opacity-60 ${
-      selected ? 'border-blue-600 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900'
-    }`
+    cn(
+      'flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+      selected ? 'border-primary bg-secondary text-secondary-foreground' : 'hover:bg-muted',
+    )
+  const mark = (selected: boolean, shape: 'circle' | 'square') =>
+    cn(
+      'flex size-4 shrink-0 items-center justify-center border',
+      shape === 'circle' ? 'rounded-full' : 'rounded-sm',
+      selected ? 'border-primary bg-primary text-primary-foreground' : 'border-input',
+    )
 
   return (
     <fieldset className="flex flex-col gap-3" disabled={disabled}>
       <legend className="sr-only">{t('quiz.question', { number })}</legend>
       <div className="flex items-start justify-between gap-3">
         <div className="flex gap-2">
-          <span className="font-semibold text-zinc-500">{number}.</span>
-          <div className="content prose prose-zinc max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: q.prompt }} />
+          <span className="font-semibold text-primary">{number}.</span>
+          <div className="content prose prose-neutral max-w-none dark:prose-invert prose-p:my-0" dangerouslySetInnerHTML={{ __html: q.prompt }} />
         </div>
-        <span className="shrink-0 text-xs text-zinc-500">{t('quiz.points', { count: q.points })}</span>
+        <Badge variant="outline" className="shrink-0">
+          {t('quiz.points', { count: q.points })}
+        </Badge>
       </div>
 
       {cooldown?.locked ? (
-        <p className="text-sm font-medium text-red-600" role="status">
+        <p className="text-sm font-medium text-destructive" role="status">
           {t('quiz.lockedQuestion')}
         </p>
       ) : cooldown && cooldown.until > now ? (
-        <p className="text-sm font-medium text-amber-700 dark:text-amber-400" role="status">
+        <p className="text-sm font-medium text-warning-foreground" role="status">
           {t('quiz.cooldown', { seconds: Math.ceil((cooldown.until - now) / 1000) })}
         </p>
       ) : null}
@@ -244,7 +250,9 @@ function QuestionCard({
           const selected = !!answer && 'single' in answer && answer.single === a.id
           return (
             <button key={a.id} type="button" role="radio" aria-checked={selected} className={option(selected)} onClick={() => onChange({ single: a.id })}>
-              <span aria-hidden="true">{selected ? '◉' : '○'}</span>
+              <span className={mark(selected, 'circle')} aria-hidden="true">
+                {selected && <span className="size-1.5 rounded-full bg-current" />}
+              </span>
               <span dangerouslySetInnerHTML={{ __html: a.html }} />
             </button>
           )
@@ -263,7 +271,9 @@ function QuestionCard({
               className={option(selected)}
               onClick={() => onChange({ multiple: selected ? chosen.filter((id) => id !== a.id) : [...chosen, a.id] })}
             >
-              <span aria-hidden="true">{selected ? '☑' : '☐'}</span>
+              <span className={mark(selected, 'square')} aria-hidden="true">
+                {selected && <CheckIcon className="size-3" />}
+              </span>
               <span dangerouslySetInnerHTML={{ __html: a.html }} />
             </button>
           )
@@ -279,7 +289,7 @@ function QuestionCard({
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                className={`${option(selected)} w-auto justify-center px-6`}
+                className={cn(option(selected), 'w-auto justify-center px-8')}
                 onClick={() => onChange({ boolean: value })}
               >
                 {value ? t('quiz.true') : t('quiz.false')}
@@ -300,21 +310,24 @@ function QuestionCard({
               onChange({ order })
             }
             return (
-              <li key={id} className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-800">
-                <span className="w-5 text-sm text-zinc-500">{i + 1}.</span>
+              <li key={id} className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm">
+                <GripVerticalIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+                <span className="w-5 text-muted-foreground">{i + 1}.</span>
                 <span className="flex-1" dangerouslySetInnerHTML={{ __html: item.html }} />
-                <button type="button" aria-label={t('quiz.moveUp')} disabled={i === 0} onClick={() => move(i - 1)} className="rounded border px-2 disabled:opacity-30">
-                  ↑
-                </button>
-                <button
+                <Button type="button" variant="outline" size="icon" className="size-7" aria-label={t('quiz.moveUp')} disabled={i === 0} onClick={() => move(i - 1)}>
+                  <ArrowUpIcon />
+                </Button>
+                <Button
                   type="button"
+                  variant="outline"
+                  size="icon"
+                  className="size-7"
                   aria-label={t('quiz.moveDown')}
                   disabled={i === answer.order.length - 1}
                   onClick={() => move(i + 1)}
-                  className="rounded border px-2 disabled:opacity-30"
                 >
-                  ↓
-                </button>
+                  <ArrowDownIcon />
+                </Button>
               </li>
             )
           })}

@@ -7,10 +7,10 @@ Rewrite of [pupitre](../../pupitre). Original functional specs: `../../pupitre/d
 | Path | What |
 | --- | --- |
 | `apps/api` | Hono on Node, Drizzle ORM + SQLite (better-sqlite3), better-auth |
-| `apps/app` | Learner frontend, served at `/`: React 19 + Vite, React Router, Tailwind CSS v4, Hono RPC client |
+| `apps/app` | Learner frontend, served at `/`: React 19 + Vite, React Router, Tailwind CSS v4 + shadcn/ui, Hono RPC client |
 | `apps/admin` | Admin frontend, served at `/admin/` (Vite `base`), same stack; only calls `/api/admin/*` |
 | `packages/auth-ui` | Shared login page, better-auth client, `RequireAuth`, "Accès refusé", cross-app navigation |
-| `packages/ui` | Shared UI pieces: `unwrap` for API calls, badges, category labels, `useDebouncedValue` |
+| `packages/ui` | Shared UI: shadcn/ui components and the pupitre theme (`globals.css`, light/dark), page blocks, badges, `unwrap` for API calls |
 | `packages/i18n` | i18next setup, French/English catalogues, typed keys, `LanguageSwitcher` |
 | `packages/shared` | Wire types / schemas / helpers shared by every package |
 | `e2e` | Playwright tests (they start both servers themselves) |

@@ -1,6 +1,10 @@
 import { useTranslation } from '@pupitre/i18n'
 import { DIFFICULTIES, type Difficulty } from '@pupitre/shared'
-import { categoryIcon, sortByTitle, unwrap, useDebouncedValue } from '@pupitre/ui'
+import { categoryIcon, EmptyState, ErrorState, LoadingState, PageHeader, sortByTitle, unwrap, useDebouncedValue } from '@pupitre/ui'
+import { Button } from '@pupitre/ui/components/ui/button'
+import { Input } from '@pupitre/ui/components/ui/input'
+import { NativeSelect, NativeSelectOption } from '@pupitre/ui/components/ui/native-select'
+import { SearchIcon } from 'lucide-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
@@ -65,42 +69,37 @@ export function Catalogue() {
     })
   }
 
-  const chip = (active: boolean) =>
-    `rounded-full border px-3 py-1 text-sm ${
-      active
-        ? 'border-blue-600 bg-blue-600 text-white'
-        : 'border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800'
-    }`
-  const field = 'h-10 rounded-lg border border-zinc-300 bg-transparent px-3 dark:border-zinc-700'
-
   return (
-    <div className="flex flex-col gap-5">
-      <h1 className="text-2xl font-semibold">{t('catalogue.title')}</h1>
+    <div className="flex flex-col gap-6">
+      <PageHeader title={t('catalogue.title')} />
 
       <div className="flex flex-wrap items-center gap-3">
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t('catalogue.searchPlaceholder')}
-          aria-label={t('catalogue.searchLabel')}
-          className={`${field} min-w-0 flex-1 sm:max-w-sm`}
-        />
-        <select
+        <div className="relative w-full sm:w-auto sm:min-w-0 sm:flex-1 sm:max-w-sm">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('catalogue.searchPlaceholder')}
+            aria-label={t('catalogue.searchLabel')}
+            className="h-10 pl-9"
+          />
+        </div>
+        <NativeSelect
           value={difficulty}
           onChange={(e) => update((next) => (e.target.value ? next.set('difficulty', e.target.value) : next.delete('difficulty')))}
           aria-label={t('catalogue.difficultyLabel')}
-          className={field}
+          className="h-10"
         >
-          <option value="">{t('catalogue.allDifficulties')}</option>
+          <NativeSelectOption value="">{t('catalogue.allDifficulties')}</NativeSelectOption>
           {DIFFICULTIES.map((d) => (
-            <option key={d} value={d}>
+            <NativeSelectOption key={d} value={d}>
               {t(`common:difficulty.${d}`)}
-            </option>
+            </NativeSelectOption>
           ))}
-        </select>
+        </NativeSelect>
         {data && (
-          <span className="text-sm text-zinc-600 dark:text-zinc-400" role="status">
+          <span className="text-sm text-muted-foreground" role="status">
             {t('catalogue.count', { count: data.total })}
           </span>
         )}
@@ -108,47 +107,43 @@ export function Catalogue() {
 
       {data && showChips && (
         <div role="group" aria-label={t('catalogue.categoriesLabel')} className="flex flex-wrap gap-2">
-          <button
+          <Button
             type="button"
+            size="sm"
+            variant={categories.length === 0 ? 'default' : 'outline'}
             aria-pressed={categories.length === 0}
-            className={chip(categories.length === 0)}
+            className="rounded-full"
             onClick={() => update((next) => next.delete('category'))}
           >
             {t('catalogue.allCategories')}
-          </button>
+          </Button>
           {chips.map((c) => {
             const active = categories.includes(c.slug)
             return (
-              <button
+              <Button
                 key={c.slug}
                 type="button"
+                size="sm"
+                variant={active ? 'default' : 'outline'}
                 aria-pressed={active}
-                className={chip(active)}
+                className="rounded-full"
                 onClick={() => toggleCategory(c.slug)}
               >
                 <span aria-hidden="true">{categoryIcon(c)}</span> {c.title} <span className="opacity-70">{c.count}</span>
-              </button>
+              </Button>
             )
           })}
         </div>
       )}
 
       {isPending ? (
-        <p className="text-zinc-600 dark:text-zinc-400">{t('catalogue.loading')}</p>
+        <LoadingState label={t('catalogue.loading')} />
       ) : isError ? (
-        <p role="alert" className="text-red-600">
-          {error.message}
-        </p>
+        <ErrorState message={error.message} />
       ) : data.courses.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center gap-2 text-center">
-          <span className="text-4xl" aria-hidden="true">
-            📭
-          </span>
-          <p className="font-semibold">{t('catalogue.emptyTitle')}</p>
-          <p className="text-zinc-600 dark:text-zinc-400">{t('catalogue.emptyBody')}</p>
-        </div>
+        <EmptyState icon="📭" title={t('catalogue.emptyTitle')} description={t('catalogue.emptyBody')} />
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {sortByTitle(data.courses).map((course) => (
             <li key={course.slug}>
               <CourseCard course={course} />
