@@ -18,9 +18,16 @@ holds a grant on, drafts excluded, archived included.
 - Course cards sorted by title, with "Inscrit le …" (or "✓ Terminé le …" once completed, [103](103-xp.md)), an "Archivé" badge when relevant, and "Détails" (→ course page).
 - Empty: "Vous n'êtes inscrit à aucun cours" + "Découvrir le catalogue"; filtered empty: "Aucun cours ne correspond à votre filtre.".
 
+## Progress
+
+- Stats: "cours inscrits", "cours terminés", "modules terminés", "progression globale" (modules done / visible modules).
+- Status filter "Statut": Tous / Non commencés / En cours / Terminés.
+- Cards show the progress bar and a "Commencer ▸" / "Continuer ▸" / "Revoir ▸" button next to "Détails".
+- `GET /api/my/courses` adds `progress`, `moduleCount`, `skills`, `badge` and `lastActivityAt` to each course.
+
 ## Differences from the original
 
-- No progress yet: the stats row (enrolled / completed courses, completed modules, overall progress), the status filter, progress bars and "Commencer / Continuer / Revoir" come with modules and progress tracking.
+- Progress counts visible modules of every type (lessons and quizzes), not only labs.
 
 ## Source
 

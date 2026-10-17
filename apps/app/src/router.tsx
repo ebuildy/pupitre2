@@ -3,7 +3,10 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { ManagerGroups } from './routes/manager/ManagerGroups.tsx'
 import { ManagerLayout } from './routes/manager/ManagerLayout.tsx'
 import { ManagerMembers } from './routes/manager/ManagerMembers.tsx'
+import { MyBadges } from './routes/MyBadges.tsx'
 import { MyGroups } from './routes/MyGroups.tsx'
+import { MySkills } from './routes/MySkills.tsx'
+import { SkillPage } from './routes/SkillPage.tsx'
 import { demoAccounts } from './lib/demo-accounts.ts'
 import { Catalogue } from './routes/Catalogue.tsx'
 import { CourseDetail } from './routes/CourseDetail.tsx'
@@ -69,6 +72,23 @@ export const router = createBrowserRouter([
         ),
       },
       { path: 'users/:id', element: <PublicProfile /> },
+      {
+        path: 'my-badges',
+        element: (
+          <RequireAuth>
+            <MyBadges />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'my-skills',
+        element: (
+          <RequireAuth>
+            <MySkills />
+          </RequireAuth>
+        ),
+      },
+      { path: 'skills/:slug', element: <SkillPage /> },
       {
         path: 'my-groups',
         element: (

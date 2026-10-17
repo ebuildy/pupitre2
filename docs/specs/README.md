@@ -20,11 +20,13 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | [026](026-logout.md) | Logout | Implemented |
 | [034](034-current-user.md) | Current user (`GET /api/me`) | Implemented |
 | [035](035-profile.md) | Profile, change password, public profile | Implemented (badge avatars with 106) |
-| [040](040-courses-and-catalogue.md) | Courses, categories, visibility and catalogue | Implemented (no modules yet) |
+| [040](040-courses-and-catalogue.md) | Courses, categories, visibility, catalogue, cards, "Reprendre" | Implemented |
 | [045](045-course-page-and-enrollment.md) | Course page and enrollment | Implemented (no modules yet) |
-| [052](052-my-courses.md) | "Mes cours" | Implemented (no progress yet) |
+| [052](052-my-courses.md) | "Mes cours" | Implemented |
 | [053](053-course-content-and-quizzes.md) | Course content, progress and quizzes | Implemented (fake content loader) |
 | [103](103-xp.md) | XP, levels, course completion, XP gate and leaderboard | Implemented (completion marked by admins) |
+| [106](106-badges.md) | Badges, "Mes badges", badge and admin leaderboards | Implemented |
+| [110](110-skills.md) | Skills, levels, skill page, "Mes compétences", skill filter | Implemented |
 | [130](130-groups.md) | Groups, memberships, group enrollments, default group, "Mes groupes" | Implemented (SSO sync later) |
 | [140](140-manager-space.md) | Manager space: scope, members, groups | Implemented (paths, sessions later) |
 | [162](162-admin-users.md) | Admin: users (list, edit, deactivate, delete) | Implemented |

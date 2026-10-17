@@ -1,7 +1,7 @@
 import { useGoTo, useSession } from '@pupitre/auth-ui'
 import { useTranslation } from '@pupitre/i18n'
 import type { CourseModulesResponse } from '@pupitre/shared'
-import { CategoryLabel, categoryIcon, DifficultyBadge, EmptyState, ErrorState, isNotFound, LoadingState, unwrap } from '@pupitre/ui'
+import { CategoryLabel, courseIcon, DifficultyBadge, EmptyState, ErrorState, isNotFound, LoadingState, unwrap } from '@pupitre/ui'
 import { Alert, AlertDescription } from '@pupitre/ui/components/ui/alert'
 import { Button } from '@pupitre/ui/components/ui/button'
 import { Card, CardContent } from '@pupitre/ui/components/ui/card'
@@ -10,6 +10,7 @@ import { ArchiveIcon, ZapIcon } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
+import { SkillChips } from '../components/CourseCard.tsx'
 import { ModuleList } from '../components/ModuleList.tsx'
 import { api } from '../lib/api.ts'
 import { moduleHref, nextModule, useCourseModules } from '../lib/learning.ts'
@@ -71,13 +72,13 @@ export function CourseDetail() {
 
   return (
     <div className="grid gap-8 md:grid-cols-[minmax(0,22rem)_1fr]">
-      <aside className="flex flex-col gap-4 md:sticky md:top-24 md:self-start">
+      <aside className="flex flex-col gap-4 md:sticky md:top-24 lg:top-32 md:self-start">
         <Card className="gap-0 overflow-hidden py-0">
           <div
             className="flex h-36 items-center justify-center bg-gradient-to-br from-secondary to-muted text-6xl"
             aria-hidden="true"
           >
-            {categoryIcon(course.category)}
+            {courseIcon(course)}
           </div>
           <CardContent className="flex flex-col gap-4 p-5">
             <h1 className="text-2xl font-bold tracking-tight">{course.title}</h1>
@@ -86,6 +87,11 @@ export function CourseDetail() {
               {course.category && <CategoryLabel category={course.category} />}
             </div>
             {course.description && <p className="whitespace-pre-line text-muted-foreground">{course.description}</p>}
+            {course.skills.length > 0 && (
+              <div className="flex flex-wrap gap-1.5" aria-label={t('course.skillsTitle')}>
+                <SkillChips skills={course.skills} />
+              </div>
+            )}
 
             {course.completedAt && (
               <Alert variant="success">
@@ -112,6 +118,8 @@ export function CourseDetail() {
                 </span>
               </Link>
             )}
+
+            {course.badge && <BadgeCard slug={course.slug} badge={course.badge} earned={!!course.completedAt} />}
 
             {course.status === 'archived' && (
               <Alert>
@@ -216,5 +224,29 @@ function ProgressBlock({ courseSlug, content }: { courseSlug: string; content: C
         </Button>
       )}
     </Card>
+  )
+}
+
+/** Spec 106/109: the course badge, its rarity, and whether the viewer earned it. */
+function BadgeCard({ slug, badge, earned }: { slug: string; badge: { name: string; icon: string }; earned: boolean }) {
+  const { t } = useTranslation('app')
+  const stats = useQuery({
+    queryKey: ['badge', slug],
+    queryFn: () => unwrap(api.api.badges[':courseSlug'].$get({ param: { courseSlug: slug } })),
+  })
+  return (
+    <div className="flex items-center gap-3 rounded-lg border px-3 py-2" data-testid="course-badge">
+      <span className={`text-3xl ${earned ? '' : 'opacity-50 grayscale'}`} aria-hidden="true">
+        {badge.icon}
+      </span>
+      <span className="flex flex-col">
+        <span className="text-xs text-muted-foreground">{t('course.badgeTitle')}</span>
+        <span className="font-semibold">{badge.name}</span>
+        <span className="text-xs text-muted-foreground">
+          {earned && <span className="mr-1 text-success">{t('course.badgeEarned')}</span>}
+          {stats.data && t('course.badgeEarnedBy', { count: stats.data.earnedBy })}
+        </span>
+      </span>
+    </div>
   )
 }

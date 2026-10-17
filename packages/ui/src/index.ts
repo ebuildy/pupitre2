@@ -3,8 +3,10 @@ export { ApiRequestError, isNotFound, unwrap } from './api.ts'
 export {
   CategoryLabel,
   categoryIcon,
+  courseIcon,
   DifficultyBadge,
   LevelBadge,
+  SkillLevelBadge,
   StatusBadge,
   sortByTitle,
   VisibilityBadge,

@@ -1,11 +1,21 @@
 import type { XpEventView, XpSource } from '@pupitre/shared'
 import { and, desc, eq, gt, inArray, ne, sql, sum } from 'drizzle-orm'
 import { db } from '../db/index.ts'
-import { course, courseCompletion, user, xpEvent } from '../db/schema/index.ts'
+import { badgeAward, course, courseCompletion, user, xpEvent } from '../db/schema/index.ts'
+import { updateSkillLevels } from './skills.ts'
 
 // better-sqlite3 is synchronous: Drizzle transactions take a synchronous callback, so the helpers that may
 // run inside one use the synchronous `.all()` / `.get()` / `.run()` query methods.
 type Tx = Pick<typeof db, 'insert' | 'select' | 'delete'>
+
+type CompletableCourse = {
+  id: string
+  title: string
+  completionXp: number
+  difficulty?: (typeof course.$inferSelect)['difficulty']
+  badgeName?: string | null
+  badgeIcon?: string | null
+}
 
 type XpInput = {
   userId: string
@@ -78,14 +88,10 @@ export async function xpHistory(userId: string): Promise<XpEventView[]> {
 }
 
 /**
- * Spec 068 / 191: records the completion and grants the course's completion XP, together.
- * Idempotent: completing twice changes nothing. Returns whether it was new.
+ * Spec 068 / 191: records the completion and, in the same step, grants the completion XP, awards the badge (106) and
+ * updates the skill levels (113). Idempotent: completing twice changes nothing. Returns whether it was new.
  */
-export function completeCourse(
-  userId: string,
-  c: { id: string; title: string; completionXp: number },
-  completedBy: string | null,
-) {
+export function completeCourse(userId: string, c: CompletableCourse, completedBy: string | null) {
   return db.transaction((tx) => {
     const inserted = tx
       .insert(courseCompletion)
@@ -108,6 +114,13 @@ export function completeCourse(
         tx,
       )
     }
+    if (c.badgeName && c.badgeIcon) {
+      tx.insert(badgeAward)
+        .values({ userId, courseId: c.id, courseTitle: c.title, name: c.badgeName, icon: c.badgeIcon })
+        .onConflictDoNothing({ target: [badgeAward.userId, badgeAward.courseId] })
+        .run()
+    }
+    updateSkillLevels(tx, userId, c.id, c.difficulty ?? null)
     return true
   })
 }
@@ -121,6 +134,7 @@ export function uncompleteCourse(userId: string, courseId: string) {
     tx.delete(xpEvent)
       .where(and(eq(xpEvent.userId, userId), eq(xpEvent.source, 'course'), eq(xpEvent.sourceKey, courseId)))
       .run()
+    tx.delete(badgeAward).where(and(eq(badgeAward.userId, userId), eq(badgeAward.courseId, courseId))).run()
   })
 }
 

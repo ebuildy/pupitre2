@@ -63,7 +63,7 @@ export function LessonPage() {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_13rem]">
-      <aside className="hidden flex-col gap-3 self-start lg:sticky lg:top-24 lg:flex" aria-label={t('lesson.modules')}>
+      <aside className="hidden flex-col gap-3 self-start lg:sticky lg:top-32 lg:flex" aria-label={t('lesson.modules')}>
         <h2 className="text-sm font-semibold">{t('lesson.modules')}</h2>
         {list && (
           <div className="flex flex-col gap-1.5">
@@ -159,7 +159,7 @@ export function LessonPage() {
       </article>
 
       {detail.lesson && detail.lesson.toc.length > 0 && (
-        <aside className="hidden self-start xl:sticky xl:top-24 xl:block" aria-label={t('lesson.toc')}>
+        <aside className="hidden self-start xl:sticky xl:top-32 xl:block" aria-label={t('lesson.toc')}>
           <h2 className="mb-2 text-sm font-semibold">{t('lesson.toc')}</h2>
           <ul className="flex flex-col gap-1 border-l text-sm">
             {detail.lesson.toc.map((entry) => (

@@ -38,6 +38,11 @@ function checkCategory(tree: CategoryTree, categoryId: string | null | undefined
   if (categoryId && !tree.byId.has(categoryId)) throw new HTTPException(400, { message: 'Unknown category' })
 }
 
+/** Form fields → columns: the badge is stored as two columns. */
+function courseValues<T extends { badge?: { name: string; icon: string } | null }>({ badge, ...rest }: T) {
+  return { ...rest, ...(badge !== undefined ? { badgeName: badge?.name ?? null, badgeIcon: badge?.icon ?? null } : {}) }
+}
+
 async function requireCourse(id: string) {
   const found = await findCourseById(id)
   if (!found) throw new HTTPException(404, { message: NOT_FOUND })
@@ -59,7 +64,7 @@ export const adminCourseRoutes = new Hono<AppEnv>()
     const tree = await CategoryTree.load()
     checkCategory(tree, input.categoryId)
     try {
-      const [created] = await db.insert(course).values(input).returning()
+      const [created] = await db.insert(course).values(courseValues(input)).returning()
       return c.json<AdminCourse>(toAdminCourse(created!, 0, tree), 201)
     } catch (err) {
       if (isUniqueViolation(err)) throw new HTTPException(409, { message: SLUG_TAKEN })
@@ -76,7 +81,7 @@ export const adminCourseRoutes = new Hono<AppEnv>()
     const tree = await CategoryTree.load()
     checkCategory(tree, input.categoryId)
     try {
-      const [updated] = await db.update(course).set(input).where(eq(course.id, found.id)).returning()
+      const [updated] = await db.update(course).set(courseValues(input)).where(eq(course.id, found.id)).returning()
       return c.json<AdminCourse>(toAdminCourse(updated!, await countEnrolled(found.id), tree))
     } catch (err) {
       if (isUniqueViolation(err)) throw new HTTPException(409, { message: SLUG_TAKEN })

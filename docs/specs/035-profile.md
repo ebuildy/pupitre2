@@ -12,7 +12,7 @@ Covers the original 035 (edit profile), 036 (change password) and 037 (public us
 
 - Header: avatar (80 px) with "✏️ Modifier", username, role badge for managers and admins, e-mail, "Voir mon profil public".
 - Avatar dialog "Modifier la photo de profil": "URL externe" + "OK" (must start with `http://` or `https://`),
-  "Retirer la photo". Toast "Photo de profil mise à jour". The emoji picker (badge icons) comes with badges (106).
+  "Retirer la photo". Toast "Photo de profil mise à jour". "Emoji de badge": the icons of earned badges ([106](106-badges.md)).
 - Tab "👤 Compte": card "Mon compte" in read mode (Nom d'utilisateur, Nom affiché, Email, Bio); "Modifier" switches to a
   form (username — disabled with an explanation when `profile_allow_username_change` is off —, display name, bio
   "Dites-nous quelque chose sur vous…"), "Enregistrer" / "Annuler", toast "Profil mis à jour". The top bar follows.
@@ -50,7 +50,7 @@ Leaderboard rows link to it.
 - `PATCH /api/me` instead of `PUT /api/auth/profile`; display name is editable; `avatarUrl` is better-auth's `image`.
 - Password change goes through better-auth; the original's "SSO account" error is replaced by hiding the form
   (`hasPassword`).
-- Public profile shows XP and completions now; badges are added with spec 106.
+- The public profile also shows XP and completed courses.
 
 ## Source
 

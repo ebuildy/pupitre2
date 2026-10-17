@@ -5,12 +5,14 @@ import { cn, LanguageSwitcher, ThemeToggle, UserAvatar } from '@pupitre/ui'
 import { Button } from '@pupitre/ui/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@pupitre/ui/components/ui/sheet'
 import {
+  AwardIcon,
   BookOpenIcon,
   BriefcaseIcon,
   GraduationCapIcon,
   LogOutIcon,
   MenuIcon,
   SettingsIcon,
+  TargetIcon,
   TrophyIcon,
   UsersRoundIcon,
   ZapIcon,
@@ -32,6 +34,8 @@ export function Layout() {
       ? [
           { to: '/my-courses', label: t('app:nav.myCourses'), icon: GraduationCapIcon, end: false },
           { to: '/my-xp', label: t('app:nav.myXp'), icon: ZapIcon, end: false },
+          { to: '/my-badges', label: t('app:nav.myBadges'), icon: AwardIcon, end: false },
+          { to: '/my-skills', label: t('app:nav.mySkills'), icon: TargetIcon, end: false },
           { to: '/my-groups', label: t('app:nav.myGroups'), icon: UsersRoundIcon, end: false },
         ]
       : []),
@@ -85,14 +89,6 @@ export function Layout() {
             pupitre
           </Link>
 
-          <nav className="hidden items-center gap-1 lg:flex" aria-label={t('mainNavigation')}>
-            {links.map(({ to, label, end }) => (
-              <NavLink key={to} to={to} end={end} className={navLink}>
-                {label}
-              </NavLink>
-            ))}
-          </nav>
-
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher className="hidden sm:block" />
             <ThemeToggle className="hidden sm:inline-flex" />
@@ -109,7 +105,7 @@ export function Layout() {
                       image={session.user.image}
                       name={session.user.displayUsername ?? session.user.username ?? session.user.name}
                     />
-                    <span className="hidden xl:inline" data-testid="current-user">
+                    <span className="hidden md:inline" data-testid="current-user">
                       {session.user.displayUsername ?? session.user.username ?? session.user.name}
                     </span>
                   </Link>
@@ -135,6 +131,15 @@ export function Layout() {
               ))}
           </div>
         </div>
+        {/* Second row on desktop: every section fits (spec 011). */}
+        <nav className="mx-auto hidden h-11 max-w-6xl items-center gap-1 overflow-x-auto px-4 lg:flex" aria-label={t('mainNavigation')}>
+          {links.map(({ to, label, end, icon: Icon }) => (
+            <NavLink key={to} to={to} end={end} className={navLink}>
+              <Icon className="size-4" aria-hidden="true" />
+              {label}
+            </NavLink>
+          ))}
+        </nav>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8">
         <Outlet />

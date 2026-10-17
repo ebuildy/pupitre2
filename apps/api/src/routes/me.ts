@@ -1,4 +1,4 @@
-import { type MeResponse, profileUpdateSchema, type Role } from '@pupitre/shared'
+import { isImageUrl, type MeResponse, profileUpdateSchema, type Role } from '@pupitre/shared'
 import { and, eq, isNotNull, ne, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
@@ -7,6 +7,7 @@ import { db } from '../db/index.ts'
 import { account, user } from '../db/schema/index.ts'
 import { validate } from '../lib/validate.ts'
 import { type AppEnv, requireAuth } from '../middleware/session.ts'
+import { badgeIcons } from '../services/badges.ts'
 import { getSettings } from '../services/settings.ts'
 
 function hasPassword(userId: string) {
@@ -59,7 +60,13 @@ export const meRoutes = new Hono<AppEnv>()
     }
     if (input.name !== undefined) changes.name = input.name
     if (input.bio !== undefined) changes.bio = input.bio || null
-    if (input.image !== undefined) changes.image = input.image || null
+    if (input.image !== undefined) {
+      // Spec 035: an emoji avatar must be the icon of a badge the user earned.
+      if (input.image && !isImageUrl(input.image) && !badgeIcons(me.id).has(input.image)) {
+        throw new HTTPException(400, { message: 'Avatar emoji must come from an earned badge' })
+      }
+      changes.image = input.image || null
+    }
 
     const [updated] = Object.keys(changes).length
       ? await db.update(user).set(changes).where(eq(user.id, me.id)).returning()

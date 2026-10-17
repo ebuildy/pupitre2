@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { type SkillRef, skillSlugSchema } from './gamification.ts'
 
 // ─── Modules (spec 191 "Module") ──────────────────────────────────────────────
 
@@ -31,6 +32,8 @@ export const moduleInputSchema = z.object({
   inline: z.boolean().default(false),
   /** Slugs of modules of the same course that must be done first (spec 054). */
   prerequisites: z.array(z.string()).default([]),
+  /** Spec 110: skills taught (kebab-case tags, created on the fly). */
+  skills: z.array(skillSlugSchema).max(20).default([]),
   /** A quiz's content is a quiz document (YAML, `quizDocumentSchema`); a text module's is markdown. */
   content: moduleContentSchema,
 })
@@ -164,6 +167,7 @@ export type ModuleSummary = {
   locked: boolean
   /** Viewed (lesson) or passed (quiz). */
   done: boolean
+  skills: SkillRef[]
   /** Quizzes: the learner's results so far. */
   results: { bestScore: number | null; maxScore: number | null; attempts: number; passed: boolean } | null
 }
@@ -257,5 +261,6 @@ export type AdminModule = {
   hidden: boolean
   inline: boolean
   prerequisites: string[]
+  skills: string[]
   content: ModuleContent
 }

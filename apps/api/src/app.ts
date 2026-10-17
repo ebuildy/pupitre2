@@ -11,6 +11,7 @@ import { env } from './env.ts'
 import { type AppEnv, sessionMiddleware } from './middleware/session.ts'
 import { adminRoutes } from './routes/admin/index.ts'
 import { courseRoutes, enrollmentRoutes, leaderboardRoutes, myRoutes } from './routes/courses.ts'
+import { badgeRoutes, myBadgeRoutes, mySkillRoutes, skillRoutes } from './routes/gamification.ts'
 import { myGroupRoutes } from './routes/groups.ts'
 import { managerRoutes } from './routes/manager.ts'
 import { meRoutes } from './routes/me.ts'
@@ -60,6 +61,10 @@ const routes = app
   .route('/enrollments', enrollmentRoutes)
   .route('/my', myRoutes)
   .route('/my/groups', myGroupRoutes)
+  .route('/my/badges', myBadgeRoutes)
+  .route('/my/skills', mySkillRoutes)
+  .route('/skills', skillRoutes)
+  .route('/badges', badgeRoutes)
   .route('/manager', managerRoutes)
   .route('/leaderboard', leaderboardRoutes)
   .route('/users', userRoutes)

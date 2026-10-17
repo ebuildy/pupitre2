@@ -47,9 +47,9 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 032 | SSO group sync and role | ⬜ | | |
 | 033 | OIDC authoritative admin groups | ⬜ | | |
 | 034 | Current user | ✅ | [034](docs/specs/034-current-user.md) | |
-| 035 | Edit profile | 🟡 | [035](docs/specs/035-profile.md) | emoji avatars from badges come with 106 |
+| 035 | Edit profile | ✅ | [035](docs/specs/035-profile.md) |  |
 | 036 | Change password | ✅ | [035](docs/specs/035-profile.md) |  |
-| 037 | Public user profile | 🟡 | [035](docs/specs/035-profile.md) | badges come with 106 |
+| 037 | Public user profile | ✅ | [035](docs/specs/035-profile.md) |  |
 | 038 | Default group and group-enrollment sync | 🟡 | [130](docs/specs/130-groups.md) | default group done; grants applied at once (no login sync needed); SSO later |
 
 ## Catalogue & course consumption
@@ -58,16 +58,16 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | --- | --- | --- | --- | --- |
 | 040 | Course catalogue API | ✅ | [040](docs/specs/040-courses-and-catalogue.md) | |
 | 041 | Catalogue page | ✅ | [040](docs/specs/040-courses-and-catalogue.md) | |
-| 042 | Catalogue skill filter | ⬜ | | |
-| 043 | Continue-learning hero | ⬜ | | |
-| 044 | Course card | 🟡 | [040](docs/specs/040-courses-and-catalogue.md) | no progress bar, module count, thumbnail |
+| 042 | Catalogue skill filter | ✅ | [110](docs/specs/110-skills.md) |  |
+| 043 | Continue-learning hero | ✅ | [040](docs/specs/040-courses-and-catalogue.md) |  |
+| 044 | Course card | 🟡 | [040](docs/specs/040-courses-and-catalogue.md) | no thumbnail image yet (062), no "Présentiel" (150) |
 | 045 | Course detail page | ✅ | [045](docs/specs/045-course-page-and-enrollment.md) | |
 | 046 | Course visibility | ✅ | [040](docs/specs/040-courses-and-catalogue.md) | target model (visibility + status) |
 | 047 | Self-enrollment | ✅ | [045](docs/specs/045-course-page-and-enrollment.md) | |
 | 048 | Auto-enrollment in public courses | ⬜ | | |
 | 049 | XP-gated enrollment | ✅ | [103](docs/specs/103-xp.md) | |
 | 050 | Course prerequisites | ⬜ | | |
-| 052 | My courses page | 🟡 | [052](docs/specs/052-my-courses.md) | no progress bar |
+| 052 | My courses page | ✅ | [052](docs/specs/052-my-courses.md) |  |
 | 053 | Module list and sequential locking | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 | 054 | Module prerequisites | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 | 055 | Hidden modules | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
@@ -121,20 +121,20 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | --- | --- | --- | --- | --- |
 | 100 | Lesson progress tracking | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 | 101 | Module progress tracking | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
-| 102 | Learner progress overview | ⬜ | | |
+| 102 | Learner progress overview | ➖ |  | internal single-read endpoint of the services split; one process reads progress directly |
 | 103 | XP awarding | ✅ | [103](docs/specs/103-xp.md) | |
 | 104 | XP levels | ✅ | [103](docs/specs/103-xp.md) | |
 | 105 | My XP page | ✅ | [103](docs/specs/103-xp.md) | |
-| 106 | Course badges | ⬜ | | |
-| 107 | My badges page | ⬜ | | |
-| 108 | Badge leaderboard | 🟡 | [103](docs/specs/103-xp.md) | XP leaderboard; badges to do |
-| 109 | Badge stats | ⬜ | | |
-| 110 | Skill tagging | ⬜ | | |
-| 111 | Skill page | ⬜ | | |
-| 112 | Skill module status | ⬜ | | |
-| 113 | Skill levels | ⬜ | | |
-| 114 | My skills page | ⬜ | | |
-| 115 | Admin score leaderboard | ⬜ | | |
+| 106 | Course badges | ✅ | [106](docs/specs/106-badges.md) |  |
+| 107 | My badges page | ✅ | [106](docs/specs/106-badges.md) |  |
+| 108 | Badge leaderboard | ✅ | [106](docs/specs/106-badges.md) | XP and badge tabs |
+| 109 | Badge stats | ✅ | [106](docs/specs/106-badges.md) |  |
+| 110 | Skill tagging | ✅ | [110](docs/specs/110-skills.md) |  |
+| 111 | Skill page | ✅ | [110](docs/specs/110-skills.md) |  |
+| 112 | Skill module status | ✅ | [110](docs/specs/110-skills.md) |  |
+| 113 | Skill levels | ✅ | [110](docs/specs/110-skills.md) |  |
+| 114 | My skills page | ✅ | [110](docs/specs/110-skills.md) |  |
+| 115 | Admin score leaderboard | ✅ | [106](docs/specs/106-badges.md) | no resync button (nothing to resync) |
 
 ## Learning paths
 

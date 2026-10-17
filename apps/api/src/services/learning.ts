@@ -7,6 +7,7 @@ import {
   type QuizQuestion,
   type QuizView,
   quizDocumentSchema,
+  type SkillRef,
   XP_AMOUNTS,
 } from '@pupitre/shared'
 import { and, asc, eq, inArray, sql } from 'drizzle-orm'
@@ -17,6 +18,7 @@ import { renderFragment } from '../content/markdown.ts'
 import { db } from '../db/index.ts'
 import { courseModule, modulePrerequisite, moduleProgress, questionAttemptState, quizSubmission } from '../db/schema/index.ts'
 import type { Course } from './courses.ts'
+import { moduleSkills } from './skills.ts'
 import { awardXp, completeCourse } from './xp.ts'
 
 export type Module = typeof courseModule.$inferSelect
@@ -46,6 +48,7 @@ export type ModuleState = {
   progress: Progress | undefined
   done: boolean
   locked: boolean
+  skills: SkillRef[]
 }
 
 /**
@@ -70,11 +73,18 @@ export async function moduleStates(courseId: string, userId: string, isAdmin: bo
   const doneIds = new Set(visible.filter(isDone).map((m) => m.id))
   const visibleIds = new Set(visible.map((m) => m.id))
 
+  const skills = moduleSkills(visible.map((m) => m.id))
   let previousDone = true // the first module is always available
   const states: ModuleState[] = visible.map((m) => {
     const prereqsDone = (prerequisites.get(m.id) ?? []).every((id) => !visibleIds.has(id) || doneIds.has(id))
     const sequentialOk = m.inline || previousDone
-    const state = { module: m, progress: progress.get(m.id), done: doneIds.has(m.id), locked: !isAdmin && !(prereqsDone && sequentialOk) }
+    const state = {
+      module: m,
+      progress: progress.get(m.id),
+      done: doneIds.has(m.id),
+      locked: !isAdmin && !(prereqsDone && sequentialOk),
+      skills: skills.get(m.id) ?? [],
+    }
     if (!m.inline) previousDone = state.done
     return state
   })
@@ -91,6 +101,7 @@ export function toSummary(s: ModuleState): ModuleSummary {
     hidden: m.hidden,
     locked: s.locked,
     done: s.done,
+    skills: s.skills,
     results:
       m.type === 'quiz'
         ? { bestScore: p?.bestScore ?? null, maxScore: p?.maxScore ?? null, attempts: p?.attempts ?? 0, passed: !!p?.passedAt }

@@ -5,6 +5,7 @@ import { asc, eq, inArray } from 'drizzle-orm'
 import { auth } from '../auth.ts'
 import { db } from '../db/index.ts'
 import {
+  badgeAward,
   category,
   course,
   courseCompletion,
@@ -18,8 +19,10 @@ import {
 import { addMember, createGroup, enrollGroup, ensureDefaultMemberships } from '../services/groups.ts'
 import { loadModules, moduleBody, parseQuiz } from '../services/learning.ts'
 import { replaceModules } from '../services/modules-admin.ts'
+import { updateSkillLevels } from '../services/skills.ts'
 import {
   CATEGORIES,
+  CATEGORY_BADGE_ICONS,
   COURSE_TEMPLATES,
   CURATED_COURSES,
   CURATED_MODULES,
@@ -40,6 +43,8 @@ import {
  * - Idempotent: rows are matched by slug / e-mail and never duplicated; existing rows are left untouched.
  * - Never run it against production data.
  */
+const BADGE_TITLES = { beginner: 'Initié', intermediate: 'Praticien', advanced: 'Expert' } as const
+
 export async function seedFixtures({ students = 25, managers = 3 } = {}) {
   const faker = new Faker({ locale: [fr, en, base] })
   faker.seed(2026)
@@ -69,6 +74,7 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
           description: tpl.description(topic),
           category: cat,
           difficulty: tpl.difficulty,
+          badge: { name: `${BADGE_TITLES[tpl.difficulty]} ${topic}`, icon: CATEGORY_BADGE_ICONS[cat] ?? '🏅' },
           // Advanced courses are XP-gated (spec 049) and pay more.
           ...(tpl.difficulty === 'advanced' ? { xpRequired: 400, completionXp: 300 } : {}),
           visibility: faker.helpers.weightedArrayElement([
@@ -88,8 +94,10 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
   await db
     .insert(course)
     .values(
-      courseFixtures.map(({ category: cat, topic: _topic, ...c }) => ({
+      courseFixtures.map(({ category: cat, topic: _topic, badge, ...c }) => ({
         ...c,
+        badgeName: badge?.name ?? null,
+        badgeIcon: badge?.icon ?? null,
         categoryId: categoryIds.get(cat) ?? null,
         createdAt: faker.date.past({ years: 1, refDate }),
       })),
@@ -103,6 +111,9 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
       visibility: course.visibility,
       status: course.status,
       completionXp: course.completionXp,
+      difficulty: course.difficulty,
+      badgeName: course.badgeName,
+      badgeIcon: course.badgeIcon,
     })
     .from(course)
     .where(
@@ -119,7 +130,9 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
     const existing = await db.select({ id: courseModule.id }).from(courseModule).where(eq(courseModule.courseId, c.id)).limit(1)
     if (existing.length) continue
     const fixture = fixtureBySlug.get(c.slug)!
-    const modules = CURATED_MODULES[c.slug] ?? templateModules(fixture.topic ?? fixture.title, fixture.difficulty)
+    const topic = fixture.topic ?? fixture.title
+    const modules =
+      CURATED_MODULES[c.slug] ?? templateModules(topic, fixture.difficulty, [...new Set([fixture.category, slugify(topic)])])
     replaceModules(c.id, courseModulesSchema.parse({ modules }).modules)
   }
 
@@ -322,6 +335,21 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
       .values(xp)
       .onConflictDoNothing({ target: [xpEvent.userId, xpEvent.source, xpEvent.sourceKey] })
   }
+  // Specs 106, 113: what completing a course also gives (completeCourse does it for real completions).
+  const awards = completions.flatMap((cc) => {
+    const c = coursesById.get(cc.courseId!)!
+    return c.badgeName && c.badgeIcon
+      ? [{ userId: cc.userId, courseId: c.id, courseTitle: c.title, name: c.badgeName, icon: c.badgeIcon, awardedAt: cc.completedAt }]
+      : []
+  })
+  if (awards.length) {
+    await db.insert(badgeAward).values(awards).onConflictDoNothing({ target: [badgeAward.userId, badgeAward.courseId] })
+  }
+  db.transaction((tx) => {
+    for (const cc of [...completions].sort((a, b) => a.completedAt!.getTime() - b.completedAt!.getTime())) {
+      updateSkillLevels(tx, cc.userId, cc.courseId!, coursesById.get(cc.courseId!)!.difficulty)
+    }
+  })
 
   return {
     categories: CATEGORIES.length,

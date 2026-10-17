@@ -1,7 +1,7 @@
 import { useTranslation } from '@pupitre/i18n'
 import { PageHeader } from '@pupitre/ui'
 import { Card, CardDescription, CardHeader, CardTitle } from '@pupitre/ui/components/ui/card'
-import { BookOpenIcon, FolderTreeIcon, SettingsIcon, UsersIcon, UsersRoundIcon } from 'lucide-react'
+import { BookOpenIcon, FolderTreeIcon, SettingsIcon, TrophyIcon, UsersIcon, UsersRoundIcon } from 'lucide-react'
 import { Link } from 'react-router'
 
 /** Admin home: shortcuts to the sections (the real dashboard, spec 160, comes later). */
@@ -12,6 +12,7 @@ export function Dashboard() {
     { to: '/categories', title: t('nav.categories'), hint: t('dashboard.categoriesHint'), icon: FolderTreeIcon },
     { to: '/groups', title: t('nav.groups'), hint: t('dashboard.groupsHint'), icon: UsersRoundIcon },
     { to: '/users', title: t('nav.users'), hint: t('dashboard.usersHint'), icon: UsersIcon },
+    { to: '/leaderboard', title: t('nav.leaderboard'), hint: t('dashboard.leaderboardHint'), icon: TrophyIcon },
     { to: '/settings', title: t('nav.settings'), hint: t('dashboard.settingsHint'), icon: SettingsIcon },
   ]
   return (

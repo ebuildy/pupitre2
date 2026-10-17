@@ -64,6 +64,13 @@
       "when": 1792226528635,
       "tag": "0008_groups",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1792239560649,
+      "tag": "0009_badges_skills",
+      "breakpoints": true
     }
   ]
 }

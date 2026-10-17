@@ -8,6 +8,7 @@ import { SearchIcon } from 'lucide-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
+import { ContinueHero } from '../components/ContinueHero.tsx'
 import { CourseCard } from '../components/CourseCard.tsx'
 import { api } from '../lib/api.ts'
 
@@ -41,8 +42,10 @@ export function Catalogue() {
     update((next) => (debouncedSearch ? next.set('search', debouncedSearch) : next.delete('search')))
   }, [debouncedSearch])
 
+  const skill = params.get('skill') || undefined
   const query = {
     search: params.get('search') || undefined,
+    skill,
     difficulty: difficulty || undefined,
     category: categories.length ? categories : undefined,
   }
@@ -72,6 +75,27 @@ export function Catalogue() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={t('catalogue.title')} />
+
+      {!skill && !params.get('search') && <ContinueHero />}
+
+      {data?.skillFilter && (
+        <div
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/30 bg-secondary px-4 py-2 text-sm"
+          data-testid="skill-filter"
+        >
+          <span>
+            {data.skillFilter.level
+              ? t('catalogue.skillBanner', {
+                  skill: data.skillFilter.label,
+                  level: t(`common:skillLevels.${data.skillFilter.level === 'master' ? 'advanced' : data.skillFilter.level}`),
+                })
+              : t('catalogue.skillBannerAll', { skill: data.skillFilter.label })}
+          </span>
+          <Button variant="ghost" size="sm" onClick={() => update((next) => next.delete('skill'))}>
+            {t('catalogue.removeFilter')}
+          </Button>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative w-full sm:w-auto sm:min-w-0 sm:flex-1 sm:max-w-sm">

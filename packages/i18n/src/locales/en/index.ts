@@ -65,6 +65,12 @@ export const common = {
     course: 'Course completed',
     admin: 'Adjustment',
   },
+  skillLevels: {
+    beginner: 'Beginner',
+    intermediate: 'Intermediate',
+    advanced: 'Advanced',
+    master: '★ Master',
+  },
 } satisfies Messages<typeof fr.common>
 
 export const auth = {
@@ -132,6 +138,8 @@ export const app = {
     leaderboard: 'Leaderboard',
     profile: 'My profile',
     myGroups: 'My groups',
+    myBadges: 'My badges',
+    mySkills: 'My skills',
     managerSpace: 'My space',
   },
   catalogue: {
@@ -151,6 +159,14 @@ export const app = {
     completedBadge: 'Completed',
     xpRequired: '⚡ {{amount, number}} XP required',
     reward: '+{{amount, number}} XP',
+    skillBanner: '🎯 Courses for your level — {{skill}} ({{level}} and up)',
+    skillBannerAll: '🎯 Courses that develop “{{skill}}”',
+    removeFilter: '✕ Remove filter',
+    modules_one: '{{count}} module',
+    modules_other: '{{count}} modules',
+    progressLabel: '{{done}}/{{total}} modules · {{percent}}%',
+    heroLabel: 'Continue',
+    heroCta: 'Continue ▸',
   },
   course: {
     enroll: 'Enroll in this course',
@@ -191,6 +207,11 @@ export const app = {
     inlineQuizDone: '✓ Quiz',
     inlineQuizPending: '🧩 Quiz to pass',
     hiddenBadge: 'hidden',
+    badgeTitle: 'Course badge',
+    badgeEarnedBy_one: 'Earned by {{count}} learner',
+    badgeEarnedBy_other: 'Earned by {{count}} learners',
+    badgeEarned: '✓ Badge earned',
+    skillsTitle: 'Skills',
   },
   lesson: {
     modules: 'Modules',
@@ -258,6 +279,22 @@ export const app = {
     filteredEmpty: 'No course matches your filter.',
     details: 'Details',
     completedOn: 'Completed on {{date, datetime(dateStyle: medium)}}',
+    stats: {
+      enrolled: 'enrolled courses',
+      completed: 'completed courses',
+      modules: 'completed modules',
+      progress: 'overall progress',
+    },
+    statusLabel: 'Status',
+    statuses: {
+      all: 'All',
+      notStarted: 'Not started',
+      inProgress: 'In progress',
+      completed: 'Completed',
+    },
+    start: 'Start ▸',
+    continue: 'Continue ▸',
+    review: 'Review ▸',
   },
   myXp: {
     title: 'My XP',
@@ -282,6 +319,14 @@ export const app = {
     yourRank: 'Your position: #{{rank}} ({{xp, number}} XP)',
     notRanked: 'Earn XP to appear on the leaderboard.',
     loading: 'Loading the leaderboard…',
+    tabs: {
+      xp: 'XP',
+      badges: 'Badges',
+    },
+    badgesSubtitle: 'The learners who earned the most badges',
+    badgesEmpty: 'Nobody has earned a badge yet.',
+    badgeCount_one: '{{count}} badge',
+    badgeCount_other: '{{count}} badges',
   },
   profile: {
     title: 'My profile',
@@ -310,6 +355,9 @@ export const app = {
       remove: 'Remove picture',
       updated: 'Profile picture updated',
       urlInvalid: 'The address must start with http:// or https://',
+      badgeEmoji: 'Badge emoji',
+      badgeEmojiHelp: 'The icon of a badge you earned',
+      choose: 'Choose {{icon}}',
     },
     security: {
       title: 'Security',
@@ -333,6 +381,8 @@ export const app = {
     memberSince: 'Member since {{date, datetime(dateStyle: long)}}',
     completedCourses_one: '{{count}} course completed',
     completedCourses_other: '{{count}} courses completed',
+    badgesTitle: 'Badges earned',
+    badgesEmpty: 'No badges yet.',
   },
   myGroups: {
     title: 'My groups',
@@ -395,6 +445,53 @@ export const app = {
       members_other: '{{count}} members',
     },
   },
+  myBadges: {
+    title: 'My badges',
+    loading: 'Loading…',
+    stats: {
+      earned_one: 'Badge earned',
+      earned_other: 'Badges earned',
+      locked_one: 'Badge to unlock',
+      locked_other: 'Badges to unlock',
+      percent: '% Completed',
+    },
+    earnedTitle: 'Badges earned',
+    lockedTitle: 'To unlock',
+    notEarned: '🔒 Not earned',
+    earnedOn: 'Earned on {{date, datetime(dateStyle: medium)}}',
+    rarity_one: 'Earned by {{count}} learner',
+    rarity_other: 'Earned by {{count}} learners',
+    empty: 'No badges yet. Complete a course to earn one!',
+  },
+  mySkills: {
+    title: 'My skills',
+    loading: 'Loading…',
+    empty: 'No skills yet',
+    browse: 'Browse the catalogue',
+    coursesProgress: '{{completed}}/{{total}} courses',
+    inProgressTitle: 'In progress',
+    inProgress: 'In progress',
+  },
+  skill: {
+    back: '← Back',
+    loading: 'Loading…',
+    notFound: 'Skill not found',
+    intro: 'These courses contain modules that develop the “{{name}}” skill.',
+    yourLevel: 'Your level: {{level}}',
+    catalogue: 'See the courses for my level',
+    groups: {
+      beginner: 'Beginner',
+      intermediate: 'Intermediate',
+      advanced: 'Advanced',
+      other: 'Other',
+    },
+    modulesDone: '{{done}}/{{total}} modules',
+    status: {
+      completed: 'Done',
+      available: 'To do',
+      locked: 'Locked',
+    },
+  },
 } satisfies Messages<typeof fr.app>
 
 export const admin = {
@@ -405,6 +502,7 @@ export const admin = {
     categories: 'Categories',
     users: 'Users',
     groups: 'Groups',
+    leaderboard: 'Leaderboard',
     settings: 'Settings',
   },
   users: {
@@ -474,6 +572,7 @@ export const admin = {
     categoriesHint: 'Organize the catalogue into categories and subcategories',
     usersHint: 'Browse learners, their XP and quiz attempts',
     groupsHint: 'Groups, subgroups, members, managers and group enrollments',
+    leaderboardHint: 'Learners ranked by quiz score',
     settingsHint: 'Registration, password policy, profiles and sign-in',
   },
   categories: {
@@ -550,6 +649,11 @@ export const admin = {
       xpRequired: 'XP required to enroll',
       xpRequiredHelp: '0 = no requirement',
       completionXp: 'XP on completion',
+      badge: 'Badge',
+      badgeName: 'Badge name',
+      badgeIcon: 'Icon (emoji)',
+      badgeHelp: 'Awarded when the course is completed. Empty: no badge.',
+      badgeInvalid: 'The name and the icon (an emoji) go together',
       xpInvalid: 'XP must be whole numbers, 0 or more',
       visibility: 'Visibility',
       status: 'Status',
@@ -678,5 +782,14 @@ export const admin = {
     label: 'Search for a user',
     placeholder: 'Search for a user…',
     selectUser: 'Select a user from the list',
+  },
+  leaderboard: {
+    title: 'Overall leaderboard',
+    count_one: '{{count}} participant',
+    count_other: '{{count}} participants',
+    loading: 'Loading…',
+    empty: 'No participants',
+    detail: '{{courses}} courses · {{modules}} modules passed',
+    score: '{{score, number}} pts',
   },
 } satisfies Messages<typeof fr.admin>

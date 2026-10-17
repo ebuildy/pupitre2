@@ -117,7 +117,7 @@ export function QuizForm({
           key={q.key}
           id={`question-${i + 1}`}
           className={cn(
-            'scroll-mt-24 rounded-xl border bg-card p-5 shadow-xs transition-colors',
+            'scroll-mt-32 rounded-xl border bg-card p-5 shadow-xs transition-colors',
             answers[q.key] !== undefined && 'border-primary/40',
           )}
         >
@@ -165,7 +165,7 @@ export function QuizForm({
         {error}
         <div className="lg:hidden">{submitButton}</div>
       </div>
-      <aside className="hidden flex-col gap-3 self-start rounded-xl border bg-card p-4 shadow-xs lg:sticky lg:top-24 lg:flex">
+      <aside className="hidden flex-col gap-3 self-start rounded-xl border bg-card p-4 shadow-xs lg:sticky lg:top-32 lg:flex">
         <h2 className="font-semibold">{t('quiz.navigation')}</h2>
         <div className="flex flex-wrap gap-2">
           {quiz.questions.map((q, i) => (

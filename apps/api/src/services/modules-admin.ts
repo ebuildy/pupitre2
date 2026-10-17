@@ -4,14 +4,16 @@ import { eq, inArray } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import type { z } from 'zod'
 import { db } from '../db/index.ts'
-import { courseModule, modulePrerequisite } from '../db/schema/index.ts'
+import { courseModule, modulePrerequisite, moduleSkill } from '../db/schema/index.ts'
 import { InvalidQuizError, loadModules, parseQuiz } from './learning.ts'
+import { ensureSkills, moduleSkills } from './skills.ts'
 
 type ParsedModules = z.output<typeof courseModulesSchema>['modules']
 
 export async function adminModules(courseId: string): Promise<AdminModule[]> {
   const { modules, prerequisites } = await loadModules(courseId)
   const slugById = new Map(modules.map((m) => [m.id, m.slug]))
+  const skills = moduleSkills(modules.map((m) => m.id))
   return modules.map((m) => ({
     id: m.id,
     slug: m.slug,
@@ -20,6 +22,7 @@ export async function adminModules(courseId: string): Promise<AdminModule[]> {
     hidden: m.hidden,
     inline: m.inline,
     prerequisites: (prerequisites.get(m.id) ?? []).map((id) => slugById.get(id)!),
+    skills: (skills.get(m.id) ?? []).map((sk) => sk.slug),
     content:
       m.sourceRepo && m.sourcePath
         ? { kind: 'source', repo: m.sourceRepo, ref: m.sourceRef ?? 'main', path: m.sourcePath }
@@ -82,6 +85,14 @@ export function replaceModules(courseId: string, modules: ParsedModules) {
     if (allIds.length) tx.delete(modulePrerequisite).where(inArray(modulePrerequisite.moduleId, allIds)).run()
     const links = modules.flatMap((m) => m.prerequisites.map((p) => ({ moduleId: ids.get(m.slug)!, requiresModuleId: ids.get(p)! })))
     if (links.length) tx.insert(modulePrerequisite).values(links).run()
+
+    // Spec 110: skills, created on the fly.
+    if (allIds.length) tx.delete(moduleSkill).where(inArray(moduleSkill.moduleId, allIds)).run()
+    const skillIds = ensureSkills(modules.flatMap((m) => m.skills), tx)
+    const skillLinks = modules.flatMap((m) =>
+      [...new Set(m.skills)].map((slug) => ({ moduleId: ids.get(m.slug)!, skillId: skillIds.get(slug)! })),
+    )
+    if (skillLinks.length) tx.insert(moduleSkill).values(skillLinks).run()
   })
 }
 

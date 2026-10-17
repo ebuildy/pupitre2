@@ -61,6 +61,9 @@ export const course = sqliteTable(
     completionXp: integer().notNull().default(DEFAULT_COMPLETION_XP),
     visibility: text({ enum: COURSE_VISIBILITIES }).notNull().default('private'),
     status: text({ enum: COURSE_STATUSES }).notNull().default('draft'),
+    /** Spec 106: badge awarded on completion (both set, or neither). */
+    badgeName: text(),
+    badgeIcon: text(),
     ...timestamps(),
   },
   (t) => [index('course_status_visibility_idx').on(t.status, t.visibility), index('course_category_idx').on(t.categoryId)],

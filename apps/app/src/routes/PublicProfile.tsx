@@ -13,6 +13,11 @@ export function PublicProfile() {
     queryKey: ['user', id],
     queryFn: () => unwrap(api.api.users[':id'].$get({ param: { id } })),
   })
+  const badges = useQuery({
+    queryKey: ['user-badges', id],
+    queryFn: () => unwrap(api.api.users[':id'].badges.$get({ param: { id } })),
+    enabled: !!data,
+  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -43,6 +48,29 @@ export function PublicProfile() {
             </div>
           </CardContent>
         </Card>
+      )}
+      {data && badges.data && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-lg font-semibold">{t('publicProfile.badgesTitle')}</h2>
+          {badges.data.badges.length === 0 ? (
+            <p className="text-muted-foreground">{t('publicProfile.badgesEmpty')}</p>
+          ) : (
+            <ul className="grid gap-3 sm:grid-cols-2" aria-label={t('publicProfile.badgesTitle')}>
+              {badges.data.badges.map((b, i) => (
+                <li key={i} className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-xs">
+                  <span className="text-3xl" aria-hidden="true">
+                    {b.icon}
+                  </span>
+                  <span className="flex min-w-0 flex-col">
+                    <span className="font-semibold">{b.name}</span>
+                    <span className="truncate text-sm text-muted-foreground">{b.course?.title ?? b.courseTitle}</span>
+                    <span className="text-xs text-muted-foreground">{t('myBadges.earnedOn', { date: new Date(b.earnedAt) })}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
     </div>
   )

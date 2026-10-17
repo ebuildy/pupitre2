@@ -3,6 +3,7 @@ import { and, asc, count, eq, inArray, like, min, or, type SQL, sql } from 'driz
 import { db } from '../db/index.ts'
 import { category, course, enrollmentGrant } from '../db/schema/index.ts'
 import { type CategoryTree, ref } from './categories.ts'
+import { courseExtras } from './skills.ts'
 
 export type Course = typeof course.$inferSelect
 
@@ -19,11 +20,20 @@ function textSearch(search: string | undefined, ...columns: Parameters<typeof li
   return or(...columns.map((col) => sql`${col} LIKE ${pattern} ESCAPE '\\'`))
 }
 
+export type CourseExtras = ReturnType<typeof courseExtras>
+
+export function badgeOf(c: Course) {
+  return c.badgeName && c.badgeIcon ? { name: c.badgeName, icon: c.badgeIcon } : null
+}
+
+/** `extras`: skills, module counts and progress of a batch of courses (`courseExtras`), loaded once per request. */
 export function toSummary(
   c: Course,
   tree: CategoryTree,
   state: { enrolled: boolean; completed: boolean } = { enrolled: false, completed: false },
+  extras?: CourseExtras,
 ): CourseSummary {
+  const total = extras?.moduleCount.get(c.id) ?? 0
   return {
     slug: c.slug,
     title: c.title,
@@ -33,6 +43,10 @@ export function toSummary(
     xpRequired: c.xpRequired,
     completionXp: c.completionXp,
     ...state,
+    badge: badgeOf(c),
+    skills: extras?.skills.get(c.id) ?? [],
+    moduleCount: total,
+    progress: state.enrolled && extras ? { done: Math.min(extras.done.get(c.id) ?? 0, total), total } : null,
   }
 }
 
@@ -49,6 +63,7 @@ export function toAdminCourse(c: Course, enrollmentCount: number, tree: Category
     completionXp: c.completionXp,
     visibility: c.visibility,
     status: c.status,
+    badge: badgeOf(c),
     enrollmentCount,
     createdAt: c.createdAt.toISOString(),
     updatedAt: c.updatedAt.toISOString(),
@@ -67,13 +82,23 @@ export async function enrolledCourseIds(userId: string, courseIds?: string[]) {
   return new Set(rows.map((r) => r.courseId))
 }
 
+/** Ids of the published courses teaching the skill `slug` through a visible module (spec 042). */
+export function courseIdsWithSkill(slug: string) {
+  const rows = db.all<{ id: string }>(sql`
+    SELECT DISTINCT m.course_id AS id FROM module_skill ms
+    JOIN module m ON m.id = ms.module_id AND m.hidden = 0
+    JOIN skill s ON s.id = ms.skill_id
+    WHERE s.slug = ${slug}`)
+  return rows.map((r) => r.id)
+}
+
 /**
  * Spec 040: published public courses, filtered in SQL. `categories` are category slugs (OR); each one also
  * matches the courses of its subcategories. Unknown slugs match nothing.
  */
 export async function listCatalogue(
   tree: CategoryTree,
-  filters: { search?: string; difficulty?: Difficulty; categories?: string[] },
+  filters: { search?: string; difficulty?: Difficulty; categories?: string[]; courseIds?: string[]; minDifficulty?: number },
 ) {
   // A search term also matches every course filed under a category whose title contains it (subcategories included).
   const term = filters.search?.trim().toLocaleLowerCase()
@@ -86,6 +111,11 @@ export async function listCatalogue(
     eq(course.visibility, 'public'),
     search && matchingCategoryIds.length ? or(search, inArray(course.categoryId, matchingCategoryIds)) : search,
     filters.difficulty ? eq(course.difficulty, filters.difficulty) : undefined,
+    // Spec 042: courses teaching a skill, at or above the learner's level.
+    filters.courseIds ? (filters.courseIds.length ? inArray(course.id, filters.courseIds) : sql`0`) : undefined,
+    filters.minDifficulty && filters.minDifficulty > 1
+      ? inArray(course.difficulty, (['beginner', 'intermediate', 'advanced'] as const).slice(filters.minDifficulty - 1))
+      : undefined,
   ]
 
   // Chip counts: per category, then rolled up to the top-level categories.
@@ -182,10 +212,14 @@ export async function revoke(userId: string, courseId: string, sources: Enrollme
     )
 }
 
-/** Spec 052: the user's enrolled courses (drafts excluded), with their enrollment date. */
+/** Spec 052: the user's enrolled courses (drafts excluded), with their enrollment date and last activity. */
 export async function listMyCourses(userId: string) {
+  const lastActivity = sql<number | null>`(
+    SELECT max(p.last_activity_at) FROM module_progress p JOIN module m ON m.id = p.module_id
+    WHERE p.user_id = ${userId} AND m.course_id = ${course.id}
+  )`
   return db
-    .select({ course, enrolledAt: min(enrollmentGrant.createdAt).mapWith(Number) })
+    .select({ course, enrolledAt: min(enrollmentGrant.createdAt).mapWith(Number), lastActivity })
     .from(enrollmentGrant)
     .innerJoin(course, eq(course.id, enrollmentGrant.courseId))
     .where(and(eq(enrollmentGrant.userId, userId), inArray(course.status, ['published', 'archived'])))

@@ -3,7 +3,7 @@
 
 /* Rendered course content (sanitized HTML from the API, spec 058), on top of the typography plugin. */
 .content :where(h1, h2, h3) {
-  scroll-margin-top: 1rem;
+  scroll-margin-top: 8rem;
 }
 /* The typography plugin wraps inline code in literal backticks. */
 .content code::before,

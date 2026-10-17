@@ -40,7 +40,12 @@ export function ModuleList({ courseSlug, modules }: { courseSlug: string; module
               >
                 <Icon className="size-4" />
               </span>
-              <span className={cn('min-w-0 flex-1 truncate font-medium', m.locked && 'text-muted-foreground')}>{m.name}</span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className={cn('truncate font-medium', m.locked && 'text-muted-foreground')}>{m.name}</span>
+                {m.skills.length > 0 && (
+                  <span className="truncate text-xs text-muted-foreground">{m.skills.map((s) => `🎯 ${s.label}`).join(' · ')}</span>
+                )}
+              </span>
               <span className="flex flex-wrap justify-end gap-1">
                 {m.hidden && (
                   <Badge variant="destructive" className="bg-destructive/15 text-destructive">

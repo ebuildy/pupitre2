@@ -102,6 +102,9 @@ function AvatarDialog({ me, open, onOpenChange }: { me: MeResponse; open: boolea
   const update = useUpdateProfile()
   const [url, setUrl] = useState(me.image && isImageUrl(me.image) ? me.image : '')
   const [invalid, setInvalid] = useState(false)
+  // Spec 035: the icons of earned badges can be picked as avatar.
+  const badges = useQuery({ queryKey: ['my-badges'], queryFn: () => unwrap(api.api.my.badges.$get()), enabled: open })
+  const icons = [...new Set(badges.data?.earned.map((b) => b.icon) ?? [])]
 
   function save(image: string) {
     update.mutate(
@@ -147,6 +150,28 @@ function AvatarDialog({ me, open, onOpenChange }: { me: MeResponse; open: boolea
           </div>
           {invalid && <p className="text-sm text-destructive">{t('profile.avatar.urlInvalid')}</p>}
         </form>
+        {icons.length > 0 && (
+          <section className="flex flex-col gap-2" aria-label={t('profile.avatar.badgeEmoji')}>
+            <h3 className="text-sm font-medium">{t('profile.avatar.badgeEmoji')}</h3>
+            <p className="text-xs text-muted-foreground">{t('profile.avatar.badgeEmojiHelp')}</p>
+            <div className="flex flex-wrap gap-2">
+              {icons.map((icon) => (
+                <Button
+                  key={icon}
+                  type="button"
+                  variant={me.image === icon ? 'default' : 'outline'}
+                  size="icon"
+                  className="text-xl"
+                  disabled={update.isPending}
+                  aria-label={t('profile.avatar.choose', { icon })}
+                  onClick={() => save(icon)}
+                >
+                  {icon}
+                </Button>
+              ))}
+            </div>
+          </section>
+        )}
         {me.image && (
           <DialogFooter>
             <Button variant="outline" onClick={() => save('')} disabled={update.isPending}>

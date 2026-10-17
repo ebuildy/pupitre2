@@ -7,6 +7,7 @@ import {
   DEFAULT_COMPLETION_XP,
   DIFFICULTIES,
   SLUG_PATTERN,
+  badgeSchema,
 } from '@pupitre/shared'
 import { type FormEvent, useState } from 'react'
 import { flattenTree, useCategories } from '../../lib/categories.ts'
@@ -17,10 +18,10 @@ import { buttonVariants } from '@pupitre/ui/components/ui/button'
 
 // Form state: text inputs hold strings (numbers are parsed on submit).
 type Values = Required<{
-  [K in keyof CourseCreateInput]: NonNullable<CourseCreateInput[K]> extends number
+  [K in Exclude<keyof CourseCreateInput, 'badge'>]: NonNullable<CourseCreateInput[K]> extends number
     ? string
     : NonNullable<CourseCreateInput[K]> | ''
-}>
+}> & { badgeName: string; badgeIcon: string }
 
 function initialValues(course?: AdminCourse): Values {
   return {
@@ -33,6 +34,8 @@ function initialValues(course?: AdminCourse): Values {
     completionXp: String(course?.completionXp ?? DEFAULT_COMPLETION_XP),
     visibility: course?.visibility ?? 'private',
     status: course?.status ?? 'draft',
+    badgeName: course?.badge?.name ?? '',
+    badgeIcon: course?.badge?.icon ?? '',
   }
 }
 
@@ -51,7 +54,7 @@ export function CourseForm({
   const { t } = useTranslation(['admin', 'common'])
   const [values, setValues] = useState(() => initialValues(course))
   const categories = useCategories()
-  const [invalid, setInvalid] = useState<'titleRequired' | 'slugInvalid' | 'xpInvalid' | null>(null)
+  const [invalid, setInvalid] = useState<'titleRequired' | 'slugInvalid' | 'xpInvalid' | 'badgeInvalid' | null>(null)
 
   const set = (key: keyof Values) => (e: { target: { value: string } }) =>
     setValues((v) => ({ ...v, [key]: e.target.value }))
@@ -63,6 +66,11 @@ export function CourseForm({
     const xpRequired = Number(values.xpRequired || 0)
     const completionXp = Number(values.completionXp || 0)
     if (![xpRequired, completionXp].every((n) => Number.isInteger(n) && n >= 0)) return setInvalid('xpInvalid')
+    const badgeName = values.badgeName.trim()
+    const badgeIcon = values.badgeIcon.trim()
+    if (!!badgeName !== !!badgeIcon || (badgeIcon && !badgeSchema.shape.icon.safeParse(badgeIcon).success)) {
+      return setInvalid('badgeInvalid')
+    }
     setInvalid(null)
     onSubmit({
       slug: values.slug.trim(),
@@ -74,6 +82,7 @@ export function CourseForm({
       completionXp,
       visibility: values.visibility || 'private',
       status: values.status || 'draft',
+      badge: badgeName ? { name: badgeName, icon: badgeIcon } : null,
     })
   }
 
@@ -171,6 +180,20 @@ export function CourseForm({
           />
         </label>
       </div>
+      <fieldset className="flex flex-col gap-2 rounded-lg border p-4">
+        <legend className="px-1 text-sm font-medium">{t('courses.form.badge')}</legend>
+        <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+          <label className={label}>
+            {t('courses.form.badgeName')}
+            <Input value={values.badgeName} onChange={set('badgeName')} className={field} />
+          </label>
+          <label className={label}>
+            {t('courses.form.badgeIcon')}
+            <Input value={values.badgeIcon} onChange={set('badgeIcon')} placeholder="🏅" className={field} />
+          </label>
+        </div>
+        <span className="text-xs text-muted-foreground">{t('courses.form.badgeHelp')}</span>
+      </fieldset>
       <button
         type="submit"
         disabled={pending}

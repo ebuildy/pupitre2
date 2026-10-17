@@ -99,7 +99,12 @@ Category icon, category path ("DevOps › Docker"), title, "⚡ N XP requis" whe
 - Visibility is the target model (spec 191: visibility + status) instead of `public` + an unused `hidden` flag.
 - Courses have an id and a mutable slug (the original slug was immutable).
 - Categories are managed objects (a tree with titles) instead of free-text slugs with built-in French labels.
-- Not yet: thumbnails, skills and the skill filter (042), prerequisites (050), in-person sessions, badges, module count, progress bar on cards, "continue learning" hero (043).
+- Not yet: thumbnails, prerequisites (050), in-person sessions.
+
+## Card, hero (specs 043, 044)
+
+- Cards: icon inferred from skills and title keywords (pentest 🔐, security 🛡️, linux/bash 🐧, kubernetes ☸️, docker 🐋, git/devops ⚙️, python 🐍, network 🌐, cloud ☁️, database 🗄️…), else the category's; badge icon before the title; module count; progress bar "x/y modules · p %" when enrolled; up to 3 skill chips.
+- "Reprendre" hero at the top of the catalogue (signed in, no search or skill filter): the most recently worked-on course in progress, else the first open enrolled course; title, progress, "Continuer ▸".
 
 ## Source
 

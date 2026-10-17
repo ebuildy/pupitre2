@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { type Badge, badgeSchema, type SkillLevel, type SkillRef } from './gamification.ts'
 
 export const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'] as const
 export type Difficulty = (typeof DIFFICULTIES)[number]
@@ -52,6 +53,8 @@ export const courseCreateSchema = z.object({
   completionXp: z.number().int().min(0).max(100_000).optional(),
   visibility: z.enum(COURSE_VISIBILITIES).default('private'),
   status: z.enum(COURSE_STATUSES).default('draft'),
+  /** Spec 106: awarded on completion. */
+  badge: badgeSchema.nullable().optional(),
 })
 export type CourseCreateInput = z.input<typeof courseCreateSchema>
 
@@ -82,6 +85,12 @@ export type CourseSummary = {
   enrolled: boolean
   /** Signed-in user completed the course. */
   completed: boolean
+  badge: Badge | null
+  /** Spec 110: union of the skills of its visible modules. */
+  skills: SkillRef[]
+  moduleCount: number
+  /** Enrolled users: visible modules done (spec 044). */
+  progress: { done: number; total: number } | null
 }
 
 /** `GET /api/courses` */
@@ -93,6 +102,8 @@ export type CourseListResponse = {
    * `count` includes the courses of subcategories.
    */
   categories: (CategoryRef & { count: number })[]
+  /** Spec 042: the `skill` filter, with the viewer's level in it ("Cours adaptés à ton niveau"). */
+  skillFilter: (SkillRef & { level: SkillLevel | null }) | null
 }
 
 /** `GET /api/courses/:slug` */
@@ -111,7 +122,13 @@ export type CourseDetail = CourseSummary & {
 
 /** `GET /api/my/courses` */
 export type MyCoursesResponse = {
-  courses: (CourseSummary & { status: CourseStatus; enrolledAt: string; completedAt: string | null })[]
+  courses: (CourseSummary & {
+    status: CourseStatus
+    enrolledAt: string
+    completedAt: string | null
+    /** Last module viewed or quiz submitted. */
+    lastActivityAt: string | null
+  })[]
 }
 
 /** A course as shown to admins. */
@@ -127,6 +144,7 @@ export type AdminCourse = {
   completionXp: number
   visibility: CourseVisibility
   status: CourseStatus
+  badge: Badge | null
   enrollmentCount: number
   createdAt: string
   updatedAt: string

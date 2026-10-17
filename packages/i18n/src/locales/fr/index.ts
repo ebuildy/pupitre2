@@ -66,6 +66,13 @@ export const common = {
     course: 'Cours terminé',
     admin: 'Ajustement',
   },
+  // Spec 113
+  skillLevels: {
+    beginner: 'Débutant',
+    intermediate: 'Intermédiaire',
+    advanced: 'Avancé',
+    master: '★ Maître',
+  },
 }
 
 export const auth = {
@@ -135,6 +142,8 @@ export const app = {
     leaderboard: 'Classement',
     profile: 'Mon profil',
     myGroups: 'Mes groupes',
+    myBadges: 'Mes badges',
+    mySkills: 'Mes compétences',
     managerSpace: 'Mon espace',
   },
   // Spec 041
@@ -155,6 +164,17 @@ export const app = {
     completedBadge: 'Terminé',
     xpRequired: '⚡ {{amount, number}} XP requis',
     reward: '+{{amount, number}} XP',
+    // Spec 042
+    skillBanner: '🎯 Cours adaptés à ton niveau — {{skill}} ({{level}} et +)',
+    skillBannerAll: '🎯 Cours qui développent « {{skill}} »',
+    removeFilter: '✕ Retirer le filtre',
+    // Spec 044
+    modules_one: '{{count}} module',
+    modules_other: '{{count}} modules',
+    progressLabel: '{{done}}/{{total}} modules · {{percent}} %',
+    // Spec 043
+    heroLabel: 'Reprendre',
+    heroCta: 'Continuer ▸',
   },
   // Specs 045, 047
   course: {
@@ -197,6 +217,12 @@ export const app = {
     inlineQuizDone: '✓ Quiz',
     inlineQuizPending: '🧩 Quiz à valider',
     hiddenBadge: 'masqué',
+    // Specs 106, 109, 110
+    badgeTitle: 'Badge du cours',
+    badgeEarnedBy_one: 'Obtenu par {{count}} apprenant',
+    badgeEarnedBy_other: 'Obtenu par {{count}} apprenants',
+    badgeEarned: '✓ Badge obtenu',
+    skillsTitle: 'Compétences',
   },
   // Specs 056, 057, 067
   lesson: {
@@ -267,6 +293,22 @@ export const app = {
     filteredEmpty: 'Aucun cours ne correspond à votre filtre.',
     details: 'Détails',
     completedOn: 'Terminé le {{date, datetime(dateStyle: medium)}}',
+    stats: {
+      enrolled: 'cours inscrits',
+      completed: 'cours terminés',
+      modules: 'modules terminés',
+      progress: 'progression globale',
+    },
+    statusLabel: 'Statut',
+    statuses: {
+      all: 'Tous',
+      notStarted: 'Non commencés',
+      inProgress: 'En cours',
+      completed: 'Terminés',
+    },
+    start: 'Commencer ▸',
+    continue: 'Continuer ▸',
+    review: 'Revoir ▸',
   },
   // Spec 105
   myXp: {
@@ -292,6 +334,14 @@ export const app = {
     yourRank: 'Votre position : #{{rank}} ({{xp, number}} XP)',
     notRanked: 'Gagnez de l’XP pour apparaître dans le classement.',
     loading: 'Chargement du classement…',
+    tabs: {
+      xp: 'XP',
+      badges: 'Badges',
+    },
+    badgesSubtitle: 'Les apprenants qui ont obtenu le plus de badges',
+    badgesEmpty: 'Personne n’a encore obtenu de badge.',
+    badgeCount_one: '{{count}} badge',
+    badgeCount_other: '{{count}} badges',
   },
   // Specs 035, 036
   profile: {
@@ -321,6 +371,9 @@ export const app = {
       remove: 'Retirer la photo',
       updated: 'Photo de profil mise à jour',
       urlInvalid: 'L’adresse doit commencer par http:// ou https://',
+      badgeEmoji: 'Emoji de badge',
+      badgeEmojiHelp: 'L’icône d’un badge que vous avez obtenu',
+      choose: 'Choisir {{icon}}',
     },
     security: {
       title: 'Sécurité',
@@ -345,6 +398,8 @@ export const app = {
     memberSince: 'Membre depuis le {{date, datetime(dateStyle: long)}}',
     completedCourses_one: '{{count}} cours terminé',
     completedCourses_other: '{{count}} cours terminés',
+    badgesTitle: 'Badges obtenus',
+    badgesEmpty: "Aucun badge pour l'instant.",
   },
   // Spec 136
   myGroups: {
@@ -409,6 +464,55 @@ export const app = {
       members_other: '{{count}} membres',
     },
   },
+  // Specs 106, 107
+  myBadges: {
+    title: 'Mes badges',
+    loading: 'Chargement…',
+    stats: {
+      earned_one: 'Badge obtenu',
+      earned_other: 'Badges obtenus',
+      locked_one: 'Badge à débloquer',
+      locked_other: 'Badges à débloquer',
+      percent: '% Complété',
+    },
+    earnedTitle: 'Badges obtenus',
+    lockedTitle: 'À débloquer',
+    notEarned: '🔒 Non obtenu',
+    earnedOn: 'Obtenu le {{date, datetime(dateStyle: medium)}}',
+    rarity_one: 'Obtenu par {{count}} apprenant',
+    rarity_other: 'Obtenu par {{count}} apprenants',
+    empty: "Aucun badge pour l'instant. Terminez un cours pour en gagner !",
+  },
+  // Specs 111–114
+  mySkills: {
+    title: 'Mes compétences',
+    loading: 'Chargement…',
+    empty: "Aucune compétence pour l'instant",
+    browse: 'Découvrir le catalogue',
+    coursesProgress: '{{completed}}/{{total}} cours',
+    inProgressTitle: 'En cours',
+    inProgress: 'En cours',
+  },
+  skill: {
+    back: '← Retour',
+    loading: 'Chargement…',
+    notFound: 'Compétence introuvable',
+    intro: 'Ces cours contiennent des modules qui développent la compétence « {{name}} ».',
+    yourLevel: 'Votre niveau : {{level}}',
+    catalogue: 'Voir les cours adaptés à mon niveau',
+    groups: {
+      beginner: 'Débutant',
+      intermediate: 'Intermédiaire',
+      advanced: 'Avancé',
+      other: 'Autre',
+    },
+    modulesDone: '{{done}}/{{total}} modules',
+    status: {
+      completed: 'Terminé',
+      available: 'À faire',
+      locked: 'Verrouillé',
+    },
+  },
 }
 
 export const admin = {
@@ -419,6 +523,7 @@ export const admin = {
     categories: 'Catégories',
     users: 'Utilisateurs',
     groups: 'Groupes',
+    leaderboard: 'Classement',
     settings: 'Paramètres',
   },
   users: {
@@ -488,6 +593,7 @@ export const admin = {
     categoriesHint: 'Organiser le catalogue en catégories et sous-catégories',
     usersHint: 'Consulter les apprenants, leur XP et leurs tentatives de quiz',
     groupsHint: 'Groupes, sous-groupes, membres, managers et inscriptions de groupe',
+    leaderboardHint: 'Les apprenants classés par score aux quiz',
     settingsHint: 'Inscriptions, politique de mot de passe, profils et connexion',
   },
   categories: {
@@ -565,6 +671,11 @@ export const admin = {
       xpRequired: 'XP requis pour s’inscrire',
       xpRequiredHelp: '0 = aucune condition',
       completionXp: 'XP à l’achèvement',
+      badge: 'Badge',
+      badgeName: 'Nom du badge',
+      badgeIcon: 'Icône (emoji)',
+      badgeHelp: 'Attribué à l’achèvement du cours. Vide : pas de badge.',
+      badgeInvalid: 'Le nom et l’icône (un emoji) vont ensemble',
       xpInvalid: 'Les XP doivent être des nombres entiers positifs',
       visibility: 'Visibilité',
       status: 'Statut',
@@ -696,5 +807,15 @@ export const admin = {
     label: 'Rechercher un utilisateur',
     placeholder: 'Rechercher un utilisateur…',
     selectUser: 'Sélectionnez un utilisateur dans la liste',
+  },
+  // Spec 115
+  leaderboard: {
+    title: 'Classement général',
+    count_one: '{{count}} participant',
+    count_other: '{{count}} participants',
+    loading: 'Chargement…',
+    empty: 'Aucun participant',
+    detail: '{{courses}} cours · {{modules}} modules validés',
+    score: '{{score, number}} pts',
   },
 }
