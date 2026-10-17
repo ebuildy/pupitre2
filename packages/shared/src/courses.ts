@@ -11,8 +11,11 @@ export type CourseVisibility = (typeof COURSE_VISIBILITIES)[number]
 export const COURSE_STATUSES = ['draft', 'published', 'archived'] as const
 export type CourseStatus = (typeof COURSE_STATUSES)[number]
 
-/** Why a user has access to a course. More sources (group, path, …) come with their features. */
-export const ENROLLMENT_SOURCES = ['self', 'admin'] as const
+/**
+ * Why a user has access to a course (spec 191). `group` and `path` grants carry the group / path id (`via`) and are
+ * kept in sync with memberships and group/path enrollments.
+ */
+export const ENROLLMENT_SOURCES = ['self', 'auto', 'admin', 'manager', 'group', 'path'] as const
 export type EnrollmentSource = (typeof ENROLLMENT_SOURCES)[number]
 
 /** Spec 185. */

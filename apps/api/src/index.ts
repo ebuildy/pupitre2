@@ -4,6 +4,7 @@ import { ensureAdmin } from './bootstrap/admin.ts'
 import { sqlite } from './db/index.ts'
 import { runMigrations } from './db/migrate.ts'
 import { env } from './env.ts'
+import { ensureDefaultMemberships } from './services/groups.ts'
 
 runMigrations()
 await ensureAdmin()
@@ -12,6 +13,8 @@ if (env.SEED_DEV_DATA) {
   const { seedFixtures } = await import('./fixtures/index.ts')
   console.log('fixtures loaded:', await seedFixtures())
 }
+// Spec 038: accounts created before the default group existed, or outside better-auth.
+ensureDefaultMemberships()
 
 const server = serve({ fetch: app.fetch, port: env.PORT }, (info) => {
   console.log(`api listening on http://localhost:${info.port}`)

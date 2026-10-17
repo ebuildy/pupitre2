@@ -11,6 +11,8 @@ import { env } from './env.ts'
 import { type AppEnv, sessionMiddleware } from './middleware/session.ts'
 import { adminRoutes } from './routes/admin/index.ts'
 import { courseRoutes, enrollmentRoutes, leaderboardRoutes, myRoutes } from './routes/courses.ts'
+import { myGroupRoutes } from './routes/groups.ts'
+import { managerRoutes } from './routes/manager.ts'
 import { meRoutes } from './routes/me.ts'
 import { moduleRoutes } from './routes/modules.ts'
 import { settingsRoutes, userRoutes } from './routes/users.ts'
@@ -57,6 +59,8 @@ const routes = app
   .route('/courses/:slug/modules', moduleRoutes)
   .route('/enrollments', enrollmentRoutes)
   .route('/my', myRoutes)
+  .route('/my/groups', myGroupRoutes)
+  .route('/manager', managerRoutes)
   .route('/leaderboard', leaderboardRoutes)
   .route('/users', userRoutes)
   .route('/settings', settingsRoutes)

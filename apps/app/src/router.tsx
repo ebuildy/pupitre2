@@ -1,5 +1,9 @@
 import { LoginPage, RegisterPage, RequireAuth } from '@pupitre/auth-ui'
 import { createBrowserRouter, Navigate } from 'react-router'
+import { ManagerGroups } from './routes/manager/ManagerGroups.tsx'
+import { ManagerLayout } from './routes/manager/ManagerLayout.tsx'
+import { ManagerMembers } from './routes/manager/ManagerMembers.tsx'
+import { MyGroups } from './routes/MyGroups.tsx'
 import { demoAccounts } from './lib/demo-accounts.ts'
 import { Catalogue } from './routes/Catalogue.tsx'
 import { CourseDetail } from './routes/CourseDetail.tsx'
@@ -65,6 +69,27 @@ export const router = createBrowserRouter([
         ),
       },
       { path: 'users/:id', element: <PublicProfile /> },
+      {
+        path: 'my-groups',
+        element: (
+          <RequireAuth>
+            <MyGroups />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'manager',
+        element: (
+          <RequireAuth>
+            <ManagerLayout />
+          </RequireAuth>
+        ),
+        children: [
+          { index: true, element: <Navigate to="/manager/users" replace /> },
+          { path: 'users', element: <ManagerMembers /> },
+          { path: 'groups', element: <ManagerGroups /> },
+        ],
+      },
     ],
   },
 ])

@@ -14,6 +14,7 @@ import { eq, or, sql } from 'drizzle-orm'
 import { db } from './db/index.ts'
 import * as schema from './db/schema/index.ts'
 import { env } from './env.ts'
+import { joinDefaultGroup } from './services/groups.ts'
 import { getSettings } from './services/settings.ts'
 
 export const auth = betterAuth({
@@ -37,6 +38,12 @@ export const auth = betterAuth({
     },
   },
   databaseHooks: {
+    user: {
+      create: {
+        // Spec 038: every account is in the default group (and gets the courses it is enrolled in).
+        after: async (created) => joinDefaultGroup(created.id),
+      },
+    },
     session: {
       create: {
         // Runs after the password check: a deactivated account gets the same answer as a bad password (spec 023).

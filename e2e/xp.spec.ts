@@ -114,6 +114,7 @@ test.describe('XP-gated enrollment (spec 049)', () => {
 
     await admin(adminRequest).adjust(user.id, 150, 'Bonus')
     await page.reload()
+    await expect(page.getByText('Il vous manque', { exact: false })).toHaveCount(0)
     await page.getByRole('button', { name: "S'inscrire au cours" }).click()
     await expect(page.getByText(/^✓ Inscrit le/)).toBeVisible()
 

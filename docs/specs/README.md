@@ -25,5 +25,8 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | [052](052-my-courses.md) | "Mes cours" | Implemented (no progress yet) |
 | [053](053-course-content-and-quizzes.md) | Course content, progress and quizzes | Implemented (fake content loader) |
 | [103](103-xp.md) | XP, levels, course completion, XP gate and leaderboard | Implemented (completion marked by admins) |
+| [130](130-groups.md) | Groups, memberships, group enrollments, default group, "Mes groupes" | Implemented (SSO sync later) |
+| [140](140-manager-space.md) | Manager space: scope, members, groups | Implemented (paths, sessions later) |
+| [162](162-admin-users.md) | Admin: users (list, edit, deactivate, delete) | Implemented |
 | [165](165-admin-courses.md) | Admin: courses, categories and enrollments | Basic version |
 | [179](179-platform-settings.md) | Platform settings | Implemented (SSO keys with their features) |

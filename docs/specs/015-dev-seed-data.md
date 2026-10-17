@@ -64,6 +64,10 @@ exactly as with a manual login.
   use `pnpm db:reset`.
 - e2e tests do not use the fixtures: they create their own data (`e2e/fixtures.ts`).
 
+## Groups
+
+`GROUPS` in `fixtures/data.ts`: "Ingénierie" (managed by `manager`) with "Équipe Plateforme" (where `etudiant` is, enrolled in a Kubernetes course) and "Équipe Produit", and "Support"; generated managers manage the leaf groups, generated students are spread over them. Created once, matched by name.
+
 ## Differences from the original
 
 - One command and one variable (`SEED_DEV_DATA`) instead of `SEED_DEV_COURSES` (course-service) and `SEED_MOCK_DATA` (user-service).

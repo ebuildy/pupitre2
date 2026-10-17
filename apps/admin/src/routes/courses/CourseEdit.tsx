@@ -7,6 +7,7 @@ import { Link, useLocation, useParams } from 'react-router'
 import { adminApi } from '../../lib/api.ts'
 import { CourseForm } from './CourseForm.tsx'
 import { EnrollmentsPanel } from './EnrollmentsPanel.tsx'
+import { GroupEnrollmentsPanel } from './GroupEnrollmentsPanel.tsx'
 
 /** Spec 167 (edit) and 145 (enrollments). */
 export function CourseEdit() {
@@ -68,6 +69,7 @@ export function CourseEdit() {
             }}
           />
           <EnrollmentsPanel courseId={course.id} />
+          <GroupEnrollmentsPanel courseId={course.id} />
         </>
       )}
     </div>

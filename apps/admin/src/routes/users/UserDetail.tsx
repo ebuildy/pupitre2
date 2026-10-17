@@ -3,7 +3,10 @@ import type { XpAdjustmentInput } from '@pupitre/shared'
 import { isNotFound, LevelBadge, LoadingState, unwrap } from '@pupitre/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
+import { Badge } from '@pupitre/ui/components/ui/badge'
+import { Button } from '@pupitre/ui/components/ui/button'
+import { UserDeleteDialog, UserEditDialog, useSelfId } from '../../components/UserDialogs.tsx'
 import { adminApi } from '../../lib/api.ts'
 import { Input } from '@pupitre/ui/components/ui/input'
 import { buttonVariants } from '@pupitre/ui/components/ui/button'
@@ -17,6 +20,10 @@ export function UserDetail() {
   const [reason, setReason] = useState('')
   const [invalid, setInvalid] = useState<'amountInvalid' | 'reasonRequired' | null>(null)
   const [newTotal, setNewTotal] = useState<number | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const selfId = useSelfId()
+  const navigate = useNavigate()
 
   const { data: user, isPending, error } = useQuery({
     queryKey: ['admin-user', id],
@@ -65,13 +72,71 @@ export function UserDetail() {
         </p>
       ) : (
         <>
-          <header className="flex flex-col gap-1">
-            <h1 className="text-3xl font-bold tracking-tight">{user.username ?? user.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              {user.name} · {user.email} · {t(`common:roles.${user.role}`)}
-              {!user.isActive && <span className="ml-2 text-destructive">{t('users.inactive')}</span>}
-            </p>
+          <header className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <h1 className="text-3xl font-bold tracking-tight">{user.username ?? user.name}</h1>
+              <p className="text-sm text-muted-foreground">
+                {user.name} · {user.email} · {t(`common:roles.${user.role}`)}
+                {!user.isActive && <span className="ml-2 text-destructive">{t('users.inactive')}</span>}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setEditing(true)}>
+                {t('common:edit')}
+              </Button>
+              {user.id !== selfId && (
+                <Button variant="outline" className="text-destructive" onClick={() => setDeleting(true)}>
+                  {t('common:delete')}
+                </Button>
+              )}
+            </div>
           </header>
+          <UserEditDialog user={editing ? user : null} onClose={() => setEditing(false)} />
+          <UserDeleteDialog
+            user={deleting ? user : null}
+            onClose={() => setDeleting(false)}
+            onDeleted={() => navigate('/users', { replace: true })}
+          />
+
+          <div className="grid max-w-3xl gap-6 sm:grid-cols-2">
+            <section className="flex flex-col gap-2">
+              <h2 className="text-xl font-semibold tracking-tight">{t('users.groupsTitle')}</h2>
+              {user.groups.length === 0 ? (
+                <p className="text-muted-foreground">{t('users.groupsEmpty')}</p>
+              ) : (
+                <ul className="flex flex-col gap-1 text-sm" data-testid="user-groups">
+                  {user.groups.map((g) => (
+                    <li key={g.id} className="flex items-center gap-2">
+                      <Link to={`/groups/${g.id}`} className="hover:underline">
+                        {g.name}
+                      </Link>
+                      {g.isDefault && <span className="text-xs text-muted-foreground">({t('users.defaultGroup')})</span>}
+                      {g.role === 'manager' && <Badge variant="info">{t('common:membershipRoles.manager')}</Badge>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+            <section className="flex flex-col gap-2">
+              <h2 className="text-xl font-semibold tracking-tight">{t('users.coursesTitle')}</h2>
+              {user.courses.length === 0 ? (
+                <p className="text-muted-foreground">{t('users.coursesEmpty')}</p>
+              ) : (
+                <ul className="flex flex-col gap-1 text-sm" data-testid="user-courses">
+                  {user.courses.map((c) => (
+                    <li key={c.id} className="flex flex-wrap items-center gap-2">
+                      <Link to={`/courses/${c.id}`} className="hover:underline">
+                        {c.title}
+                      </Link>
+                      <span className="text-xs text-muted-foreground">
+                        {c.sources.map((s) => t(`courses.enrollments.sources.${s as 'self'}`)).join(', ')}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
 
           <section className="flex max-w-3xl flex-col gap-3">
             <h2 className="text-xl font-semibold tracking-tight">{t('users.xpTitle')}</h2>

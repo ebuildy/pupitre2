@@ -50,7 +50,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 035 | Edit profile | 🟡 | [035](docs/specs/035-profile.md) | emoji avatars from badges come with 106 |
 | 036 | Change password | ✅ | [035](docs/specs/035-profile.md) |  |
 | 037 | Public user profile | 🟡 | [035](docs/specs/035-profile.md) | badges come with 106 |
-| 038 | Default group and group-enrollment sync | ⬜ | | |
+| 038 | Default group and group-enrollment sync | 🟡 | [130](docs/specs/130-groups.md) | default group done; grants applied at once (no login sync needed); SSO later |
 
 ## Catalogue & course consumption
 
@@ -153,21 +153,21 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 
 | # | Feature | Status | Rewrite spec | Notes |
 | --- | --- | --- | --- | --- |
-| 130 | Groups model | ⬜ | | |
-| 131 | Admin group CRUD | ⬜ | | |
-| 132 | Subgroups and move | ⬜ | | |
-| 133 | Group membership | ⬜ | | |
-| 134 | Group role mappings | ⬜ | | |
-| 135 | Group course enrollment | ⬜ | | |
-| 136 | My groups page | ⬜ | | |
+| 130 | Groups model | ✅ | [130](docs/specs/130-groups.md) |  |
+| 131 | Admin group CRUD | ✅ | [130](docs/specs/130-groups.md) |  |
+| 132 | Subgroups and move | ✅ | [130](docs/specs/130-groups.md) |  |
+| 133 | Group membership | ✅ | [130](docs/specs/130-groups.md) |  |
+| 134 | Group role mappings | ⬜ |  | IdP role mappings, with SSO |
+| 135 | Group course enrollment | ✅ | [130](docs/specs/130-groups.md) | group grants applied immediately |
+| 136 | My groups page | ✅ | [130](docs/specs/130-groups.md) |  |
 
 ## Manager & enrollment administration
 
 | # | Feature | Status | Rewrite spec | Notes |
 | --- | --- | --- | --- | --- |
-| 140 | Manager scope | ⬜ | | |
-| 141 | Manager members page | ⬜ | | |
-| 142 | Manager groups page | ⬜ | | |
+| 140 | Manager scope | ✅ | [140](docs/specs/140-manager-space.md) | scope = managed groups + subgroups; gaps fixed |
+| 141 | Manager members page | 🟡 | [140](docs/specs/140-manager-space.md) | path enrollments with paths (120) |
+| 142 | Manager groups page | ✅ | [140](docs/specs/140-manager-space.md) |  |
 | 143 | Manager paths page | ⬜ | | |
 | 145 | Admin course enrollments | ✅ | [165](docs/specs/165-admin-courses.md) | |
 
@@ -188,8 +188,8 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | --- | --- | --- | --- | --- |
 | 160 | Admin dashboard | 🟡 | | shortcut cards only, no stats |
 | 161 | Admin monitoring | ⬜ | | |
-| 162 | Admin user list | 🟡 | | list + search; no filters, no pagination |
-| 163 | Admin user edit / deactivate / delete | ⬜ | | |
+| 162 | Admin user list | ✅ | [162](docs/specs/162-admin-users.md) | role/status filters instead of provider tabs |
+| 163 | Admin user edit / deactivate / delete | ✅ | [162](docs/specs/162-admin-users.md) |  |
 | 165 | Admin course list | ✅ | [165](docs/specs/165-admin-courses.md) | |
 | 166 | Course create | ✅ | [165](docs/specs/165-admin-courses.md) | |
 | 167 | Course edit metadata | 🟡 | [165](docs/specs/165-admin-courses.md) | no badge, in-person, prerequisites |

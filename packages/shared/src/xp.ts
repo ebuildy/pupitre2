@@ -69,13 +69,27 @@ export type AdminUserSummary = {
   username: string | null
   name: string
   email: string
+  image: string | null
   role: 'student' | 'manager' | 'admin'
   isActive: boolean
   xp: number
+  /** Spec 162: number of courses the user is enrolled in. */
+  enrolledCourses: number
+  createdAt: string
 }
 
 export type AdminUserDetail = AdminUserSummary & {
-  createdAt: string
   history: XpEventView[]
   completions: { course: CategoryRef | null; title: string; completedAt: string }[]
+  groups: { id: string; name: string; role: 'member' | 'manager'; isDefault: boolean }[]
+  courses: { id: string; slug: string; title: string; sources: string[] }[]
 }
+
+/** `PATCH /api/admin/users/:id` (spec 163). */
+export const adminUserUpdateSchema = z
+  .object({
+    role: z.enum(['student', 'manager', 'admin']),
+    isActive: z.boolean(),
+  })
+  .partial()
+export type AdminUserUpdateInput = z.input<typeof adminUserUpdateSchema>

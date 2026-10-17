@@ -172,6 +172,14 @@ export const KNOWN_USERS = [
   { username: 'inactif', name: 'Ines Inactive', email: 'inactif@pupitre.local', role: 'student', password: 'Student@1234', isActive: false },
 ] as const
 
+/** Spec 130: a small organisation. `manager` (known account) manages "Ingénierie"; generated managers the others. */
+export const GROUPS: { name: string; description: string; parent?: string }[] = [
+  { name: 'Ingénierie', description: 'Toutes les équipes techniques' },
+  { name: 'Équipe Plateforme', description: 'Infrastructure, CI/CD et Kubernetes', parent: 'Ingénierie' },
+  { name: 'Équipe Produit', description: 'Développement des applications', parent: 'Ingénierie' },
+  { name: 'Support', description: 'Support client et exploitation' },
+]
+
 /** Reasons of the admin XP bonuses given to a few learners. */
 export const XP_BONUSES = [
   { reason: 'Bonus : participation à l’atelier DevOps', amount: 50 },

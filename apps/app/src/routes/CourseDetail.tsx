@@ -24,7 +24,8 @@ export function CourseDetail() {
   const [confirmUnenroll, setConfirmUnenroll] = useState(false)
 
   const { data: course, isPending, error } = useQuery({
-    queryKey: ['course', slug],
+    // The answer depends on the viewer (enrollment, XP): signing in loads it again.
+    queryKey: ['course', slug, session?.user.id ?? null],
     queryFn: () => unwrap(api.api.courses[':slug'].$get({ param: { slug } })),
   })
   // Content is for enrolled learners and admins (spec 053).

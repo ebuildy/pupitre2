@@ -11,7 +11,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { db } from '../../db/index.ts'
-import { course, courseCompletion, enrollmentGrant, user } from '../../db/schema/index.ts'
+import { course, courseCompletion, enrollmentGrant, groupCourseEnrollment, groupMembership, user, userGroup } from '../../db/schema/index.ts'
 import { validate } from '../../lib/validate.ts'
 import type { AppEnv } from '../../middleware/session.ts'
 import {
@@ -133,9 +133,24 @@ export const adminCourseRoutes = new Hono<AppEnv>()
   })
   .delete('/:id/enrollments/:userId', async (c) => {
     const found = await requireCourse(c.req.param('id'))
-    // Removes the direct grants (the learner's own and admin ones). Group/path grants will stay.
-    await revoke(c.req.param('userId'), found.id, ['self', 'admin'])
+    // Removes the direct grants (the learner's own, automatic, admin and manager ones). Group/path grants stay.
+    await revoke(c.req.param('userId'), found.id, ['self', 'auto', 'admin', 'manager'])
     return c.json({ message: 'User unenrolled' })
+  })
+
+  // Spec 135: groups enrolled in the course (enroll / withdraw: /api/admin/groups/:id/courses).
+  .get('/:id/groups', async (c) => {
+    const found = await requireCourse(c.req.param('id'))
+    const memberCount = sql<number>`(SELECT count(*) FROM ${groupMembership} WHERE ${groupMembership.groupId} = ${userGroup.id})`.mapWith(Number)
+    const groups = db
+      .select({ id: userGroup.id, name: userGroup.name, memberCount, enrolledAt: groupCourseEnrollment.createdAt })
+      .from(groupCourseEnrollment)
+      .innerJoin(userGroup, eq(userGroup.id, groupCourseEnrollment.groupId))
+      .where(eq(groupCourseEnrollment.courseId, found.id))
+      .orderBy(asc(userGroup.name))
+      .all()
+      .map((g) => ({ ...g, enrolledAt: g.enrolledAt.toISOString() }))
+    return c.json({ groups })
   })
 
   // Module list (spec 169 style): read, and replace as a whole. The module editor UI comes later.

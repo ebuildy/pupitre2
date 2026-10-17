@@ -12,8 +12,10 @@ import {
   enrollmentGrant,
   moduleProgress,
   user,
+  userGroup,
   xpEvent,
 } from '../db/schema/index.ts'
+import { addMember, createGroup, enrollGroup, ensureDefaultMemberships } from '../services/groups.ts'
 import { loadModules, moduleBody, parseQuiz } from '../services/learning.ts'
 import { replaceModules } from '../services/modules-admin.ts'
 import {
@@ -22,6 +24,7 @@ import {
   CURATED_COURSES,
   CURATED_MODULES,
   type CourseFixture,
+  GROUPS,
   KNOWN_USERS,
   MANAGER_PASSWORD,
   STUDENT_PASSWORD,
@@ -206,7 +209,38 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
     await db
       .insert(enrollmentGrant)
       .values(grants)
-      .onConflictDoNothing({ target: [enrollmentGrant.userId, enrollmentGrant.courseId, enrollmentGrant.source] })
+      .onConflictDoNothing({ target: [enrollmentGrant.userId, enrollmentGrant.courseId, enrollmentGrant.source, enrollmentGrant.via] })
+  }
+
+  // 4b. Groups (spec 130): created once (matched by name); members and managers added when missing.
+  ensureDefaultMemberships()
+  const groupIds = new Map<string, string>()
+  let newGroups = 0
+  for (const g of GROUPS) {
+    const found = db.select({ id: userGroup.id }).from(userGroup).where(eq(userGroup.name, g.name)).get()
+    const id = found?.id ?? createGroup({ name: g.name, description: g.description, parentId: g.parent ? groupIds.get(g.parent) : null }).id
+    if (!found) newGroups++
+    groupIds.set(g.name, id)
+  }
+  if (newGroups > 0) {
+    const knownManager = await db.query.user.findFirst({ columns: { id: true }, where: eq(user.username, 'manager') })
+    const managers = userIds.filter((u) => u.role === 'manager' && u.id !== knownManager?.id)
+    const students = userIds.filter((u) => u.role === 'student' && u.isActive)
+    if (knownManager) addMember(groupIds.get('Ingénierie')!, knownManager.id, { role: 'manager', addedBy: admin?.id })
+    for (const [i, name] of ['Équipe Plateforme', 'Équipe Produit', 'Support'].entries()) {
+      const manager = managers[i % Math.max(managers.length, 1)]
+      if (manager) addMember(groupIds.get(name)!, manager.id, { role: 'manager', addedBy: admin?.id })
+    }
+    // `etudiant` is in Équipe Plateforme; generated students are spread over the leaf groups.
+    const etudiant = await db.query.user.findFirst({ columns: { id: true }, where: eq(user.username, 'etudiant') })
+    if (etudiant) addMember(groupIds.get('Équipe Plateforme')!, etudiant.id, { addedBy: admin?.id })
+    const leaves = ['Équipe Plateforme', 'Équipe Produit', 'Support']
+    for (const learner of students) {
+      addMember(groupIds.get(faker.helpers.arrayElement(leaves))!, learner.id, { addedBy: admin?.id })
+    }
+    // Spec 135: Équipe Plateforme follows the Kubernetes course (published curated course, if any).
+    const k8s = courses.find((c) => c.slug.includes('kubernetes') && c.status === 'published') ?? courses.find((c) => c.status === 'published')
+    if (k8s && admin) enrollGroup(groupIds.get('Équipe Plateforme')!, k8s.id, admin.id)
   }
 
   // 5. Progress (spec 191 "ModuleProgress"), in module order: about a third of the enrollments finished (every
@@ -291,6 +325,7 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
 
   return {
     categories: CATEGORIES.length,
+    groups: GROUPS.length,
     courses: courseFixtures.length,
     users: userFixtures.length,
     grants: grants.length,

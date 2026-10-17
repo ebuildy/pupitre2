@@ -25,6 +25,10 @@ type Fixtures = {
   createCourse: (input?: Partial<CourseCreateInput>) => Promise<AdminCourse>
   /** Creates a category through the admin API. Defaults: unique slug and title, top-level. */
   createCategory: (input?: Partial<CategoryCreateInput>) => Promise<AdminCategory>
+  /** Creates a local group through the admin API (unique name by default); returns its id. */
+  createGroup: (input?: { name?: string; parentId?: string | null }) => Promise<{ id: string; name: string }>
+  /** Adds a user to a group (admin API). */
+  addMember: (groupId: string, userId: string, role?: 'member' | 'manager') => Promise<void>
   /** Replaces a course's modules through the admin API. */
   setModules: (courseId: string, modules: ModuleInput[]) => Promise<void>
 }
@@ -99,6 +103,21 @@ export const test = base.extend<Fixtures>({
       })
       if (!res.ok()) throw new Error(`course creation failed: ${res.status()} ${await res.text()}`)
       return (await res.json()) as AdminCourse
+    })
+  },
+
+  createGroup: async ({ adminRequest }, use) => {
+    await use(async ({ name = `group-${uid()}`, parentId = null } = {}) => {
+      const res = await adminRequest.post('/api/admin/groups', { data: { name, parentId } })
+      if (!res.ok()) throw new Error(`group creation failed: ${res.status()} ${await res.text()}`)
+      return { id: ((await res.json()) as { id: string }).id, name }
+    })
+  },
+
+  addMember: async ({ adminRequest }, use) => {
+    await use(async (groupId, userId, role = 'member') => {
+      const res = await adminRequest.post(`/api/admin/groups/${groupId}/members`, { data: { userId, role } })
+      if (!res.ok()) throw new Error(`adding member failed: ${res.status()} ${await res.text()}`)
     })
   },
 

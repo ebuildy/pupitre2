@@ -86,6 +86,8 @@ test.describe('enrollment (specs 045, 047, 052)', () => {
     await expect(page).toHaveURL(/\/login\?redirect=/)
     await login(page, user.email, user.password)
     await expect(page).toHaveURL(new RegExp(`/courses/${course.slug}$`))
+    // The session reaches the page shortly after the redirect.
+    await expect(page.getByTestId('current-user')).toHaveText(user.username)
 
     await page.getByRole('button', { name: "S'inscrire au cours" }).click()
     await expect(page.getByText(/^✓ Inscrit le/)).toBeVisible()

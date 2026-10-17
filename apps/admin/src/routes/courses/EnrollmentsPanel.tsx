@@ -1,36 +1,25 @@
 import { useTranslation } from '@pupitre/i18n'
 import type { AdminUserSearchResult } from '@pupitre/shared'
-import { ErrorState, LoadingState, unwrap, useDebouncedValue } from '@pupitre/ui'
+import { ErrorState, LoadingState, unwrap } from '@pupitre/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { adminApi } from '../../lib/api.ts'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@pupitre/ui/components/ui/table'
-import { Input } from '@pupitre/ui/components/ui/input'
 import { buttonVariants } from '@pupitre/ui/components/ui/button'
 import { cn } from '@pupitre/ui'
 
-function userLabel(u: { username: string | null; name: string }) {
-  return u.username ?? u.name
-}
+import { UserPicker, userLabel } from '../../components/UserPicker.tsx'
 
 /** Spec 145: enrolled users of a course; enroll by search, remove. */
 export function EnrollmentsPanel({ courseId }: { courseId: string }) {
   const { t, i18n } = useTranslation(['admin', 'common'])
   const queryClient = useQueryClient()
-  const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<AdminUserSearchResult | null>(null)
   const [mustSelect, setMustSelect] = useState(false)
-  const q = useDebouncedValue(search.trim(), 250)
 
   const enrollments = useQuery({
     queryKey: ['admin-enrollments', courseId],
     queryFn: () => unwrap(adminApi.courses[':id'].enrollments.$get({ param: { id: courseId } })),
-  })
-
-  const suggestions = useQuery({
-    queryKey: ['admin-user-search', q],
-    queryFn: () => unwrap(adminApi.users.search.$get({ query: { q } })),
-    enabled: q.length > 0 && !selected,
   })
 
   const refresh = async () => {
@@ -44,7 +33,6 @@ export function EnrollmentsPanel({ courseId }: { courseId: string }) {
       unwrap(adminApi.courses[':id'].enrollments.$post({ param: { id: courseId }, json: { userId } })),
     onSuccess: async () => {
       setSelected(null)
-      setSearch('')
       await refresh()
     },
   })
@@ -82,43 +70,14 @@ export function EnrollmentsPanel({ courseId }: { courseId: string }) {
           enroll.mutate(selected.id)
         }}
       >
-        <div className="relative min-w-64 flex-1">
-          <Input
-            type="search"
-            role="combobox"
-            aria-expanded={!!suggestions.data?.users.length}
-            aria-controls="user-suggestions"
-            aria-label={t('courses.enrollments.searchLabel')}
-            placeholder={t('courses.enrollments.searchPlaceholder')}
-            value={selected ? `${userLabel(selected)} <${selected.email}>` : search}
-            onChange={(e) => {
-              setSelected(null)
-              setMustSelect(false)
-              setSearch(e.target.value)
-            }}
-            className="h-10 max-w-sm"
-          />
-          {!selected && q && suggestions.data && suggestions.data.users.length > 0 && (
-            <ul
-              id="user-suggestions"
-              role="listbox"
-              className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-lg"
-            >
-              {suggestions.data.users.map((u) => (
-                <li key={u.id} role="option" aria-selected={false}>
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
-                    onClick={() => setSelected(u)}
-                  >
-                    <span className="font-medium">{userLabel(u)}</span>{' '}
-                    <span className="text-muted-foreground">{u.email}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <UserPicker
+          value={selected}
+          label={t('courses.enrollments.searchLabel')}
+          onChange={(u) => {
+            setSelected(u)
+            setMustSelect(false)
+          }}
+        />
         <button
           type="submit"
           disabled={enroll.isPending}

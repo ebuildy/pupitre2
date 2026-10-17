@@ -153,14 +153,23 @@ export function canSelfEnroll(c: Course) {
   return c.status === 'published' && c.visibility === 'public'
 }
 
-/** Idempotent: one grant per (user, course, source). */
-export async function grant(userId: string, courseId: string, source: EnrollmentSource, grantedBy: string | null) {
+export const GRANT_TARGET = [enrollmentGrant.userId, enrollmentGrant.courseId, enrollmentGrant.source, enrollmentGrant.via]
+
+/** Idempotent: one grant per (user, course, source, via). `via` is the group or path of `group` / `path` grants. */
+export async function grant(
+  userId: string,
+  courseId: string,
+  source: EnrollmentSource,
+  grantedBy: string | null,
+  via = '',
+) {
   await db
     .insert(enrollmentGrant)
-    .values({ userId, courseId, source, grantedBy })
-    .onConflictDoNothing({ target: [enrollmentGrant.userId, enrollmentGrant.courseId, enrollmentGrant.source] })
+    .values({ userId, courseId, source, grantedBy, via })
+    .onConflictDoNothing({ target: GRANT_TARGET })
 }
 
+/** Removes the user's grants of the given sources (all `via`). Progress is kept. */
 export async function revoke(userId: string, courseId: string, sources: EnrollmentSource[]) {
   await db
     .delete(enrollmentGrant)

@@ -78,6 +78,10 @@ pnpm auth:generate  # regenerate the better-auth schema after changing auth conf
   (sanitized); the front end displays that HTML. Never put correct answers or feedback in a learner view before
   submission (`quizView`). Progress, attempts and submissions reference module ids. Quiz documents are validated by
   `quizDocumentSchema`; add sample quizzes there and check them with it.
+- Course access is a set of `enrollment_grant` rows (source + `via`). Group grants are maintained by `services/groups.ts`
+  (`addMember`, `removeMember`, `enrollGroup`, `unenrollGroup`); never insert or delete `group` grants elsewhere.
+- Correlated subqueries in a one-table select: write the outer column qualified (`"user"."id"`), Drizzle drops the
+  table name there.
 - Anything a learner earns goes through `awardXp()` / `completeCourse()` (`services/xp.ts`): at most once per thing
   earned, history kept when the course is deleted (spec 103).
 - Guards: `requireAuth`, `requireRole('admin' | 'manager', …)` from `src/middleware/session.ts`. `c.var.user` is
@@ -149,6 +153,7 @@ Playwright is the only test runner. Every feature ships with e2e tests covering 
   `page.request` calls (navigating away right after `login()` can cancel the sign-in).
 - Content: `await setModules(course.id, [...])` (admin API `PUT …/modules`) with inline bodies, or sources pointing at
   `content-samples` repos (e.g. `https://git.example.com/pupitre/pupitre-linux.git`).
+- Groups: `await createGroup({ name?, parentId? })` and `await addMember(groupId, userId, 'member' | 'manager')` (admin API).
 - Courses and categories: `await createCategory({ title, parentId })`, `await createCourse({ categoryId, visibility, status, ... })` (admin API; defaults: unique slug/title, published,
   public). `adminRequest` is an API client signed in as admin.
 - The catalogue is shared by parallel tests: put a `uid()` token in titles/categories and filter with `?search=<token>`.

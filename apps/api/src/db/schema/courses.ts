@@ -68,7 +68,7 @@ export const course = sqliteTable(
 
 /**
  * Spec 191 "Enrollment": a user is enrolled in a course while at least one grant exists.
- * One row per (user, course, source); the enrollment date is the oldest grant.
+ * One row per (user, course, source, via); the enrollment date is the oldest grant.
  */
 export const enrollmentGrant = sqliteTable(
   'enrollment_grant',
@@ -83,11 +83,14 @@ export const enrollmentGrant = sqliteTable(
       .notNull()
       .references(() => course.id, { onDelete: 'cascade' }),
     source: text({ enum: ENROLLMENT_SOURCES }).notNull(),
+    /** The group or path a `group` / `path` grant comes from; '' for the other sources. */
+    via: text().notNull().default(''),
     grantedBy: text().references(() => user.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
   },
   (t) => [
-    uniqueIndex('enrollment_grant_user_course_source_idx').on(t.userId, t.courseId, t.source),
+    uniqueIndex('enrollment_grant_user_course_source_via_idx').on(t.userId, t.courseId, t.source, t.via),
+    index('enrollment_grant_via_idx').on(t.source, t.via),
     index('enrollment_grant_course_idx').on(t.courseId),
   ],
 )

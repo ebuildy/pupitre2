@@ -62,7 +62,7 @@ Current routes: `/my-courses` (any signed-in user), the whole admin app `/admin/
 
 - Sessions are server-side (better-auth) instead of stateless JWTs; there is no `localStorage` token (the original's rebuild note).
 - The role is read from the database on each request, so role changes apply immediately instead of at next login.
-- Manager scope, `/manager/**` pages and internal service auth are not implemented yet.
+- Manager scope follows spec 191: a user manages the groups where their membership role is `manager` ([140](140-manager-space.md)); `/manager/**` is in the learner app. There is no internal service auth (one API).
 
 ## Source
 

@@ -4,15 +4,27 @@ import { useTranslation } from '@pupitre/i18n'
 import { cn, LanguageSwitcher, ThemeToggle, UserAvatar } from '@pupitre/ui'
 import { Button } from '@pupitre/ui/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@pupitre/ui/components/ui/sheet'
-import { BookOpenIcon, GraduationCapIcon, LogOutIcon, MenuIcon, SettingsIcon, TrophyIcon, ZapIcon } from 'lucide-react'
+import {
+  BookOpenIcon,
+  BriefcaseIcon,
+  GraduationCapIcon,
+  LogOutIcon,
+  MenuIcon,
+  SettingsIcon,
+  TrophyIcon,
+  UsersRoundIcon,
+  ZapIcon,
+} from 'lucide-react'
 import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router'
+import { useManagerScope } from '../lib/manager.ts'
 
 /** Spec 011: top bar (links, language, theme, account) and, on phones, a drawer with the same links. */
 export function Layout() {
   const { t } = useTranslation(['common', 'app'])
   const { data: session, isPending } = useSession()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const scope = useManagerScope()
 
   const links = [
     { to: '/courses', label: t('app:nav.catalogue'), icon: BookOpenIcon, end: true },
@@ -20,9 +32,14 @@ export function Layout() {
       ? [
           { to: '/my-courses', label: t('app:nav.myCourses'), icon: GraduationCapIcon, end: false },
           { to: '/my-xp', label: t('app:nav.myXp'), icon: ZapIcon, end: false },
+          { to: '/my-groups', label: t('app:nav.myGroups'), icon: UsersRoundIcon, end: false },
         ]
       : []),
     { to: '/leaderboard', label: t('app:nav.leaderboard'), icon: TrophyIcon, end: false },
+    // Spec 001: "Mon espace" for group managers.
+    ...(session && scope.data?.canManage
+      ? [{ to: '/manager', label: t('app:nav.managerSpace'), icon: BriefcaseIcon, end: false }]
+      : []),
   ]
 
   const navLink = ({ isActive }: { isActive: boolean }) =>
@@ -37,7 +54,7 @@ export function Layout() {
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
           <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden" aria-label={t('menu')}>
+              <Button variant="ghost" size="icon" className="lg:hidden" aria-label={t('menu')}>
                 <MenuIcon />
               </Button>
             </SheetTrigger>
@@ -68,7 +85,7 @@ export function Layout() {
             pupitre
           </Link>
 
-          <nav className="hidden items-center gap-1 md:flex" aria-label={t('mainNavigation')}>
+          <nav className="hidden items-center gap-1 lg:flex" aria-label={t('mainNavigation')}>
             {links.map(({ to, label, end }) => (
               <NavLink key={to} to={to} end={end} className={navLink}>
                 {label}
@@ -92,7 +109,7 @@ export function Layout() {
                       image={session.user.image}
                       name={session.user.displayUsername ?? session.user.username ?? session.user.name}
                     />
-                    <span className="hidden lg:inline" data-testid="current-user">
+                    <span className="hidden xl:inline" data-testid="current-user">
                       {session.user.displayUsername ?? session.user.username ?? session.user.name}
                     </span>
                   </Link>
