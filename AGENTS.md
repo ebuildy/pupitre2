@@ -92,6 +92,10 @@ pnpm auth:generate  # regenerate the better-auth schema after changing auth conf
 - Data fetching: TanStack Query + the typed Hono clients (`api` / `adminApi`), unwrapped with `unwrap()` from
   `@pupitre/ui` (throws `ApiRequestError` with the API's `error` message). After a mutation, invalidate the affected
   query keys.
+- Report mutation results with toasts (spec 012): `toast.success(t('…'))` / `toast.error(err.message)`, `toast` from
+  `@pupitre/ui`.
+- Platform settings the UI needs before sign-in come from `usePublicSettings()` (`@pupitre/auth-ui`); a new setting is
+  declared in `SETTINGS` and `settingsUpdateSchema` (`packages/shared/src/settings.ts`) and read with `getSettings()` in the API.
 - Keep filters that users may want to share in the URL search params.
 - Auth UI comes from `@pupitre/auth-ui`; do not reimplement login, guards or logout in an app.
 - Protect pages with `<RequireAuth roles={[…]}>`.
@@ -156,6 +160,12 @@ Playwright is the only test runner. Every feature ships with e2e tests covering 
 - API checks: `page.request` shares the page's cookies (`await page.request.get('/api/me')`).
 - In React effects, use a braced body: `useEffect(() => { window.scrollTo(0, 0) }, …)`. Scroll methods return a Promise in
   recent browsers, and an effect returning a non-function crashes React ("destroy is not a function").
+- Tests that change platform settings (spec 179: registration, password policy, local login…) go in
+  `e2e/global-settings.spec.ts`: the `global-settings` project runs it alone, after the other tests, one worker, and
+  each test restores the defaults in `afterEach`. Run it alone with `pnpm test:e2e --project global-settings --no-deps`.
+- Sign-in is rate-limited per client IP (spec 009): every test gets its own random `X-Forwarded-For`. A second page or
+  API client must get one too: `browser.newPage({ extraHTTPHeaders: { 'x-forwarded-for': randomIp() } })`,
+  `await apiClient()` (both from `./fixtures.ts`).
 - Use web-first assertions (`await expect(locator).toBeVisible()`, `toHaveURL`); no fixed waits.
 - `toHaveURL` for admin app roots: `/\/admin\/?$/` (the router may drop the trailing slash).
 - Direct database access from tests (`node:sqlite`) must open the file with a busy `timeout`.

@@ -8,6 +8,7 @@ import { CourseEdit } from './routes/courses/CourseEdit.tsx'
 import { CourseList } from './routes/courses/CourseList.tsx'
 import { CourseNew } from './routes/courses/CourseNew.tsx'
 import { Dashboard } from './routes/Dashboard.tsx'
+import { Settings } from './routes/Settings.tsx'
 import { UserDetail } from './routes/users/UserDetail.tsx'
 import { UserList } from './routes/users/UserList.tsx'
 
@@ -30,6 +31,7 @@ export const router = createBrowserRouter(
         { path: 'categories/:id', element: <CategoryEdit /> },
         { path: 'users', element: <UserList /> },
         { path: 'users/:id', element: <UserDetail /> },
+        { path: 'settings', element: <Settings /> },
       ],
     },
   ],

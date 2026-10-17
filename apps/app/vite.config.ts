@@ -8,7 +8,7 @@ const adminUrl = process.env.ADMIN_URL ?? 'http://localhost:3002'
 // Single hostname (spec 004): the browser only talks to this origin, which proxies
 // /api to the API and /admin to the admin app (apps/admin, built with base `/admin/`).
 const proxy: Record<string, ProxyOptions> = {
-  '/api': { target: apiUrl },
+  '/api': { target: apiUrl, xfwd: true }, // client IP for rate limiting (spec 009)
   '/health': { target: apiUrl },
   '^/admin(/|$)': {
     target: adminUrl,

@@ -1,5 +1,5 @@
 import { ADMIN_PASSWORD } from './env.ts'
-import { expect, login, signIn, test, uid } from './fixtures.ts'
+import { expect, login, randomIp, signIn, test, uid } from './fixtures.ts'
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/admin/login')
@@ -104,7 +104,7 @@ test.describe('admin course enrollments (spec 145)', () => {
     const user = await createUser()
     const course = await createCourse()
 
-    const learner = await browser.newPage()
+    const learner = await browser.newPage({ extraHTTPHeaders: { 'x-forwarded-for': randomIp() } })
     await signIn(learner, user)
     expect((await learner.request.post(`/api/enrollments/${course.slug}`)).ok()).toBeTruthy()
     await learner.close()

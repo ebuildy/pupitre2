@@ -34,7 +34,25 @@ export function uid() {
   return randomUUID().slice(0, 8)
 }
 
+/**
+ * A random client IP. Sign-in is rate-limited per IP (spec 009): each test (and each API client) sends its own
+ * `X-Forwarded-For`, so parallel tests don't share a bucket.
+ */
+export function randomIp() {
+  const byte = () => Math.floor(Math.random() * 254) + 1
+  return `10.${byte()}.${byte()}.${byte()}`
+}
+
+/** A fresh API client (no session) with its own client IP. */
+export function apiClient() {
+  return request.newContext({ baseURL: BASE_URL, extraHTTPHeaders: { 'x-forwarded-for': randomIp() } })
+}
+
 export const test = base.extend<Fixtures>({
+  extraHTTPHeaders: async ({}, use) => {
+    await use({ 'x-forwarded-for': randomIp() })
+  },
+
   createUser: async ({}, use) => {
     // The API writes to the same file concurrently: wait for its locks instead of failing.
     const db = new DatabaseSync(API_DB_PATH, { timeout: 5000 })
@@ -46,7 +64,7 @@ export const test = base.extend<Fixtures>({
         password: 'Password123!',
         role,
       }
-      const api = await request.newContext({ baseURL: BASE_URL })
+      const api = await apiClient()
       const res = await api.post('/api/auth/sign-up/email', {
         data: { name: user.username, username: user.username, email: user.email, password: user.password },
       })
@@ -60,7 +78,7 @@ export const test = base.extend<Fixtures>({
   },
 
   adminRequest: async ({}, use) => {
-    const api = await request.newContext({ baseURL: BASE_URL })
+    const api = await apiClient()
     const res = await api.post('/api/auth/sign-in/username', { data: { username: 'admin', password: ADMIN_PASSWORD } })
     if (!res.ok()) throw new Error(`admin sign-in failed: ${res.status()} ${await res.text()}`)
     await use(api)

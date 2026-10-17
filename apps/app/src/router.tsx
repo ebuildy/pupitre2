@@ -1,4 +1,4 @@
-import { LoginPage, RequireAuth } from '@pupitre/auth-ui'
+import { LoginPage, RegisterPage, RequireAuth } from '@pupitre/auth-ui'
 import { createBrowserRouter, Navigate } from 'react-router'
 import { demoAccounts } from './lib/demo-accounts.ts'
 import { Catalogue } from './routes/Catalogue.tsx'
@@ -9,10 +9,13 @@ import { Layout } from './routes/Layout.tsx'
 import { Leaderboard } from './routes/Leaderboard.tsx'
 import { MyCourses } from './routes/MyCourses.tsx'
 import { MyXp } from './routes/MyXp.tsx'
+import { Profile } from './routes/Profile.tsx'
+import { PublicProfile } from './routes/PublicProfile.tsx'
 
 // `/admin/*` is the admin app (apps/admin), served on the same origin.
 export const router = createBrowserRouter([
   { path: 'login', element: <LoginPage demoAccounts={demoAccounts} /> },
+  { path: 'register', element: <RegisterPage /> },
   {
     element: <Layout />,
     children: [
@@ -53,6 +56,15 @@ export const router = createBrowserRouter([
         ),
       },
       { path: 'leaderboard', element: <Leaderboard /> },
+      {
+        path: 'profile',
+        element: (
+          <RequireAuth>
+            <Profile />
+          </RequireAuth>
+        ),
+      },
+      { path: 'users/:id', element: <PublicProfile /> },
     ],
   },
 ])

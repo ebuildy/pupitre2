@@ -13,7 +13,19 @@ export default defineConfig({
     locale: 'fr-FR',
     trace: 'on-first-retry',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: /global-settings\.spec\.ts/ },
+    // Platform settings (spec 179) change the behaviour of every test (registration, login…): this project runs
+    // alone, after the others, one test at a time. Run it on its own with `--project global-settings --no-deps`.
+    {
+      name: 'global-settings',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /global-settings\.spec\.ts/,
+      dependencies: ['chromium'],
+      fullyParallel: false,
+      workers: 1,
+    },
+  ],
   webServer: [
     {
       name: 'api',

@@ -22,8 +22,11 @@ export type MeResponse = {
   name: string
   role: Role
   image: string | null
+  bio: string | null
   isActive: boolean
   createdAt: string
+  /** The account has a local password (SSO-only accounts have none; spec 036). */
+  hasPassword: boolean
 }
 
 /** Where to go after login (spec 025): a local `redirect` path, else the role's home. */
@@ -35,3 +38,5 @@ export function landingPath(role: Role | undefined, redirect: string | null | un
 export * from './courses.ts'
 export * from './xp.ts'
 export * from './content.ts'
+export * from './settings.ts'
+export * from './account.ts'

@@ -47,7 +47,7 @@ export type MyXpResponse = {
 
 /** `GET /api/leaderboard` */
 export type LeaderboardResponse = {
-  leaderboard: { rank: number; username: string; name: string; image: string | null; xp: number }[]
+  leaderboard: { rank: number; id: string; username: string; name: string; image: string | null; xp: number }[]
   /** The signed-in user's own position, when they have XP (whether or not they are in the top). */
   me: { rank: number; xp: number } | null
 }

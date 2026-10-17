@@ -4,7 +4,7 @@ import { useTranslation } from '@pupitre/i18n'
 import { cn, LanguageSwitcher, ThemeToggle } from '@pupitre/ui'
 import { Button } from '@pupitre/ui/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@pupitre/ui/components/ui/sheet'
-import { ArrowLeftIcon, BookOpenIcon, FolderTreeIcon, LayoutDashboardIcon, LogOutIcon, MenuIcon, UsersIcon } from 'lucide-react'
+import { ArrowLeftIcon, BookOpenIcon, FolderTreeIcon, LayoutDashboardIcon, LogOutIcon, MenuIcon, SettingsIcon, UsersIcon } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 
@@ -14,6 +14,7 @@ const sections = [
   { to: '/courses', label: 'nav.courses', end: false, icon: BookOpenIcon },
   { to: '/categories', label: 'nav.categories', end: false, icon: FolderTreeIcon },
   { to: '/users', label: 'nav.users', end: false, icon: UsersIcon },
+  { to: '/settings', label: 'nav.settings', end: false, icon: SettingsIcon },
 ] as const
 
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {

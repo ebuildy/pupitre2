@@ -1,14 +1,13 @@
 import { DatabaseSync } from 'node:sqlite'
-import { request } from '@playwright/test'
-import { API_DB_PATH, BASE_URL } from './env.ts'
-import { expect, test } from './fixtures.ts'
+import { API_DB_PATH } from './env.ts'
+import { apiClient, expect, test } from './fixtures.ts'
 
 /**
  * The e2e database has no fixtures: create the known accounts the demo buttons use (spec 015).
  * Idempotent, since tests run in parallel and repeated.
  */
 async function ensureKnownUser(username: string, password: string, role: 'student' | 'manager') {
-  const api = await request.newContext({ baseURL: BASE_URL })
+  const api = await apiClient()
   // Fails when the account already exists, which is fine.
   await api.post('/api/auth/sign-up/email', {
     data: { name: username, username, email: `${username}@pupitre.local`, password },

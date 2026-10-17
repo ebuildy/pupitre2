@@ -21,6 +21,16 @@ const schema = z.object({
   CONTENT_LOADER: z.enum(['fake', 'git']).default('fake'),
   /** Fake loader: folder holding one sub-folder per repository (default `apps/api/content-samples`). */
   CONTENT_SAMPLES_DIR: z.string().optional(),
+  /** Spec 009: credential endpoints (sign-in, sign-up) per client IP; 0 disables. */
+  AUTH_RATE_LIMIT_REQUESTS: z.coerce.number().int().min(0).default(10),
+  AUTH_RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
+  /** Header carrying the client IP, set by the reverse proxy (ingress, Vite in dev). */
+  CLIENT_IP_HEADER: z.string().default('x-forwarded-for'),
+  /** Comma-separated proxy addresses/CIDRs skipped when reading the client IP (default: the local Vite proxy). */
+  TRUSTED_PROXIES: z
+    .string()
+    .default('127.0.0.1,::1')
+    .transform((v) => v.split(',').map((o) => o.trim()).filter(Boolean)),
   /** Spec 015: load the mock data (`src/fixtures`) at startup. Development only. */
   SEED_DEV_DATA: z.stringbool().default(false),
 })

@@ -156,7 +156,7 @@ export const leaderboardRoutes = new Hono<AppEnv>().get('/', async (c) => {
   return c.json<LeaderboardResponse>({
     leaderboard: ranking
       .slice(0, LEADERBOARD_SIZE)
-      .map(({ rank, username, name, image, xp }) => ({ rank, username: username ?? name, name, image, xp })),
+      .map(({ rank, userId, username, name, image, xp }) => ({ rank, id: userId, username: username ?? name, name, image, xp })),
     me: mine ? { rank: mine.rank, xp: mine.xp } : null,
   })
 })

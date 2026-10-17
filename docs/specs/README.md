@@ -8,17 +8,22 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | --- | --- | --- |
 | [001](001-roles-and-permissions.md) | Roles, account status and guards | Implemented |
 | [004](004-frontends-and-routing.md) | Frontends, routing and admin API prefix | Implemented |
+| [009](009-rate-limiting.md) | Rate limiting | Implemented |
 | [010](010-theme.md) | Theme, light / dark mode and UI components | Implemented |
+| [012](012-toast-notifications.md) | Toast notifications | Implemented |
 | [015](015-dev-seed-data.md) | Mock data (fixtures) | Implemented |
 | [016](016-admin-bootstrap.md) | Admin account bootstrap | Implemented |
 | [018](018-localization.md) | Localization (French default, English) | Implemented |
+| [020](020-registration-and-password-policy.md) | Registration, registration policy, password policy, local login toggle | Implemented |
 | [023](023-local-login.md) | Local login (username or e-mail + password) | Implemented |
 | [025](025-post-login-landing.md) | Post-login redirect and landing page | Implemented |
 | [026](026-logout.md) | Logout | Implemented |
 | [034](034-current-user.md) | Current user (`GET /api/me`) | Implemented |
+| [035](035-profile.md) | Profile, change password, public profile | Implemented (badge avatars with 106) |
 | [040](040-courses-and-catalogue.md) | Courses, categories, visibility and catalogue | Implemented (no modules yet) |
 | [045](045-course-page-and-enrollment.md) | Course page and enrollment | Implemented (no modules yet) |
 | [052](052-my-courses.md) | "Mes cours" | Implemented (no progress yet) |
 | [053](053-course-content-and-quizzes.md) | Course content, progress and quizzes | Implemented (fake content loader) |
 | [103](103-xp.md) | XP, levels, course completion, XP gate and leaderboard | Implemented (completion marked by admins) |
 | [165](165-admin-courses.md) | Admin: courses, categories and enrollments | Basic version |
+| [179](179-platform-settings.md) | Platform settings | Implemented (SSO keys with their features) |

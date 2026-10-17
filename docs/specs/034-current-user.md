@@ -17,9 +17,11 @@
   "email": "admin@pupitre.local",
   "name": "admin",
   "role": "student|manager|admin",
-  "image": "https://…|null",
+  "image": "https://…|emoji|null",
+  "bio": "…|null",
   "isActive": true,
-  "createdAt": "2026-10-16T16:23:49.025Z"
+  "createdAt": "2026-10-16T16:23:49.025Z",
+  "hasPassword": true
 }
 ```
 
@@ -32,7 +34,7 @@ Signed out, or deactivated → 401 `{"error":"Authentication required"}`.
 ## Differences from the original
 
 - Path is `/api/me`, not `/api/auth/me`: `/api/auth/*` belongs to better-auth.
-- `avatarUrl` is better-auth's `image`; `bio` and `authProvider` come with the profile and SSO features.
+- `avatarUrl` is better-auth's `image`; `hasPassword` tells whether the account has a local password ([035](035-profile.md)); `authProvider` comes with SSO.
 - The web app reads the session with better-auth's `useSession()` (which includes `role`); `/api/me` is for API consumers.
 
 ## Source

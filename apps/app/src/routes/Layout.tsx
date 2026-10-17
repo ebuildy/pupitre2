@@ -1,7 +1,7 @@
 import { signOutTo, useSession } from '@pupitre/auth-ui'
 import logo from '@pupitre/auth-ui/pioupitre.png'
 import { useTranslation } from '@pupitre/i18n'
-import { cn, LanguageSwitcher, ThemeToggle } from '@pupitre/ui'
+import { cn, LanguageSwitcher, ThemeToggle, UserAvatar } from '@pupitre/ui'
 import { Button } from '@pupitre/ui/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@pupitre/ui/components/ui/sheet'
 import { BookOpenIcon, GraduationCapIcon, LogOutIcon, MenuIcon, SettingsIcon, TrophyIcon, ZapIcon } from 'lucide-react'
@@ -82,9 +82,20 @@ export function Layout() {
             {!isPending &&
               (session ? (
                 <>
-                  <span className="hidden text-sm font-medium lg:inline" data-testid="current-user">
-                    {session.user.username ?? session.user.name}
-                  </span>
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-2 rounded-md px-1.5 py-1 text-sm font-medium hover:bg-muted"
+                    aria-label={t('profile')}
+                    title={t('profile')}
+                  >
+                    <UserAvatar
+                      image={session.user.image}
+                      name={session.user.displayUsername ?? session.user.username ?? session.user.name}
+                    />
+                    <span className="hidden lg:inline" data-testid="current-user">
+                      {session.user.displayUsername ?? session.user.username ?? session.user.name}
+                    </span>
+                  </Link>
                   {session.user.role === 'admin' && (
                     // The admin app is another frontend: plain link, full page load.
                     <Button asChild variant="outline" size="sm">

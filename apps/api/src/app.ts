@@ -13,6 +13,7 @@ import { adminRoutes } from './routes/admin/index.ts'
 import { courseRoutes, enrollmentRoutes, leaderboardRoutes, myRoutes } from './routes/courses.ts'
 import { meRoutes } from './routes/me.ts'
 import { moduleRoutes } from './routes/modules.ts'
+import { settingsRoutes, userRoutes } from './routes/users.ts'
 
 const app = new Hono<AppEnv>()
 
@@ -57,6 +58,8 @@ const routes = app
   .route('/enrollments', enrollmentRoutes)
   .route('/my', myRoutes)
   .route('/leaderboard', leaderboardRoutes)
+  .route('/users', userRoutes)
+  .route('/settings', settingsRoutes)
 
 // Admin app routes, all under /api/admin and admin-only. Typed separately (`AdminAppType`)
 // so each frontend's client only sees its own endpoints.

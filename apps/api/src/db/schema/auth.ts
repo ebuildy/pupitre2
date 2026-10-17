@@ -22,6 +22,7 @@ export const user = sqliteTable("user", {
     .default("student")
     .notNull(),
   isActive: integer("is_active", { mode: "boolean" }).default(true).notNull(),
+  bio: text("bio"),
 });
 
 export const session = sqliteTable(

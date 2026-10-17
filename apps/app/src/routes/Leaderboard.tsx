@@ -1,6 +1,7 @@
 import { useSession } from '@pupitre/auth-ui'
 import { useTranslation } from '@pupitre/i18n'
-import { EmptyState, ErrorState, LevelBadge, LoadingState, PageHeader, unwrap } from '@pupitre/ui'
+import { EmptyState, ErrorState, LevelBadge, LoadingState, PageHeader, unwrap, UserAvatar } from '@pupitre/ui'
+import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api.ts'
 
@@ -16,7 +17,7 @@ export function Leaderboard() {
     queryFn: () => unwrap(api.api.leaderboard.$get()),
   })
 
-  const self = session?.user.username ?? null
+  const self = session?.user.id ?? null
 
   return (
     <div className="flex flex-col gap-6">
@@ -38,10 +39,10 @@ export function Leaderboard() {
         <ol className="flex flex-col gap-2" aria-label={t('leaderboard.title')}>
           {data.leaderboard.map((entry) => {
             const podium = entry.rank <= 3
-            const mine = entry.username === self
+            const mine = entry.id === self
             return (
               <li
-                key={entry.username}
+                key={entry.id}
                 aria-current={mine ? 'true' : undefined}
                 className={`flex items-center gap-3 rounded-xl border bg-card px-4 shadow-xs ${podium ? 'py-3' : 'py-2'} ${
                   mine ? 'border-xp bg-xp-soft' : 'border-border'
@@ -50,13 +51,11 @@ export function Leaderboard() {
                 <span className={`w-10 text-center font-semibold ${podium ? 'text-2xl' : 'text-muted-foreground'}`}>
                   {podium ? MEDALS[entry.rank - 1] : `#${entry.rank}`}
                 </span>
-                <span
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary font-semibold text-secondary-foreground uppercase"
-                  aria-hidden="true"
-                >
-                  {entry.image ? <img src={entry.image} alt="" className="h-9 w-9 rounded-full" /> : entry.username[0]}
-                </span>
-                <span className="min-w-0 flex-1 truncate font-medium">{entry.username}</span>
+                <UserAvatar image={entry.image} name={entry.username} className="size-9" />
+                {/* Spec 037: rows open the public profile. */}
+                <Link to={`/users/${entry.id}`} className="min-w-0 flex-1 truncate font-medium hover:underline">
+                  {entry.username}
+                </Link>
                 <LevelBadge xp={entry.xp} className="hidden sm:inline-flex" />
                 <span className="w-24 text-right font-semibold text-xp">
                   {t('common:xpAmount', { amount: entry.xp })}
