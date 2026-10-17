@@ -4,6 +4,8 @@ import { adminCategoryRoutes } from './categories.ts'
 import { adminCourseRoutes } from './courses.ts'
 import { adminGroupRoutes } from './groups.ts'
 import { adminLeaderboardRoutes } from './leaderboard.ts'
+import { adminPathRoutes } from './paths.ts'
+import { adminSkillRoutes } from './skills.ts'
 import { adminSettingsRoutes } from './settings.ts'
 import { adminUserRoutes } from './users.ts'
 
@@ -18,5 +20,7 @@ export const adminRoutes = new Hono<AppEnv>()
   .route('/courses', adminCourseRoutes)
   .route('/groups', adminGroupRoutes)
   .route('/leaderboard', adminLeaderboardRoutes)
+  .route('/paths', adminPathRoutes)
+  .route('/skills', adminSkillRoutes)
   .route('/users', adminUserRoutes)
   .route('/settings', adminSettingsRoutes)

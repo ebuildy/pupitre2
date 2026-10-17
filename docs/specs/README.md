@@ -27,6 +27,7 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | [103](103-xp.md) | XP, levels, course completion, XP gate and leaderboard | Implemented (completion marked by admins) |
 | [106](106-badges.md) | Badges, "Mes badges", badge and admin leaderboards | Implemented |
 | [110](110-skills.md) | Skills, levels, skill page, "Mes compétences", skill filter | Implemented |
+| [120](120-learning-paths.md) | Learning paths: model, access, progress, admin, manager, "Mes parcours" | Implemented |
 | [130](130-groups.md) | Groups, memberships, group enrollments, default group, "Mes groupes" | Implemented (SSO sync later) |
 | [140](140-manager-space.md) | Manager space: scope, members, groups | Implemented (paths, sessions later) |
 | [162](162-admin-users.md) | Admin: users (list, edit, deactivate, delete) | Implemented |

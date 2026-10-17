@@ -17,6 +17,7 @@ import {
   xpEvent,
 } from '../db/schema/index.ts'
 import { addMember, createGroup, enrollGroup, ensureDefaultMemberships } from '../services/groups.ts'
+import { createPath, enrollInPath, findPath } from '../services/paths.ts'
 import { loadModules, moduleBody, parseQuiz } from '../services/learning.ts'
 import { replaceModules } from '../services/modules-admin.ts'
 import { updateSkillLevels } from '../services/skills.ts'
@@ -28,6 +29,7 @@ import {
   CURATED_MODULES,
   type CourseFixture,
   GROUPS,
+  PATHS,
   KNOWN_USERS,
   MANAGER_PASSWORD,
   STUDENT_PASSWORD,
@@ -256,6 +258,20 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
     if (k8s && admin) enrollGroup(groupIds.get('Équipe Plateforme')!, k8s.id, admin.id)
   }
 
+  // 4c. Paths (spec 120): created once (matched by slug); `etudiant` and a few students follow them.
+  for (const p of PATHS) {
+    if (findPath({ slug: p.slug })) continue
+    const items =
+      p.kind === 'course' ? p.items.flatMap((slug) => courses.filter((c) => c.slug === slug).map((c) => c.id)) : p.items
+    const created = createPath({ ...p, status: 'published', items })
+    const etudiant = await db.query.user.findFirst({ columns: { id: true }, where: eq(user.username, 'etudiant') })
+    const followers = [
+      ...(etudiant ? [etudiant.id] : []),
+      ...faker.helpers.arrayElements(userIds.filter((u) => u.role === 'student' && u.isActive), 3).map((u) => u.id),
+    ]
+    for (const userId of new Set(followers)) if (admin) enrollInPath(created.id, userId, admin.id)
+  }
+
   // 5. Progress (spec 191 "ModuleProgress"), in module order: about a third of the enrollments finished (every
   // module done, course completed), some started, the rest untouched; with their lesson, quiz and course XP.
   const completions: (typeof courseCompletion.$inferInsert)[] = []
@@ -354,6 +370,7 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
   return {
     categories: CATEGORIES.length,
     groups: GROUPS.length,
+    paths: PATHS.length,
     courses: courseFixtures.length,
     users: userFixtures.length,
     grants: grants.length,

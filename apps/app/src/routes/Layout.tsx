@@ -10,6 +10,7 @@ import {
   BriefcaseIcon,
   GraduationCapIcon,
   LogOutIcon,
+  MapIcon,
   MenuIcon,
   SettingsIcon,
   TargetIcon,
@@ -34,6 +35,7 @@ export function Layout() {
       ? [
           { to: '/my-courses', label: t('app:nav.myCourses'), icon: GraduationCapIcon, end: false },
           { to: '/my-xp', label: t('app:nav.myXp'), icon: ZapIcon, end: false },
+          { to: '/my-paths', label: t('app:nav.myPaths'), icon: MapIcon, end: false },
           { to: '/my-badges', label: t('app:nav.myBadges'), icon: AwardIcon, end: false },
           { to: '/my-skills', label: t('app:nav.mySkills'), icon: TargetIcon, end: false },
           { to: '/my-groups', label: t('app:nav.myGroups'), icon: UsersRoundIcon, end: false },

@@ -73,6 +73,17 @@ export const common = {
     advanced: 'Avancé',
     master: '★ Maître',
   },
+  // Spec 120
+  pathLevel: 'Niveau {{n}} · {{name}}',
+  pathKinds: {
+    course: 'Suite de cours',
+    skill: 'Suite de compétences',
+  },
+  pathStatus: {
+    completed: 'Terminé',
+    available: 'Disponible',
+    locked: 'Verrouillé',
+  },
 }
 
 export const auth = {
@@ -143,6 +154,7 @@ export const app = {
     profile: 'Mon profil',
     myGroups: 'Mes groupes',
     myBadges: 'Mes badges',
+    myPaths: 'Mes parcours',
     mySkills: 'Mes compétences',
     managerSpace: 'Mon espace',
   },
@@ -418,6 +430,7 @@ export const app = {
     nav: {
       members: 'Mes membres',
       groups: 'Mes groupes',
+      paths: 'Parcours',
     },
     noScope: "Vous ne gérez encore aucun groupe. Un administrateur peut vous nommer manager d'un groupe.",
     members: {
@@ -513,6 +526,37 @@ export const app = {
       locked: 'Verrouillé',
     },
   },
+  // Specs 123, 124
+  myPaths: {
+    title: 'Mes parcours',
+    subtitle_one: '{{count}} parcours en cours',
+    subtitle_other: '{{count}} parcours en cours',
+    loading: 'Chargement…',
+    empty: 'Aucun parcours en cours',
+    emptyCta: 'Voir le catalogue',
+    back: '◂ Mes parcours',
+    progress: '{{done}}/{{total}}',
+    notFound: 'Parcours introuvable',
+    roadmap: 'Feuille de route',
+  },
+  managerPaths: {
+    title: 'Parcours',
+    path: 'Parcours :',
+    choosePath: '— Choisir un parcours —',
+    member: 'Membre',
+    chooseMember: 'Sélectionnez un membre',
+    enroll: 'Inscrire',
+    enrolled: 'Membre inscrit au parcours',
+    unenroll: 'Désinscrire',
+    confirmUnenroll: 'Désinscrire ce membre du parcours ?',
+    unenrolled: 'Membre désinscrit',
+    empty: 'Aucun membre inscrit à ce parcours',
+    columns: {
+      member: 'Membre',
+      progress: 'Progression',
+      enrolledAt: 'Inscrit le',
+    },
+  },
 }
 
 export const admin = {
@@ -524,6 +568,7 @@ export const admin = {
     users: 'Utilisateurs',
     groups: 'Groupes',
     leaderboard: 'Classement',
+    paths: 'Parcours',
     settings: 'Paramètres',
   },
   users: {
@@ -594,6 +639,7 @@ export const admin = {
     usersHint: 'Consulter les apprenants, leur XP et leurs tentatives de quiz',
     groupsHint: 'Groupes, sous-groupes, membres, managers et inscriptions de groupe',
     leaderboardHint: 'Les apprenants classés par score aux quiz',
+    pathsHint: 'Parcours de cours ou de compétences, et leurs inscrits',
     settingsHint: 'Inscriptions, politique de mot de passe, profils et connexion',
   },
   categories: {
@@ -817,5 +863,65 @@ export const admin = {
     empty: 'Aucun participant',
     detail: '{{courses}} cours · {{modules}} modules validés',
     score: '{{score, number}} pts',
+  },
+  // Specs 126, 127
+  paths: {
+    title: 'Parcours',
+    count_one: '{{count}} parcours',
+    count_other: '{{count}} parcours',
+    new: '+ Nouveau parcours',
+    searchLabel: 'Rechercher un parcours',
+    searchPlaceholder: 'Rechercher un parcours…',
+    loading: 'Chargement…',
+    empty: 'Aucun parcours',
+    notFound: 'Parcours introuvable',
+    back: '← Retour aux parcours',
+    delete: 'Supprimer',
+    confirmDeleteTitle: 'Supprimer le parcours « {{title}} » ?',
+    confirmDeleteBody: 'Les inscriptions à ce parcours seront perdues.',
+    deleted: 'Parcours supprimé',
+    created: 'Parcours créé',
+    saved: 'Parcours enregistré',
+    items_one: '{{count}} élément',
+    items_other: '{{count}} éléments',
+    enrollments_one: '{{count}} inscrit',
+    enrollments_other: '{{count}} inscrits',
+    form: {
+      newTitle: 'Nouveau parcours',
+      slug: 'Slug',
+      title: 'Titre',
+      description: 'Description',
+      kind: 'Type',
+      level: 'Niveau',
+      noLevel: '— Aucun —',
+      status: 'Statut',
+      create: 'Créer le parcours',
+      titleRequired: 'Le titre est requis',
+      slugInvalid: 'Slug invalide',
+    },
+    members: {
+      title: 'Éléments du parcours',
+      courseHelp: 'Les inscrits au parcours ont accès à chacun de ces cours.',
+      addCourse: '— Ajouter un cours —',
+      addSkill: 'Nom de la compétence…',
+      addSkillButton: 'Ajouter',
+      moveUp: 'Monter {{title}}',
+      moveDown: 'Descendre {{title}}',
+      remove: 'Retirer {{title}}',
+      empty: 'Aucun élément',
+      kindChange: 'Changer de type retire les éléments actuels.',
+    },
+    enrollmentsTitle_one: 'Inscriptions ({{count}})',
+    enrollmentsTitle_other: 'Inscriptions ({{count}})',
+    enroll: 'Inscrire',
+    enrolled: 'Utilisateur inscrit',
+    unenroll: 'Désinscrire',
+    unenrolled: 'Utilisateur désinscrit',
+    enrollmentsEmpty: 'Aucun inscrit',
+    columns: {
+      user: 'Utilisateur',
+      progress: 'Progression',
+      enrolledAt: 'Inscrit le',
+    },
   },
 }

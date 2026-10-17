@@ -140,14 +140,14 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 
 | # | Feature | Status | Rewrite spec | Notes |
 | --- | --- | --- | --- | --- |
-| 120 | Learning path model | ⬜ | | |
-| 121 | Path catalogue API | ⬜ | | |
-| 122 | Path enrollment | ⬜ | | |
-| 123 | My paths page | ⬜ | | |
-| 124 | Path progress rules | ⬜ | | |
-| 125 | Path grants course access | ⬜ | | |
-| 126 | Admin path management | ⬜ | | |
-| 127 | Admin path enrollments | ⬜ | | |
+| 120 | Learning path model | ✅ | [120](docs/specs/120-learning-paths.md) |  |
+| 121 | Path catalogue API | ✅ | [120](docs/specs/120-learning-paths.md) |  |
+| 122 | Path enrollment | ✅ | [120](docs/specs/120-learning-paths.md) |  |
+| 123 | My paths page | 🟡 | [120](docs/specs/120-learning-paths.md) | no "return to path" after a course |
+| 124 | Path progress rules | ✅ | [120](docs/specs/120-learning-paths.md) |  |
+| 125 | Path grants course access | ✅ | [120](docs/specs/120-learning-paths.md) |  |
+| 126 | Admin path management | ✅ | [120](docs/specs/120-learning-paths.md) |  |
+| 127 | Admin path enrollments | ✅ | [120](docs/specs/120-learning-paths.md) |  |
 
 ## Groups
 
@@ -166,9 +166,9 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | # | Feature | Status | Rewrite spec | Notes |
 | --- | --- | --- | --- | --- |
 | 140 | Manager scope | ✅ | [140](docs/specs/140-manager-space.md) | scope = managed groups + subgroups; gaps fixed |
-| 141 | Manager members page | 🟡 | [140](docs/specs/140-manager-space.md) | path enrollments with paths (120) |
+| 141 | Manager members page | 🟡 | [140](docs/specs/140-manager-space.md) | path enrollments on the "Parcours" tab, not in the member dialog |
 | 142 | Manager groups page | ✅ | [140](docs/specs/140-manager-space.md) |  |
-| 143 | Manager paths page | ⬜ | | |
+| 143 | Manager paths page | ✅ | [120](docs/specs/120-learning-paths.md) |  |
 | 145 | Admin course enrollments | ✅ | [165](docs/specs/165-admin-courses.md) | |
 
 ## In-person sessions

@@ -6,7 +6,7 @@
 | Actors | Group manager |
 | Related | [130](130-groups.md), [001](001-roles-and-permissions.md) |
 
-Covers the original 140 (scope), 141 ("Mes membres") and 142 ("Mes groupes"). Path enrollments (143) come with paths.
+Covers the original 140 (scope), 141 ("Mes membres") and 142 ("Mes groupes"). Path enrollments (143): see [120](120-learning-paths.md).
 
 ## Scope
 

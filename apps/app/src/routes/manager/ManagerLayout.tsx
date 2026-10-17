@@ -26,6 +26,9 @@ export function ManagerLayout() {
         <NavLink to="/manager/groups" className={tab}>
           {t('manager.nav.groups')}
         </NavLink>
+        <NavLink to="/manager/paths" className={tab}>
+          {t('manager.nav.paths')}
+        </NavLink>
       </nav>
       {scope.data.groups.length === 0 && <p className="text-muted-foreground">{t('manager.noScope')}</p>}
       <Outlet />

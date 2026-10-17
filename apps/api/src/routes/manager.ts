@@ -11,7 +11,7 @@ import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { db } from '../db/index.ts'
-import { course, enrollmentGrant, groupMembership, user, userGroup } from '../db/schema/index.ts'
+import { course, enrollmentGrant, groupMembership, learningPath, user, userGroup } from '../db/schema/index.ts'
 import { validate } from '../lib/validate.ts'
 import { type AppEnv, requireAuth } from '../middleware/session.ts'
 import { audit } from '../services/audit.ts'
@@ -27,6 +27,7 @@ import {
   removeMember,
   requireGroup,
 } from '../services/groups.ts'
+import { enrollInPath, pathEnrollmentRows, requirePath, unenrollFromPath } from '../services/paths.ts'
 
 type ManagerEnv = AppEnv & { Variables: { managed: string[] } }
 
@@ -142,6 +143,36 @@ export const managerRoutes = new Hono<ManagerEnv>()
       .orderBy(asc(course.title))
       .all()
     return c.json({ courses })
+  })
+
+  // Spec 143: path enrollments of users in scope.
+  .get('/paths', (c) => {
+    const paths = db
+      .select({ id: learningPath.id, slug: learningPath.slug, title: learningPath.title, kind: learningPath.kind })
+      .from(learningPath)
+      .where(eq(learningPath.status, 'published'))
+      .orderBy(asc(learningPath.title))
+      .all()
+    return c.json({ paths })
+  })
+  .get('/paths/:id/enrollments', (c) => {
+    const found = requirePath({ id: c.req.param('id') })
+    return c.json({ users: pathEnrollmentRows(found, memberIdsOf(c.get('managed'))) })
+  })
+  .post('/paths/:id/enrollments', validate('json', z.object({ userId: z.string().min(1) })), (c) => {
+    const found = requirePath({ id: c.req.param('id') })
+    if (found.status !== 'published') throw new HTTPException(404, { message: 'Path not found' })
+    const { userId } = c.req.valid('json')
+    inScopeUser(c.get('managed'), userId)
+    enrollInPath(found.id, userId, c.get('user')!.id)
+    return c.json({ message: 'User enrolled' })
+  })
+  .delete('/paths/:id/enrollments/:userId', (c) => {
+    const found = requirePath({ id: c.req.param('id') })
+    const userId = c.req.param('userId')
+    inScopeUser(c.get('managed'), userId)
+    unenrollFromPath(found.id, userId)
+    return c.json({ message: 'User unenrolled' })
   })
 
   // Spec 142: "Mes groupes"

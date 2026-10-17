@@ -186,6 +186,26 @@ export const GROUPS: { name: string; description: string; parent?: string }[] = 
   { name: 'Support', description: 'Support client et exploitation' },
 ]
 
+/** Spec 120: one course path and one skill path (members by course slug / skill slug). */
+export const PATHS = [
+  {
+    slug: 'parcours-devops',
+    title: 'Parcours DevOps',
+    description: 'De Linux à Kubernetes : les bases pour déployer vos applications.',
+    kind: 'course' as const,
+    level: 'beginner' as const,
+    items: ['linux-basics', 'git-essentials', 'docker-intro', 'kubernetes-basics'],
+  },
+  {
+    slug: 'parcours-conteneurs',
+    title: 'Maîtriser les conteneurs',
+    description: 'Une suite de compétences, de Linux à l’orchestration.',
+    kind: 'skill' as const,
+    level: 'intermediate' as const,
+    items: ['linux', 'docker', 'kubernetes'],
+  },
+]
+
 /** Reasons of the admin XP bonuses given to a few learners. */
 export const XP_BONUSES = [
   { reason: 'Bonus : participation à l’atelier DevOps', amount: 50 },

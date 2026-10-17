@@ -3,6 +3,8 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { ManagerGroups } from './routes/manager/ManagerGroups.tsx'
 import { ManagerLayout } from './routes/manager/ManagerLayout.tsx'
 import { ManagerMembers } from './routes/manager/ManagerMembers.tsx'
+import { ManagerPaths } from './routes/manager/ManagerPaths.tsx'
+import { MyPathDetail, MyPaths } from './routes/MyPaths.tsx'
 import { MyBadges } from './routes/MyBadges.tsx'
 import { MyGroups } from './routes/MyGroups.tsx'
 import { MySkills } from './routes/MySkills.tsx'
@@ -73,6 +75,22 @@ export const router = createBrowserRouter([
       },
       { path: 'users/:id', element: <PublicProfile /> },
       {
+        path: 'my-paths',
+        element: (
+          <RequireAuth>
+            <MyPaths />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'my-paths/:slug',
+        element: (
+          <RequireAuth>
+            <MyPathDetail />
+          </RequireAuth>
+        ),
+      },
+      {
         path: 'my-badges',
         element: (
           <RequireAuth>
@@ -108,6 +126,7 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="/manager/users" replace /> },
           { path: 'users', element: <ManagerMembers /> },
           { path: 'groups', element: <ManagerGroups /> },
+          { path: 'paths', element: <ManagerPaths /> },
         ],
       },
     ],

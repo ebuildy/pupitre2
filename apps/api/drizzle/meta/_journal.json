@@ -71,6 +71,13 @@
       "when": 1792239560649,
       "tag": "0009_badges_skills",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1792240341846,
+      "tag": "0010_paths",
+      "breakpoints": true
     }
   ]
 }
