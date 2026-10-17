@@ -9,7 +9,6 @@ import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
  */
 
 const QUIZ_KEYS = ['title', 'description', 'passingScore', 'cooldown', 'maxAttemptsPerQuestion', 'lockOnMaxAttempts', 'questions'] as const
-const MODULE_KEYS = ['type', 'slug', 'src', 'ref', 'path', 'hidden', 'inline', 'skills', 'prerequisites'] as const
 
 function bad(message: string): never {
   throw new HTTPException(400, { message })
@@ -133,14 +132,16 @@ function toModule(name: string, body: string, used: Set<string>, warnings: strin
   const type = (directive.type as ModuleInput['type'] | undefined) ?? 'text'
   const quiz = Object.fromEntries(QUIZ_KEYS.filter((k) => k in directive).map((k) => [k, directive[k]]))
   let content: ModuleInput['content']
-  if (directive.src || directive.path) {
+  if ((type === 'video' || type === 'image') && directive.url) {
+    content = { kind: 'media', url: String(directive.url), replicate: directive.replicate === true }
+  } else if (directive.src || directive.path) {
     content = { kind: 'source', repo: String(directive.src ?? ''), ref: String(directive.ref ?? 'main'), path: String(directive.path ?? '') }
   } else if (type === 'quiz' && quiz.questions) {
     content = { kind: 'inline', body: stringifyYaml(quiz) }
   } else {
     content = { kind: 'inline', body: markdown }
   }
-  if (content.kind === 'source' || type === 'quiz') {
+  if (content.kind !== 'inline' || type === 'quiz') {
     if (markdown) warnings.push(`Module "${name}": its content comes from elsewhere, the markdown under its heading is ignored.`)
   }
   return {
@@ -200,7 +201,10 @@ export function exportMarkdownCourse(slug: string, spec: CourseSpec, requested?:
     if (m.skills?.length) directive.skills = m.skills
     if (m.prerequisites?.length) directive.prerequisites = m.prerequisites
     let body = ''
-    if (m.content.kind === 'source') {
+    if (m.content.kind === 'media') {
+      directive.url = m.content.url
+      if (m.content.replicate) directive.replicate = true
+    } else if (m.content.kind === 'source') {
       directive.src = m.content.repo
       directive.ref = m.content.ref
       directive.path = m.content.path

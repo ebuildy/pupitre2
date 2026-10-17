@@ -10,6 +10,7 @@ const adminUrl = process.env.ADMIN_URL ?? 'http://localhost:3002'
 const proxy: Record<string, ProxyOptions> = {
   '/api': { target: apiUrl, xfwd: true }, // client IP for rate limiting (spec 009)
   '/health': { target: apiUrl },
+  '/uploads': { target: apiUrl },
   '^/admin(/|$)': {
     target: adminUrl,
     ws: true, // admin app HMR

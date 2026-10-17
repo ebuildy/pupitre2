@@ -46,10 +46,14 @@ export function CourseCard({ course, footer }: { course: CourseSummary; footer?:
   return (
     <Card className="group relative h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
       <div
-        className="flex h-28 items-center justify-center bg-gradient-to-br from-secondary to-muted text-5xl transition-transform"
+        className="flex h-28 items-center justify-center overflow-hidden bg-gradient-to-br from-secondary to-muted text-5xl transition-transform"
         aria-hidden="true"
       >
-        <span className="transition-transform group-hover:scale-110">{courseIcon(course)}</span>
+        {course.thumbnailUrl ? (
+          <img src={course.thumbnailUrl} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+        ) : (
+          <span className="transition-transform group-hover:scale-110">{courseIcon(course)}</span>
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-5">
         <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">

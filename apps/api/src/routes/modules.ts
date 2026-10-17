@@ -14,6 +14,7 @@ import { renderMarkdown } from '../content/markdown.ts'
 import { validate } from '../lib/validate.ts'
 import { type AppEnv, requireAuth } from '../middleware/session.ts'
 import { canSelfEnroll, canView, findCourseBySlug, grant, grantsFor } from '../services/courses.ts'
+import { mediaUrlFor } from '../services/media.ts'
 import { prerequisiteViews } from '../services/prerequisites.ts'
 import { totalXp } from '../services/xp.ts'
 import {
@@ -86,7 +87,10 @@ export const moduleRoutes = new Hono<AppEnv>()
 
     let lesson: ModuleDetail['lesson'] = null
     let quiz: ModuleDetail['quiz'] = null
-    if (m.type === 'quiz') {
+    let media: ModuleDetail['media'] = null
+    if (m.mediaUrl) {
+      media = { url: await mediaUrlFor(m.mediaUrl, m.mediaReplicate) }
+    } else if (m.type === 'quiz') {
       quiz = quizView(await loadQuiz(m), attemptStates(user.id, m.id))
     } else {
       try {
@@ -107,6 +111,7 @@ export const moduleRoutes = new Hono<AppEnv>()
       ...toSummary(state),
       lesson,
       quiz,
+      media,
       inlineQuiz,
       hostSlug: m.inline ? (before?.module.slug ?? null) : null,
       previous: previous && !m.inline ? { slug: previous.module.slug, type: previous.module.type } : null,

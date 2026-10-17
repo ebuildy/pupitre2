@@ -11,6 +11,7 @@ import {
 } from '@pupitre/shared'
 import { type FormEvent, useState } from 'react'
 import { flattenTree, useCategories } from '../../lib/categories.ts'
+import { MediaField } from '../../components/MediaField.tsx'
 import { Input } from '@pupitre/ui/components/ui/input'
 import { Textarea } from '@pupitre/ui/components/ui/textarea'
 import { NativeSelect, NativeSelectOption } from '@pupitre/ui/components/ui/native-select'
@@ -35,6 +36,7 @@ function initialValues(course?: AdminCourse): Values {
     visibility: course?.visibility ?? 'private',
     status: course?.status ?? 'draft',
     inPerson: course?.inPerson ?? false,
+    thumbnailUrl: course?.thumbnailUrl ?? '',
     badgeName: course?.badge?.name ?? '',
     badgeIcon: course?.badge?.icon ?? '',
   }
@@ -85,6 +87,7 @@ export function CourseForm({
       status: values.status || 'draft',
       badge: badgeName ? { name: badgeName, icon: badgeIcon } : null,
       inPerson: values.inPerson === true,
+      thumbnailUrl: values.thumbnailUrl || null,
     })
   }
 
@@ -181,6 +184,16 @@ export function CourseForm({
             className={field}
           />
         </label>
+      </div>
+      <div className="flex flex-col gap-1 text-sm font-medium">
+        <label htmlFor="course-thumbnail">{t('courses.form.thumbnail')}</label>
+        <MediaField
+          id="course-thumbnail"
+          value={values.thumbnailUrl || ''}
+          onChange={(url) => setValues((v) => ({ ...v, thumbnailUrl: url }))}
+          accept="image/*"
+        />
+        <span className="text-xs font-normal text-muted-foreground">{t('courses.form.thumbnailHelp')}</span>
       </div>
       <label className="flex items-start gap-2 text-sm font-medium">
         <input

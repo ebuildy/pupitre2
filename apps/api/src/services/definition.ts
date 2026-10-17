@@ -31,6 +31,7 @@ export async function readDefinition(c: Course): Promise<{ slug: string; spec: C
       xpRequired: c.xpRequired,
       completionXp: c.completionXp,
       inPerson: c.inPerson,
+      thumbnailUrl: c.thumbnailUrl,
       badge: c.badgeName && c.badgeIcon ? { name: c.badgeName, icon: c.badgeIcon } : null,
       prerequisites: prereqs.map((p) => ({
         course: slugs.get(p.courseId) ?? p.courseId,
@@ -67,6 +68,7 @@ export function writeDefinition(slug: string, rawSpec: CourseSpec, existing: Cou
     xpRequired: spec.xpRequired ?? 0,
     ...(spec.completionXp !== undefined ? { completionXp: spec.completionXp } : {}),
     inPerson: spec.inPerson ?? false,
+    thumbnailUrl: spec.thumbnailUrl ?? null,
     badgeName: spec.badge?.name ?? null,
     badgeIcon: spec.badge?.icon ?? null,
   }

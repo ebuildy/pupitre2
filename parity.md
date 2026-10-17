@@ -60,7 +60,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 041 | Catalogue page | ✅ | [040](docs/specs/040-courses-and-catalogue.md) | |
 | 042 | Catalogue skill filter | ✅ | [110](docs/specs/110-skills.md) |  |
 | 043 | Continue-learning hero | ✅ | [040](docs/specs/040-courses-and-catalogue.md) |  |
-| 044 | Course card | 🟡 | [040](docs/specs/040-courses-and-catalogue.md) | no thumbnail image yet (062) |
+| 044 | Course card | ✅ | [040](docs/specs/040-courses-and-catalogue.md) | thumbnail: [062](docs/specs/062-media.md) |
 | 045 | Course detail page | ✅ | [045](docs/specs/045-course-page-and-enrollment.md) | |
 | 046 | Course visibility | ✅ | [040](docs/specs/040-courses-and-catalogue.md) | target model (visibility + status) |
 | 047 | Self-enrollment | ✅ | [045](docs/specs/045-course-page-and-enrollment.md) | |
@@ -72,13 +72,13 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 054 | Module prerequisites | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 | 055 | Hidden modules | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 | 056 | Lesson player | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
-| 057 | Reading mode | ⬜ | | |
+| 057 | Reading mode | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) |  |
 | 058 | Markdown rendering | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 | 059 | Admonitions | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
-| 060 | Mermaid diagrams | ⬜ | | |
+| 060 | Mermaid diagrams | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | lazy-loaded |
 | 061 | Markdown patterns rendering | ⬜ | | |
-| 062 | Video and image modules | ⬜ | | |
-| 063 | Media replication | ⬜ | | |
+| 062 | Video and image modules | ✅ | [062](docs/specs/062-media.md) | upload endpoint added |
+| 063 | Media replication | ✅ | [062](docs/specs/062-media.md) | falls back to the remote URL |
 | 064 | Git-sourced content | 🟡 | [053](docs/specs/053-course-content-and-quizzes.md) | fake loader only |
 | 065 | Module index expansion | ⬜ | | |
 | 066 | Git content cache and credentials | ⬜ | | |
@@ -100,7 +100,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 081 | Quiz max attempts and lock | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 | 082 | Quiz player page | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 | 083 | Inline mini-quiz | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
-| 084 | Quiz anti-copy | ⬜ | | |
+| 084 | Quiz anti-copy | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) |  |
 | 085 | Quiz answer confidentiality | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 
 ## Labs

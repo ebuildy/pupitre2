@@ -35,6 +35,9 @@ export const courseModule = sqliteTable(
     sourceRepo: text(),
     sourceRef: text(),
     sourcePath: text(),
+    /** Video / image modules (spec 062): uploaded `/uploads/…` or remote URL; `mediaReplicate` copies it locally (063). */
+    mediaUrl: text(),
+    mediaReplicate: integer({ mode: 'boolean' }).notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

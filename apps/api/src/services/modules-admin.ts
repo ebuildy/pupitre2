@@ -23,8 +23,9 @@ export async function adminModules(courseId: string): Promise<AdminModule[]> {
     inline: m.inline,
     prerequisites: (prerequisites.get(m.id) ?? []).map((id) => slugById.get(id)!),
     skills: (skills.get(m.id) ?? []).map((sk) => sk.slug),
-    content:
-      m.sourceRepo && m.sourcePath
+    content: m.mediaUrl
+      ? { kind: 'media', url: m.mediaUrl, replicate: m.mediaReplicate }
+      : m.sourceRepo && m.sourcePath
         ? { kind: 'source', repo: m.sourceRepo, ref: m.sourceRef ?? 'main', path: m.sourcePath }
         : { kind: 'inline', body: m.body ?? '' },
   }))
@@ -68,6 +69,8 @@ export function replaceModules(courseId: string, modules: ParsedModules) {
         sourceRepo: m.content.kind === 'source' ? m.content.repo : null,
         sourceRef: m.content.kind === 'source' ? m.content.ref : null,
         sourcePath: m.content.kind === 'source' ? m.content.path : null,
+        mediaUrl: m.content.kind === 'media' ? m.content.url : null,
+        mediaReplicate: m.content.kind === 'media' ? m.content.replicate : false,
       }
       const id = existing.get(m.slug)
       if (id) {

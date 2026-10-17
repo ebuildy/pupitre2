@@ -69,6 +69,15 @@ export const courseCreateSchema = z.object({
   inPerson: z.boolean().optional(),
   /** Spec 050. */
   prerequisites: z.array(prerequisiteSchema).max(20).optional(),
+  /** Spec 044: card image, uploaded (`/uploads/…`) or remote. */
+  thumbnailUrl: z
+    .string()
+    .trim()
+    .max(2048)
+    .refine((v) => v === '' || /^https?:\/\//i.test(v) || /^\/uploads\/[\w.-]+$/.test(v), 'Invalid image URL')
+    .transform((v) => v || null)
+    .nullable()
+    .optional(),
 })
 export type CourseCreateInput = z.input<typeof courseCreateSchema>
 
@@ -101,6 +110,7 @@ export type CourseSummary = {
   completed: boolean
   badge: Badge | null
   inPerson: boolean
+  thumbnailUrl: string | null
   /** Spec 110: union of the skills of its visible modules. */
   skills: SkillRef[]
   moduleCount: number
@@ -172,6 +182,7 @@ export type AdminCourse = {
   status: CourseStatus
   badge: Badge | null
   inPerson: boolean
+  thumbnailUrl: string | null
   prerequisites: { courseId: string; minScore: number | null; modules: string[] }[]
   enrollmentCount: number
   createdAt: string

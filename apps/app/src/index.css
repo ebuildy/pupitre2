@@ -51,3 +51,14 @@
 .dark .hljs-string, .dark .hljs-attr, .dark .hljs-symbol, .dark .hljs-bullet { color: var(--color-green-300); }
 .dark .hljs-number, .dark .hljs-literal, .dark .hljs-variable, .dark .hljs-template-variable { color: var(--color-orange-300); }
 .dark .hljs-title, .dark .hljs-section, .dark .hljs-name, .dark .hljs-type { color: var(--color-blue-300); }
+
+/* Spec 060: Mermaid diagrams (source shown until drawn). */
+.content pre.mermaid {
+  background: transparent;
+  color: var(--foreground);
+  text-align: center;
+}
+.content pre.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}

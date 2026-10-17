@@ -12,6 +12,8 @@ const md = markdownIt({
   html: false,
   linkify: true,
   highlight(code, lang) {
+    // Spec 060: diagrams are drawn in the browser; the source stays readable if that fails.
+    if (lang === 'mermaid') return `<pre class="mermaid">${escapeHtml(code)}</pre>`
     const language = lang && hljs.getLanguage(lang) ? lang : null
     const highlighted = language ? hljs.highlight(code, { language, ignoreIllegals: true }).value : escapeHtml(code)
     return `<pre><code class="hljs${language ? ` language-${language}` : ''}">${highlighted}</code></pre>`
@@ -113,6 +115,7 @@ const SANITIZE: sanitizeHtml.IOptions = {
     img: ['src', 'alt', 'title'],
     '*': ['id'],
     code: ['class'],
+    pre: ['class'],
     span: ['class'],
     div: ['class'],
     p: ['class'],
@@ -121,6 +124,7 @@ const SANITIZE: sanitizeHtml.IOptions = {
   },
   allowedClasses: {
     code: ['hljs', /^language-/],
+    pre: ['mermaid'],
     span: [/^hljs-/],
     div: ['admonition', /^admonition-/],
     p: ['admonition-title'],

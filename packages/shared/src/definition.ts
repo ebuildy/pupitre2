@@ -18,6 +18,7 @@ export const courseSpecSchema = z.object({
   xpRequired: z.number().int().min(0).optional(),
   completionXp: z.number().int().min(0).optional(),
   inPerson: z.boolean().optional(),
+  thumbnailUrl: z.string().nullable().optional(),
   badge: badgeSchema.nullable().optional(),
   prerequisites: z
     .array(

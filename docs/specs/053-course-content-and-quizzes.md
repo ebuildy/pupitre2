@@ -130,9 +130,18 @@ one, `order`'s `correctOrder` lists every item once, keys are unique.
 - Quiz settings live in the quiz document for both inline and git-sourced quizzes; questions are identified by key.
 - URLs use module slugs instead of positions.
 - Locked questions are defined: they score 0 until an admin resets the learner's attempts.
-- Not yet: git loader and cache (066), module index files (065), video/image/lab modules (062, 090), Mermaid (060),
-  markdown patterns (061), reading-mode toggle (057), module editor UI (171, 172), course prerequisites (050),
-  auto-enrollment on module access (048), source references in feedback.
+- Not yet: git loader and cache (066), module index files (065), lab modules (090), markdown patterns (061), source
+  references in feedback. Done since: video / image modules ([062](062-media.md)), module editor ([169](169-course-authoring.md)),
+  prerequisites and auto-enrollment ([050](050-prerequisites-and-auto-enrollment.md)).
+
+## Rendering extras
+
+- **Mermaid (060)**: ` ```mermaid ` blocks become `<pre class="mermaid">` (escaped source); the lesson page loads the
+  library only when a page has one, draws the diagrams in the current theme, redraws on theme change, and keeps the
+  source when a diagram fails.
+- **Reading mode (057)**: a floating button switches between "docs" (modules, content, table of contents) and "focus"
+  (content only, centred): "Lecture focus" / "Mode docs", remembered in `localStorage['pupitre.readingMode']`.
+- **Anti-copy (084)**: on quizzes, `copy`, `cut` and the context menu are cancelled outside inputs.
 
 ## Source
 

@@ -29,7 +29,7 @@ export default defineConfig({
   webServer: [
     {
       name: 'api',
-      command: 'rm -f data/e2e.db* && pnpm start',
+      command: 'rm -rf data/e2e.db* data/e2e-uploads && pnpm start',
       cwd: './apps/api',
       url: `http://localhost:${API_PORT}/health`,
       reuseExistingServer: !process.env.CI,
@@ -37,6 +37,7 @@ export default defineConfig({
         NODE_ENV: 'test',
         PORT: String(API_PORT),
         DATABASE_URL: './data/e2e.db',
+        UPLOADS_DIR: './data/e2e-uploads',
         BETTER_AUTH_URL: BASE_URL,
         CORS_ORIGINS: BASE_URL,
         LOG_REQUESTS: 'false',

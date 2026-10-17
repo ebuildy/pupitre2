@@ -14,6 +14,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': { target: apiUrl },
+      '/uploads': { target: apiUrl },
     },
   },
   preview: {

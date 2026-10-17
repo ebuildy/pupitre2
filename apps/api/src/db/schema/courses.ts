@@ -66,6 +66,8 @@ export const course = sqliteTable(
     badgeIcon: text(),
     /** Spec 150. */
     inPerson: integer({ mode: 'boolean' }).notNull().default(false),
+    /** Spec 044. */
+    thumbnailUrl: text(),
     ...timestamps(),
   },
   (t) => [index('course_status_visibility_idx').on(t.status, t.visibility), index('course_category_idx').on(t.categoryId)],

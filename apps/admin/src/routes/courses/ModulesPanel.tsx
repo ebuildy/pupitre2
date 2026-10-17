@@ -29,6 +29,7 @@ import { Textarea } from '@pupitre/ui/components/ui/textarea'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowDownIcon, ArrowUpIcon, GripVerticalIcon } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
+import { MediaField } from '../../components/MediaField.tsx'
 import { adminApi } from '../../lib/api.ts'
 
 type Editable = Omit<AdminModule, 'id'>
@@ -139,7 +140,11 @@ export function ModulesPanel({ courseId }: { courseId: string }) {
                   {m.inline && <Badge variant="info">{t('authoring.modules.inlineBadge')}</Badge>}
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {m.content.kind === 'source' ? `${m.content.path} · ${m.content.repo} @ ${m.content.ref}` : m.slug}
+                  {m.content.kind === 'source'
+                    ? `${m.content.path} · ${m.content.repo} @ ${m.content.ref}`
+                    : m.content.kind === 'media'
+                      ? m.content.url
+                      : m.slug}
                 </span>
               </span>
               <Button variant="ghost" size="icon" disabled={i === 0 || save.isPending} onClick={() => move(i, i - 1)} aria-label={t('authoring.modules.moveUp', { name: m.name })}>
@@ -228,8 +233,10 @@ function ModuleDialog({
   onSave: (m: Editable) => void
 }) {
   const { t } = useTranslation(['admin', 'common'])
-  const [type, setType] = useState<'text' | 'quiz'>((module?.type as 'text' | 'quiz') ?? 'text')
-  const [kind, setKind] = useState<'inline' | 'source'>(module?.content.kind ?? 'inline')
+  const [type, setType] = useState<ModuleInput['type']>((module?.type as ModuleInput['type']) ?? 'text')
+  const media = type === 'video' || type === 'image'
+  const [kind, setKind] = useState<'inline' | 'source'>(module?.content.kind === 'source' ? 'source' : 'inline')
+  const [mediaUrl, setMediaUrl] = useState(module?.content.kind === 'media' ? module.content.url : '')
   const [body, setBody] = useState(module?.content.kind === 'inline' ? module.content.body : '')
   const [invalid, setInvalid] = useState(false)
 
@@ -252,8 +259,9 @@ function ModuleDialog({
         .filter(Boolean),
       prerequisites: form.getAll('prerequisites').map(String),
       // Writing a body clears the git fields and the other way round (spec 171).
-      content:
-        kind === 'inline'
+      content: media
+        ? { kind: 'media', url: mediaUrl.trim(), replicate: form.get('replicate') === 'on' }
+        : kind === 'inline'
           ? { kind: 'inline', body }
           : {
               kind: 'source',
@@ -289,11 +297,15 @@ function ModuleDialog({
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="module-type">{t('authoring.modules.type')}</Label>
-              <NativeSelect id="module-type" value={type} onChange={(e) => setType(e.target.value as 'text' | 'quiz')}>
-                <NativeSelectOption value="text">{t('authoring.modules.types.text')}</NativeSelectOption>
-                <NativeSelectOption value="quiz">{t('authoring.modules.types.quiz')}</NativeSelectOption>
+              <NativeSelect id="module-type" value={type} onChange={(e) => setType(e.target.value as ModuleInput['type'])}>
+                {(['text', 'quiz', 'video', 'image'] as const).map((ty) => (
+                  <NativeSelectOption key={ty} value={ty}>
+                    {t(`authoring.modules.types.${ty}`)}
+                  </NativeSelectOption>
+                ))}
               </NativeSelect>
             </div>
+            {!media && (
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="module-source">{t('authoring.modules.source')}</Label>
               <NativeSelect id="module-source" value={kind} onChange={(e) => setKind(e.target.value as 'inline' | 'source')}>
@@ -301,8 +313,27 @@ function ModuleDialog({
                 <NativeSelectOption value="source">{t('authoring.modules.sources.source')}</NativeSelectOption>
               </NativeSelect>
             </div>
+            )}
           </div>
-          {kind === 'inline' ? (
+          {media ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="module-media">{t('authoring.modules.mediaUrl')}</Label>
+              <MediaField id="module-media" value={mediaUrl} onChange={setMediaUrl} accept={type === 'video' ? 'video/*' : 'image/*'} />
+              <span className="text-xs text-muted-foreground">{t('authoring.modules.mediaHelp')}</span>
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="replicate"
+                  defaultChecked={module?.content.kind === 'media' && module.content.replicate}
+                  className="mt-0.5 accent-primary"
+                />
+                <span className="flex flex-col">
+                  {t('authoring.modules.replicate')}
+                  <span className="text-xs text-muted-foreground">{t('authoring.modules.replicateHelp')}</span>
+                </span>
+              </label>
+            </div>
+          ) : kind === 'inline' ? (
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between gap-2">
                 <Label htmlFor="module-body">{type === 'quiz' ? t('authoring.modules.quizBody') : t('authoring.modules.body')}</Label>

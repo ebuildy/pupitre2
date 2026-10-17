@@ -76,10 +76,10 @@ export function CourseDetail() {
       <aside className="flex flex-col gap-4 md:sticky md:top-24 lg:top-32 md:self-start">
         <Card className="gap-0 overflow-hidden py-0">
           <div
-            className="flex h-36 items-center justify-center bg-gradient-to-br from-secondary to-muted text-6xl"
+            className="flex h-36 items-center justify-center overflow-hidden bg-gradient-to-br from-secondary to-muted text-6xl"
             aria-hidden="true"
           >
-            {courseIcon(course)}
+            {course.thumbnailUrl ? <img src={course.thumbnailUrl} alt="" className="h-full w-full object-cover" /> : courseIcon(course)}
           </div>
           <CardContent className="flex flex-col gap-4 p-5">
             <h1 className="text-2xl font-bold tracking-tight">{course.title}</h1>

@@ -3,17 +3,29 @@ import { type SkillRef, skillSlugSchema } from './gamification.ts'
 
 // ─── Modules (spec 191 "Module") ──────────────────────────────────────────────
 
-/** All module types of the model; only `text` and `quiz` are implemented so far. */
+/** All module types of the model; labs come with their feature. */
 export const MODULE_TYPES = ['text', 'video', 'image', 'quiz', 'lab'] as const
 export type ModuleType = (typeof MODULE_TYPES)[number]
-export const SUPPORTED_MODULE_TYPES = ['text', 'quiz'] as const
+export const SUPPORTED_MODULE_TYPES = ['text', 'quiz', 'video', 'image'] as const
+export const MEDIA_MODULE_TYPES = ['video', 'image'] as const
+
+/** A media URL: uploaded (`/uploads/<file>`) or remote (`http(s)://`). */
+export const mediaUrlSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine((v) => /^https?:\/\//i.test(v) || /^\/uploads\/[\w.-]+$/.test(v), 'Media URL must be http(s):// or /uploads/<file>')
 
 /** Module slugs: letters (any script), digits, `-` and `_` (spec 185). Unique within a course. */
 export const MODULE_SLUG_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N}_-]*$/u
 
-/** Exactly one content source (spec 191): text written in the platform, or a file in a repository. */
+/**
+ * Exactly one content source (spec 191): text written in the platform, a file in a repository, or a media URL (video
+ * and image modules; `replicate` copies a remote file locally, spec 063).
+ */
 export const moduleContentSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('inline'), body: z.string() }),
+  z.object({ kind: z.literal('media'), url: mediaUrlSchema, replicate: z.boolean().default(false) }),
   z.object({
     kind: z.literal('source'),
     repo: z.string().trim().min(1),
@@ -49,6 +61,14 @@ export const courseModulesSchema = z
       slugs.add(m.slug)
       if (m.inline && m.type !== 'quiz') {
         ctx.addIssue({ code: 'custom', path: ['modules', i, 'inline'], message: 'Only quizzes can be inline' })
+      }
+      const media = (MEDIA_MODULE_TYPES as readonly string[]).includes(m.type)
+      if (media !== (m.content.kind === 'media')) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['modules', i, 'content'],
+          message: media ? 'Video and image modules need a media URL' : 'Only video and image modules have a media URL',
+        })
       }
       if (m.inline && (i === 0 || modules[i - 1]!.inline || modules[i - 1]!.type === 'quiz')) {
         ctx.addIssue({ code: 'custom', path: ['modules', i, 'inline'], message: 'An inline quiz must follow a lesson' })
@@ -211,6 +231,8 @@ export type QuizView = {
 /** `GET /api/courses/:slug/modules/:moduleSlug` */
 export type ModuleDetail = ModuleSummary & {
   lesson: LessonView | null
+  /** Video and image modules (spec 062); `url` is the local copy when replicated (063). */
+  media: { url: string } | null
   quiz: QuizView | null
   /** A lesson followed by an inline quiz embeds it (spec 083). */
   inlineQuiz: { module: ModuleSummary; quiz: QuizView } | null

@@ -11,6 +11,8 @@ import { auth } from './auth.ts'
 import { env } from './env.ts'
 import { sqlite } from './db/index.ts'
 import { metricsMiddleware, renderMetrics } from './lib/metrics.ts'
+import { uploadsDir } from './services/media.ts'
+import { serveStatic } from '@hono/node-server/serve-static'
 import { type AppEnv, sessionMiddleware } from './middleware/session.ts'
 import { adminRoutes } from './routes/admin/index.ts'
 import { courseRoutes, enrollmentRoutes, leaderboardRoutes, myRoutes } from './routes/courses.ts'
@@ -43,6 +45,13 @@ app.get('/ready', (c) => {
 })
 app.get('/metrics', (c) => c.body(renderMetrics(), 200, { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8' }))
 
+// Spec 062: uploaded and replicated media, public. Names are generated: anything else is refused.
+app.use('/uploads/:filename', async (c, next) => {
+  if (!/^[\w-]+(\.[\w]+)?$/.test(c.req.param('filename'))) return c.json<ApiError>({ error: 'Invalid filename' }, 400)
+  await next()
+})
+app.use('/uploads/*', serveStatic({ root: uploadsDir, rewriteRequestPath: (p) => p.replace(/^\/uploads/, '') }))
+
 app.use(
   '/api/*',
   cors({
@@ -52,10 +61,11 @@ app.use(
     credentials: true,
     maxAge: 300,
   }),
-  bodyLimit({
-    maxSize: 1024 * 1024,
-    onError: (c) => c.json<ApiError>({ error: 'Request body too large' }, 413),
-  }),
+  async (c, next) => {
+    // Media uploads have their own (larger) limit.
+    const maxSize = c.req.path === '/api/admin/media' ? env.MEDIA_MAX_BYTES : 1024 * 1024
+    return bodyLimit({ maxSize, onError: (ctx) => ctx.json<ApiError>({ error: 'Request body too large' }, 413) })(c, next)
+  },
 )
 
 // A deactivated user keeps their session rows, but the web app must see them as signed out.
