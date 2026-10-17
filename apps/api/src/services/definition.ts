@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import { db } from '../db/index.ts'
 import { category, course } from '../db/schema/index.ts'
-import { adminModules, replaceModules } from './modules-admin.ts'
+import { adminModules, expandModuleIndexes, replaceModules } from './modules-admin.ts'
 import { adminPrerequisites, setPrerequisites } from './prerequisites.ts'
 
 type Course = typeof course.$inferSelect
@@ -54,9 +54,9 @@ function categoryId(slug: string | null | undefined) {
  * Spec 169: creates the course, or replaces it whole (metadata, prerequisites, modules) — in one transaction.
  * Modules are matched by slug, so progress on kept modules stays.
  */
-export function writeDefinition(slug: string, rawSpec: CourseSpec, existing: Course | null) {
+export async function writeDefinition(slug: string, rawSpec: CourseSpec, existing: Course | null) {
   const spec = courseSpecSchema.parse(rawSpec)
-  const modules = courseModulesSchema.parse({ modules: spec.modules }).modules
+  const modules = await expandModuleIndexes(courseModulesSchema.parse({ modules: spec.modules }).modules)
   const values = {
     slug,
     title: spec.title,

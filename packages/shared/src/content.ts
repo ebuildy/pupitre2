@@ -8,6 +8,8 @@ export const MODULE_TYPES = ['text', 'video', 'image', 'quiz', 'lab'] as const
 export type ModuleType = (typeof MODULE_TYPES)[number]
 export const SUPPORTED_MODULE_TYPES = ['text', 'quiz', 'video', 'image'] as const
 export const MEDIA_MODULE_TYPES = ['video', 'image'] as const
+/** Spec 065: an index file listing modules; expanded into real modules when the course is saved. */
+export const INPUT_MODULE_TYPES = [...SUPPORTED_MODULE_TYPES, 'modules'] as const
 
 /** A media URL: uploaded (`/uploads/<file>`) or remote (`http(s)://`). */
 export const mediaUrlSchema = z
@@ -38,7 +40,7 @@ export type ModuleContent = z.infer<typeof moduleContentSchema>
 export const moduleInputSchema = z.object({
   slug: z.string().trim().regex(MODULE_SLUG_PATTERN, 'Invalid module slug').max(100),
   name: z.string().trim().min(1, 'Name is required').max(200),
-  type: z.enum(SUPPORTED_MODULE_TYPES),
+  type: z.enum(INPUT_MODULE_TYPES),
   hidden: z.boolean().default(false),
   /** Quizzes only: shown at the bottom of the preceding lesson (spec 083). */
   inline: z.boolean().default(false),
@@ -61,6 +63,9 @@ export const courseModulesSchema = z
       slugs.add(m.slug)
       if (m.inline && m.type !== 'quiz') {
         ctx.addIssue({ code: 'custom', path: ['modules', i, 'inline'], message: 'Only quizzes can be inline' })
+      }
+      if (m.type === 'modules' && m.content.kind !== 'source') {
+        ctx.addIssue({ code: 'custom', path: ['modules', i, 'content'], message: 'A module index is a file in a repository' })
       }
       const media = (MEDIA_MODULE_TYPES as readonly string[]).includes(m.type)
       if (media !== (m.content.kind === 'media')) {
@@ -206,6 +211,8 @@ export type LessonView = {
   toc: TocEntry[]
   /** The source could not be loaded; `html` is a placeholder (spec 064). */
   unavailable: boolean
+  /** CSS of the markdown patterns used (spec 061). */
+  styles: string
 }
 
 export type QuestionCooldown = { remainingSeconds: number; attempts: number; locked: boolean }

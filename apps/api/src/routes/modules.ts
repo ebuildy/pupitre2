@@ -94,10 +94,10 @@ export const moduleRoutes = new Hono<AppEnv>()
       quiz = quizView(await loadQuiz(m), attemptStates(user.id, m.id))
     } else {
       try {
-        lesson = { ...renderMarkdown(await moduleBody(m)), unavailable: false }
+        lesson = { ...renderMarkdown(await moduleBody(m)), unavailable: false, styles: '' }
       } catch (err) {
         if (!(err instanceof ContentUnavailableError)) throw err
-        lesson = { html: '', toc: [], unavailable: true }
+        lesson = { html: '', toc: [], unavailable: true, styles: '' }
       }
     }
 

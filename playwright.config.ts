@@ -38,6 +38,7 @@ export default defineConfig({
         PORT: String(API_PORT),
         DATABASE_URL: './data/e2e.db',
         UPLOADS_DIR: './data/e2e-uploads',
+        GIT_CACHE_DIR: './data/e2e-git-cache',
         BETTER_AUTH_URL: BASE_URL,
         CORS_ORIGINS: BASE_URL,
         LOG_REQUESTS: 'false',

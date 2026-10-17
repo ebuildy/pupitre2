@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { type AppEnv, requireRole } from '../../middleware/session.ts'
+import { adminCacheRoutes } from './cache.ts'
 import { adminCategoryRoutes } from './categories.ts'
 import { adminCourseRoutes } from './courses.ts'
 import { adminImportRoutes } from './import.ts'
@@ -20,6 +21,7 @@ import { adminUserRoutes } from './users.ts'
  */
 export const adminRoutes = new Hono<AppEnv>()
   .use('*', requireRole('admin'))
+  .route('/cache', adminCacheRoutes)
   .route('/categories', adminCategoryRoutes)
   .route('/courses/import', adminImportRoutes)
   .route('/courses', adminCourseRoutes)

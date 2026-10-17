@@ -250,7 +250,7 @@ function ModuleDialog({
     onSave({
       slug,
       name,
-      type,
+      type: type as Editable['type'],
       hidden: form.get('hidden') === 'on',
       inline: type === 'quiz' && form.get('inline') === 'on',
       skills: String(form.get('skills') ?? '')

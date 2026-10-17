@@ -95,7 +95,7 @@ export const adminImportRoutes = new Hono<AppEnv>()
   .post('/', validate('json', markdownImportSchema), async (c) => {
     const input = c.req.valid('json')
     const r = await resolveImport(input)
-    const id = writeDefinition(r.slug, r.spec, r.existing)
+    const id = await writeDefinition(r.slug, r.spec, r.existing)
     audit(c.get('user'), `course.import.${input.mode}`, { type: 'course', id, label: r.slug })
     return c.json<MarkdownImportResult>(
       { slug: r.slug, id, mode: input.mode, moduleCount: r.modules.length, warnings: r.warnings },

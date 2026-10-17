@@ -17,8 +17,19 @@ const schema = z.object({
   /** Admin bootstrap (spec 016). `_FILE` (mounted secret) wins over the plain variable. */
   ADMIN_PASSWORD: z.string().optional(),
   ADMIN_PASSWORD_FILE: z.string().optional(),
-  /** Where module files (repo, ref, path) are read from (spec 064). `git` is not implemented yet. */
-  CONTENT_LOADER: z.enum(['fake', 'git']).default('fake'),
+  /**
+   * Where module files (repo, ref, path) are read from (spec 064): `git` (clones), `fake` (CONTENT_SAMPLES_DIR only), or
+   * `auto` — repositories found in CONTENT_SAMPLES_DIR are read from it, the others through git.
+   */
+  CONTENT_LOADER: z.enum(['fake', 'git', 'auto']).default('auto'),
+  /** Spec 066: git cache. */
+  GIT_CACHE_DIR: z.string().default('./data/git-cache'),
+  GIT_CACHE_TTL_MINUTES: z.coerce.number().min(0).default(10),
+  GIT_CACHE_MAX_REPOS: z.coerce.number().int().positive().default(64),
+  /** YAML `credentials: [{url: "github.com/org/*", token: "…"}]`; first match wins. */
+  GIT_CREDENTIALS_PATH: z.string().optional(),
+  /** Token for every repository without a matching credential. */
+  GIT_TOKEN: z.string().optional(),
   /** Fake loader: folder holding one sub-folder per repository (default `apps/api/content-samples`). */
   CONTENT_SAMPLES_DIR: z.string().optional(),
   /** Spec 009: credential endpoints (sign-in, sign-up) per client IP; 0 disables. */

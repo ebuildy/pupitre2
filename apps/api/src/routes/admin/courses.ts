@@ -9,12 +9,12 @@ import {
   SLUG_PATTERN,
   type EnrollmentSource,
 } from '@pupitre/shared'
-import { and, asc, eq, max, min, sql } from 'drizzle-orm'
+import { and, asc, eq, isNotNull, max, min, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { db } from '../../db/index.ts'
-import { course, courseCompletion, enrollmentGrant, groupCourseEnrollment, groupMembership, user, userGroup } from '../../db/schema/index.ts'
+import { course, courseCompletion, courseModule, enrollmentGrant, groupCourseEnrollment, groupMembership, user, userGroup } from '../../db/schema/index.ts'
 import { validate } from '../../lib/validate.ts'
 import type { AppEnv } from '../../middleware/session.ts'
 import {
@@ -26,11 +26,12 @@ import {
   toAdminCourse,
 } from '../../services/courses.ts'
 import { CategoryTree } from '../../services/categories.ts'
-import { adminModules, replaceModules } from '../../services/modules-admin.ts'
+import { adminModules, saveModules } from '../../services/modules-admin.ts'
 import { adminPrerequisites, setPrerequisites } from '../../services/prerequisites.ts'
 import { audit } from '../../services/audit.ts'
 import { readDefinition, writeDefinition } from '../../services/definition.ts'
 import { exportMarkdownCourse } from '../../content/markdown-course.ts'
+import { contentLoader } from '../../content/loader.ts'
 import { completeCourse, uncompleteCourse } from '../../services/xp.ts'
 
 const NOT_FOUND = 'Course not found'
@@ -182,6 +183,30 @@ export const adminCourseRoutes = new Hono<AppEnv>()
     return c.json({ groups })
   })
 
+  // Spec 177: forget the git clones used by the course (or one module), to see pushed changes before the TTL.
+  .post('/:id/cache/clear', async (c) => {
+    const found = await requireCourse(c.req.param('id'))
+    const repos = db
+      .selectDistinct({ repo: courseModule.sourceRepo, ref: courseModule.sourceRef })
+      .from(courseModule)
+      .where(and(eq(courseModule.courseId, found.id), isNotNull(courseModule.sourceRepo)))
+      .all()
+      .map((r) => ({ repo: r.repo!, ref: r.ref ?? 'main' }))
+    await contentLoader.clear(repos)
+    return c.json({ status: 'ok', reposCleared: repos.length })
+  })
+  .post('/:id/modules/:slug/cache/clear', async (c) => {
+    const found = await requireCourse(c.req.param('id'))
+    const m = db
+      .select({ repo: courseModule.sourceRepo, ref: courseModule.sourceRef })
+      .from(courseModule)
+      .where(and(eq(courseModule.courseId, found.id), eq(courseModule.slug, c.req.param('slug'))))
+      .get()
+    if (!m) throw new HTTPException(404, { message: 'Module not found' })
+    if (m.repo) await contentLoader.clear([{ repo: m.repo, ref: m.ref ?? 'main' }])
+    return c.json({ status: 'ok', reposCleared: m.repo ? 1 : 0 })
+  })
+
   // Spec 176: markdown export.
   .get(
     '/:id/export/markdown',
@@ -205,7 +230,7 @@ export const adminCourseRoutes = new Hono<AppEnv>()
     const found = await requireCourse(c.req.param('id'))
     const { slug, spec } = c.req.valid('json')
     if (slug !== undefined && !SLUG_PATTERN.test(slug)) throw new HTTPException(400, { message: 'Invalid slug' })
-    writeDefinition(slug ?? found.slug, spec, found)
+    await writeDefinition(slug ?? found.slug, spec, found)
     audit(c.get('user'), 'course.definition', { type: 'course', id: found.id, label: slug ?? found.slug })
     return c.json(await readDefinition((await findCourseById(found.id))!))
   })
@@ -217,7 +242,7 @@ export const adminCourseRoutes = new Hono<AppEnv>()
   })
   .put('/:id/modules', validate('json', courseModulesSchema), async (c) => {
     const found = await requireCourse(c.req.param('id'))
-    replaceModules(found.id, c.req.valid('json').modules)
+    await saveModules(found.id, c.req.valid('json').modules)
     return c.json({ modules: await adminModules(found.id) })
   })
 
