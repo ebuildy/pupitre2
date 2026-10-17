@@ -31,6 +31,8 @@ export type CourseFixture = {
   topic?: string
   /** Spec 106. */
   badge?: { name: string; icon: string }
+  /** Spec 150. */
+  inPerson?: boolean
 }
 
 /** Hand-written courses, one per visibility/status case; stable slugs to use in docs and manual tests. */
@@ -74,6 +76,7 @@ export const CURATED_COURSES: CourseFixture[] = [
     visibility: 'public',
     status: 'published',
     badge: { name: 'Pilote de pods', icon: '☸️' },
+    inPerson: true,
   },
   {
     slug: 'python-automation',
@@ -204,6 +207,13 @@ export const PATHS = [
     level: 'intermediate' as const,
     items: ['linux', 'docker', 'kubernetes'],
   },
+]
+
+/** Spec 150: sessions of the in-person curated course (fixed dates, so runs stay identical). */
+export const SESSIONS = [
+  { course: 'kubernetes-basics', title: 'Atelier Kubernetes — Groupe A', startsAt: '2026-11-05T09:00:00+01:00', location: 'Salle 3B, Paris', capacity: 12 },
+  { course: 'kubernetes-basics', title: 'Atelier Kubernetes — Groupe B', startsAt: '2026-11-19T14:00:00+01:00', location: 'Salle 3B, Paris', capacity: 2 },
+  { course: 'kubernetes-basics', title: 'Atelier Kubernetes — Lyon', startsAt: '2026-12-03T09:30:00+01:00', location: 'Campus Lyon, salle Rhône', capacity: null },
 ]
 
 /** Reasons of the admin XP bonuses given to a few learners. */

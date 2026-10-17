@@ -78,6 +78,13 @@
       "when": 1792240341846,
       "tag": "0010_paths",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1792240811028,
+      "tag": "0011_sessions",
+      "breakpoints": true
     }
   ]
 }

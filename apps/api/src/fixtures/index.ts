@@ -8,6 +8,8 @@ import {
   badgeAward,
   category,
   course,
+  courseSession,
+  sessionBooking,
   courseCompletion,
   courseModule,
   enrollmentGrant,
@@ -30,6 +32,7 @@ import {
   type CourseFixture,
   GROUPS,
   PATHS,
+  SESSIONS,
   KNOWN_USERS,
   MANAGER_PASSWORD,
   STUDENT_PASSWORD,
@@ -272,6 +275,23 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
     for (const userId of new Set(followers)) if (admin) enrollInPath(created.id, userId, admin.id)
   }
 
+  // 4d. Sessions (spec 150), matched by title; `etudiant` booked the first one.
+  for (const sess of SESSIONS) {
+    const c = courses.find((x) => x.slug === sess.course)
+    if (!c) continue
+    const found = await db.query.courseSession.findFirst({ columns: { id: true }, where: eq(courseSession.title, sess.title) })
+    if (found) continue
+    const created = db
+      .insert(courseSession)
+      .values({ courseId: c.id, title: sess.title, startsAt: new Date(sess.startsAt), location: sess.location, capacity: sess.capacity, createdBy: admin?.id ?? null })
+      .returning({ id: courseSession.id })
+      .get()!
+    if (sess === SESSIONS[0]) {
+      const etudiant = await db.query.user.findFirst({ columns: { id: true }, where: eq(user.username, 'etudiant') })
+      if (etudiant) db.insert(sessionBooking).values({ sessionId: created.id, userId: etudiant.id }).onConflictDoNothing().run()
+    }
+  }
+
   // 5. Progress (spec 191 "ModuleProgress"), in module order: about a third of the enrollments finished (every
   // module done, course completed), some started, the rest untouched; with their lesson, quiz and course XP.
   const completions: (typeof courseCompletion.$inferInsert)[] = []
@@ -371,6 +391,7 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
     categories: CATEGORIES.length,
     groups: GROUPS.length,
     paths: PATHS.length,
+    sessions: SESSIONS.length,
     courses: courseFixtures.length,
     users: userFixtures.length,
     grants: grants.length,

@@ -55,6 +55,8 @@ export const courseCreateSchema = z.object({
   status: z.enum(COURSE_STATUSES).default('draft'),
   /** Spec 106: awarded on completion. */
   badge: badgeSchema.nullable().optional(),
+  /** Spec 150: in-person course, with sessions. */
+  inPerson: z.boolean().optional(),
 })
 export type CourseCreateInput = z.input<typeof courseCreateSchema>
 
@@ -86,6 +88,7 @@ export type CourseSummary = {
   /** Signed-in user completed the course. */
   completed: boolean
   badge: Badge | null
+  inPerson: boolean
   /** Spec 110: union of the skills of its visible modules. */
   skills: SkillRef[]
   moduleCount: number
@@ -145,6 +148,7 @@ export type AdminCourse = {
   visibility: CourseVisibility
   status: CourseStatus
   badge: Badge | null
+  inPerson: boolean
   enrollmentCount: number
   createdAt: string
   updatedAt: string

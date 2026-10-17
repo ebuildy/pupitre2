@@ -12,6 +12,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { SkillChips } from '../components/CourseCard.tsx'
 import { ModuleList } from '../components/ModuleList.tsx'
+import { CourseSessions } from '../components/sessions/CourseSessions.tsx'
 import { api } from '../lib/api.ts'
 import { moduleHref, nextModule, useCourseModules } from '../lib/learning.ts'
 
@@ -199,6 +200,7 @@ export function CourseDetail() {
         ) : (
           <LoadingState label={t('course.loading')} />
         )}
+        {course.inPerson && <CourseSessions slug={course.slug} />}
       </section>
     </div>
   )

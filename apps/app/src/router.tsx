@@ -10,6 +10,8 @@ import { MyGroups } from './routes/MyGroups.tsx'
 import { MySkills } from './routes/MySkills.tsx'
 import { SkillPage } from './routes/SkillPage.tsx'
 import { demoAccounts } from './lib/demo-accounts.ts'
+import { Agenda } from './routes/Agenda.tsx'
+import { Attendance } from './routes/Attendance.tsx'
 import { Catalogue } from './routes/Catalogue.tsx'
 import { CourseDetail } from './routes/CourseDetail.tsx'
 import { LessonPage } from './routes/LessonPage.tsx'
@@ -107,6 +109,22 @@ export const router = createBrowserRouter([
         ),
       },
       { path: 'skills/:slug', element: <SkillPage /> },
+      {
+        path: 'agenda',
+        element: (
+          <RequireAuth>
+            <Agenda />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'sessions/:id/attendance',
+        element: (
+          <RequireAuth>
+            <Attendance />
+          </RequireAuth>
+        ),
+      },
       {
         path: 'my-groups',
         element: (

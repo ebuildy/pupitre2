@@ -64,6 +64,8 @@ export const course = sqliteTable(
     /** Spec 106: badge awarded on completion (both set, or neither). */
     badgeName: text(),
     badgeIcon: text(),
+    /** Spec 150. */
+    inPerson: integer({ mode: 'boolean' }).notNull().default(false),
     ...timestamps(),
   },
   (t) => [index('course_status_visibility_idx').on(t.status, t.visibility), index('course_category_idx').on(t.categoryId)],

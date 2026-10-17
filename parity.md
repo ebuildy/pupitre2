@@ -60,7 +60,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 041 | Catalogue page | ✅ | [040](docs/specs/040-courses-and-catalogue.md) | |
 | 042 | Catalogue skill filter | ✅ | [110](docs/specs/110-skills.md) |  |
 | 043 | Continue-learning hero | ✅ | [040](docs/specs/040-courses-and-catalogue.md) |  |
-| 044 | Course card | 🟡 | [040](docs/specs/040-courses-and-catalogue.md) | no thumbnail image yet (062), no "Présentiel" (150) |
+| 044 | Course card | 🟡 | [040](docs/specs/040-courses-and-catalogue.md) | no thumbnail image yet (062) |
 | 045 | Course detail page | ✅ | [045](docs/specs/045-course-page-and-enrollment.md) | |
 | 046 | Course visibility | ✅ | [040](docs/specs/040-courses-and-catalogue.md) | target model (visibility + status) |
 | 047 | Self-enrollment | ✅ | [045](docs/specs/045-course-page-and-enrollment.md) | |
@@ -175,12 +175,12 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 
 | # | Feature | Status | Rewrite spec | Notes |
 | --- | --- | --- | --- | --- |
-| 150 | In-person courses and sessions | ⬜ | | |
-| 151 | Session management | ⬜ | | |
-| 152 | Session booking | ⬜ | | |
-| 153 | My session bookings | ⬜ | | |
-| 154 | Agenda | ⬜ | | |
-| 155 | Session attendance | ⬜ | | |
+| 150 | In-person courses and sessions | ✅ | [150](docs/specs/150-in-person-sessions.md) |  |
+| 151 | Session management | ✅ | [150](docs/specs/150-in-person-sessions.md) |  |
+| 152 | Session booking | ✅ | [150](docs/specs/150-in-person-sessions.md) | original gaps fixed |
+| 153 | My session bookings | ✅ | [150](docs/specs/150-in-person-sessions.md) |  |
+| 154 | Agenda | ✅ | [150](docs/specs/150-in-person-sessions.md) |  |
+| 155 | Session attendance | ✅ | [150](docs/specs/150-in-person-sessions.md) |  |
 
 ## Administration & authoring
 

@@ -14,6 +14,7 @@ import { courseRoutes, enrollmentRoutes, leaderboardRoutes, myRoutes } from './r
 import { badgeRoutes, myBadgeRoutes, mySkillRoutes, skillRoutes } from './routes/gamification.ts'
 import { myGroupRoutes } from './routes/groups.ts'
 import { myPathRoutes, pathRoutes } from './routes/paths.ts'
+import { sessionRoutes } from './routes/sessions.ts'
 import { managerRoutes } from './routes/manager.ts'
 import { meRoutes } from './routes/me.ts'
 import { moduleRoutes } from './routes/modules.ts'
@@ -68,6 +69,7 @@ const routes = app
   .route('/badges', badgeRoutes)
   .route('/paths', pathRoutes)
   .route('/my/paths', myPathRoutes)
+  .route('/sessions', sessionRoutes)
   .route('/manager', managerRoutes)
   .route('/leaderboard', leaderboardRoutes)
   .route('/users', userRoutes)

@@ -34,6 +34,7 @@ function initialValues(course?: AdminCourse): Values {
     completionXp: String(course?.completionXp ?? DEFAULT_COMPLETION_XP),
     visibility: course?.visibility ?? 'private',
     status: course?.status ?? 'draft',
+    inPerson: course?.inPerson ?? false,
     badgeName: course?.badge?.name ?? '',
     badgeIcon: course?.badge?.icon ?? '',
   }
@@ -83,6 +84,7 @@ export function CourseForm({
       visibility: values.visibility || 'private',
       status: values.status || 'draft',
       badge: badgeName ? { name: badgeName, icon: badgeIcon } : null,
+      inPerson: values.inPerson === true,
     })
   }
 
@@ -180,6 +182,18 @@ export function CourseForm({
           />
         </label>
       </div>
+      <label className="flex items-start gap-2 text-sm font-medium">
+        <input
+          type="checkbox"
+          className="mt-0.5 size-4 accent-primary"
+          checked={values.inPerson === true}
+          onChange={(e) => setValues((v) => ({ ...v, inPerson: e.target.checked }))}
+        />
+        <span className="flex flex-col">
+          {t('courses.form.inPerson')}
+          <span className="text-xs font-normal text-muted-foreground">{t('courses.form.inPersonHelp')}</span>
+        </span>
+      </label>
       <fieldset className="flex flex-col gap-2 rounded-lg border p-4">
         <legend className="px-1 text-sm font-medium">{t('courses.form.badge')}</legend>
         <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">

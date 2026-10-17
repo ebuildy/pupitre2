@@ -69,6 +69,7 @@ export function CourseCard({ course, footer }: { course: CourseSummary; footer?:
         {course.progress && course.progress.total > 0 && <CourseProgress progress={course.progress} />}
         <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-2">
           {course.difficulty && <DifficultyBadge difficulty={course.difficulty} />}
+          {course.inPerson && <Badge variant="outline">{t('catalogue.inPerson')}</Badge>}
           {course.xpRequired > 0 && <Badge variant="warning">{t('catalogue.xpRequired', { amount: course.xpRequired })}</Badge>}
           {course.completionXp > 0 && <Badge variant="xp">{t('catalogue.reward', { amount: course.completionXp })}</Badge>}
           {course.completed ? (
