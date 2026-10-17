@@ -31,6 +31,7 @@ import { CategoryTree } from '../services/categories.ts'
 import { courseExtras, skillRef, userSkillLevel } from '../services/skills.ts'
 import { completionsFor, totalXp, xpHistory, xpRanking } from '../services/xp.ts'
 import { badgeRanking } from '../services/badges.ts'
+import { prerequisiteViews } from '../services/prerequisites.ts'
 
 const NOT_FOUND = 'Course not found'
 
@@ -85,6 +86,7 @@ export const courseRoutes = new Hono<AppEnv>()
     if (!canView(found, user?.role as Role | undefined, enrolled)) throw new HTTPException(404, { message: NOT_FOUND })
 
     const completedAt = user ? (await completionsFor(user.id, [found.id])).get(found.id) : undefined
+    const prerequisites = prerequisiteViews(user?.id ?? null, found.id)
     return c.json<CourseDetail>({
       ...toSummary(found, await CategoryTree.load(), { enrolled, completed: !!completedAt }, courseExtras([found.id], user?.id ?? null)),
       visibility: found.visibility,
@@ -97,6 +99,8 @@ export const courseRoutes = new Hono<AppEnv>()
         : null,
       completedAt: completedAt?.toISOString() ?? null,
       userXp: user ? totalXp(user.id) : null,
+      prerequisites,
+      prerequisitesMet: user?.role === 'admin' || prerequisites.every((p) => p.met),
     })
   })
 

@@ -51,7 +51,12 @@ export function toSummary(
   }
 }
 
-export function toAdminCourse(c: Course, enrollmentCount: number, tree: CategoryTree): AdminCourse {
+export function toAdminCourse(
+  c: Course,
+  enrollmentCount: number,
+  tree: CategoryTree,
+  prerequisites: AdminCourse['prerequisites'] = [],
+): AdminCourse {
   return {
     id: c.id,
     slug: c.slug,
@@ -66,6 +71,7 @@ export function toAdminCourse(c: Course, enrollmentCount: number, tree: Category
     status: c.status,
     badge: badgeOf(c),
     inPerson: c.inPerson,
+    prerequisites,
     enrollmentCount,
     createdAt: c.createdAt.toISOString(),
     updatedAt: c.updatedAt.toISOString(),

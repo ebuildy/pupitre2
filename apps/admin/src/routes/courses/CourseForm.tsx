@@ -18,7 +18,7 @@ import { buttonVariants } from '@pupitre/ui/components/ui/button'
 
 // Form state: text inputs hold strings (numbers are parsed on submit).
 type Values = Required<{
-  [K in Exclude<keyof CourseCreateInput, 'badge'>]: NonNullable<CourseCreateInput[K]> extends number
+  [K in Exclude<keyof CourseCreateInput, 'badge' | 'prerequisites'>]: NonNullable<CourseCreateInput[K]> extends number
     ? string
     : NonNullable<CourseCreateInput[K]> | ''
 }> & { badgeName: string; badgeIcon: string }

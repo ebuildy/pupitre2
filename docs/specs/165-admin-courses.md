@@ -61,7 +61,7 @@ Admin URLs use **ids** (course and category slugs can change). Body schemas live
 
 - Pages instead of an expanding row panel; no toasts yet (inline status messages).
 - Slug editable; status and visibility editable in the form.
-- Not yet: modules tab and editor (171), YAML/markdown import/export (169–176), cache actions, group enrollments (135).
+- Modules, definition, markdown import / export: [169](169-course-authoring.md); group enrollments: [130](130-groups.md); prerequisites: [050](050-prerequisites-and-auto-enrollment.md). Not yet: git cache actions (177).
 
 ## Source
 

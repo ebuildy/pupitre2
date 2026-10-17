@@ -37,7 +37,7 @@ test.describe('admin courses (specs 165–168)', () => {
     // Edit: title and slug (the slug can change, the id stays).
     await page.getByLabel('Titre').fill(`Admin ${id} v2`)
     await page.getByLabel('Slug').fill(`admin-${id}-v2`)
-    await page.getByRole('button', { name: 'Enregistrer' }).click()
+    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click()
     await expect(page.getByRole('status')).toHaveText(`Cours « admin-${id}-v2 » mis à jour`)
 
     // Listed with its badges.

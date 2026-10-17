@@ -224,7 +224,7 @@ test.describe('admin: XP per user', () => {
     await expect(page.getByLabel('XP à l’achèvement')).toHaveValue('200')
     await page.getByLabel('XP requis pour s’inscrire').fill('50')
     await page.getByLabel('XP à l’achèvement').fill('80')
-    await page.getByRole('button', { name: 'Enregistrer' }).click()
+    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click()
     await expect(page.getByRole('status')).toHaveText(`Cours « ${course.slug} » mis à jour`)
 
     const updated = await (await page.request.get(`/api/courses/${course.slug}`)).json()

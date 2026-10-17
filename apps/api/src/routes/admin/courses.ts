@@ -3,7 +3,10 @@ import {
   type AdminCourseEnrollment,
   courseCreateSchema,
   courseModulesSchema,
+  courseSpecSchema,
+  MARKDOWN_SPLITS,
   courseUpdateSchema,
+  SLUG_PATTERN,
   type EnrollmentSource,
 } from '@pupitre/shared'
 import { and, asc, eq, max, min, sql } from 'drizzle-orm'
@@ -24,6 +27,10 @@ import {
 } from '../../services/courses.ts'
 import { CategoryTree } from '../../services/categories.ts'
 import { adminModules, replaceModules } from '../../services/modules-admin.ts'
+import { adminPrerequisites, setPrerequisites } from '../../services/prerequisites.ts'
+import { audit } from '../../services/audit.ts'
+import { readDefinition, writeDefinition } from '../../services/definition.ts'
+import { exportMarkdownCourse } from '../../content/markdown-course.ts'
 import { completeCourse, uncompleteCourse } from '../../services/xp.ts'
 
 const NOT_FOUND = 'Course not found'
@@ -39,7 +46,11 @@ function checkCategory(tree: CategoryTree, categoryId: string | null | undefined
 }
 
 /** Form fields → columns: the badge is stored as two columns. */
-function courseValues<T extends { badge?: { name: string; icon: string } | null }>({ badge, ...rest }: T) {
+function courseValues<T extends { badge?: { name: string; icon: string } | null; prerequisites?: unknown }>({
+  badge,
+  prerequisites: _,
+  ...rest
+}: T) {
   return { ...rest, ...(badge !== undefined ? { badgeName: badge?.name ?? null, badgeIcon: badge?.icon ?? null } : {}) }
 }
 
@@ -64,8 +75,12 @@ export const adminCourseRoutes = new Hono<AppEnv>()
     const tree = await CategoryTree.load()
     checkCategory(tree, input.categoryId)
     try {
-      const [created] = await db.insert(course).values(courseValues(input)).returning()
-      return c.json<AdminCourse>(toAdminCourse(created!, 0, tree), 201)
+      const created = db.transaction((tx) => {
+        const row = tx.insert(course).values(courseValues(input)).returning().get()!
+        if (input.prerequisites) setPrerequisites(tx, row.id, input.prerequisites)
+        return row
+      })
+      return c.json<AdminCourse>(toAdminCourse(created, 0, tree, adminPrerequisites(created.id)), 201)
     } catch (err) {
       if (isUniqueViolation(err)) throw new HTTPException(409, { message: SLUG_TAKEN })
       throw err
@@ -73,7 +88,9 @@ export const adminCourseRoutes = new Hono<AppEnv>()
   })
   .get('/:id', async (c) => {
     const found = await requireCourse(c.req.param('id'))
-    return c.json<AdminCourse>(toAdminCourse(found, await countEnrolled(found.id), await CategoryTree.load()))
+    return c.json<AdminCourse>(
+      toAdminCourse(found, await countEnrolled(found.id), await CategoryTree.load(), adminPrerequisites(found.id)),
+    )
   })
   .patch('/:id', validate('json', courseUpdateSchema), async (c) => {
     const found = await requireCourse(c.req.param('id'))
@@ -81,8 +98,15 @@ export const adminCourseRoutes = new Hono<AppEnv>()
     const tree = await CategoryTree.load()
     checkCategory(tree, input.categoryId)
     try {
-      const [updated] = await db.update(course).set(courseValues(input)).where(eq(course.id, found.id)).returning()
-      return c.json<AdminCourse>(toAdminCourse(updated!, await countEnrolled(found.id), tree))
+      const updated = db.transaction((tx) => {
+        const values = courseValues(input)
+        const row = Object.keys(values).length
+          ? tx.update(course).set(values).where(eq(course.id, found.id)).returning().get()!
+          : found
+        if (input.prerequisites) setPrerequisites(tx, found.id, input.prerequisites)
+        return row
+      })
+      return c.json<AdminCourse>(toAdminCourse(updated, await countEnrolled(found.id), tree, adminPrerequisites(found.id)))
     } catch (err) {
       if (isUniqueViolation(err)) throw new HTTPException(409, { message: SLUG_TAKEN })
       throw err
@@ -156,6 +180,34 @@ export const adminCourseRoutes = new Hono<AppEnv>()
       .all()
       .map((g) => ({ ...g, enrolledAt: g.enrolledAt.toISOString() }))
     return c.json({ groups })
+  })
+
+  // Spec 176: markdown export.
+  .get(
+    '/:id/export/markdown',
+    validate('query', z.object({ split: z.enum(MARKDOWN_SPLITS).optional() })),
+    async (c) => {
+      const found = await requireCourse(c.req.param('id'))
+      const { slug, spec } = await readDefinition(found)
+      const markdown = exportMarkdownCourse(slug, spec, c.req.valid('query').split)
+      c.header('Content-Disposition', `attachment; filename="${slug}.md"`)
+      c.header('X-Content-Type-Options', 'nosniff')
+      return c.body(markdown, 200, { 'Content-Type': 'text/markdown; charset=utf-8' })
+    },
+  )
+
+  // Spec 169: the whole course as a portable document.
+  .get('/:id/definition', async (c) => {
+    const found = await requireCourse(c.req.param('id'))
+    return c.json(await readDefinition(found))
+  })
+  .put('/:id/definition', validate('json', z.object({ slug: z.string().optional(), spec: courseSpecSchema })), async (c) => {
+    const found = await requireCourse(c.req.param('id'))
+    const { slug, spec } = c.req.valid('json')
+    if (slug !== undefined && !SLUG_PATTERN.test(slug)) throw new HTTPException(400, { message: 'Invalid slug' })
+    writeDefinition(slug ?? found.slug, spec, found)
+    audit(c.get('user'), 'course.definition', { type: 'course', id: found.id, label: slug ?? found.slug })
+    return c.json(await readDefinition((await findCourseById(found.id))!))
   })
 
   // Module list (spec 169 style): read, and replace as a whole. The module editor UI comes later.

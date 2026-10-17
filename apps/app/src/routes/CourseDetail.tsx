@@ -1,6 +1,6 @@
 import { useGoTo, useSession } from '@pupitre/auth-ui'
 import { useTranslation } from '@pupitre/i18n'
-import type { CourseModulesResponse } from '@pupitre/shared'
+import type { CourseDetail as CourseDetailData, CourseModulesResponse } from '@pupitre/shared'
 import { CategoryLabel, courseIcon, DifficultyBadge, EmptyState, ErrorState, isNotFound, LoadingState, unwrap } from '@pupitre/ui'
 import { Alert, AlertDescription } from '@pupitre/ui/components/ui/alert'
 import { Button } from '@pupitre/ui/components/ui/button'
@@ -31,7 +31,7 @@ export function CourseDetail() {
     queryFn: () => unwrap(api.api.courses[':slug'].$get({ param: { slug } })),
   })
   // Content is for enrolled learners and admins (spec 053).
-  const canSeeContent = !!course?.enrollment || session?.user.role === 'admin'
+  const canSeeContent = (!!course?.enrollment && course.prerequisitesMet) || session?.user.role === 'admin'
   const { data: content } = useCourseModules(slug, canSeeContent)
 
   const onChanged = async () => {
@@ -188,8 +188,9 @@ export function CourseDetail() {
             </span>
           )}
         </div>
+        {course.prerequisites.length > 0 && <Prerequisites course={course} />}
         {!canSeeContent ? (
-          <EmptyState title={`📭 ${t('course.contentLocked')}`} />
+          course.enrollment && !course.prerequisitesMet ? null : <EmptyState title={`📭 ${t('course.contentLocked')}`} />
         ) : content && content.modules.length > 0 ? (
           <>
             <ProgressBlock courseSlug={slug} content={content} />
@@ -249,6 +250,34 @@ function BadgeCard({ slug, badge, earned }: { slug: string; badge: { name: strin
           {stats.data && t('course.badgeEarnedBy', { count: stats.data.earnedBy })}
         </span>
       </span>
+    </div>
+  )
+}
+
+/** Spec 050: courses to complete first, each with ✓ when met. */
+function Prerequisites({ course }: { course: { prerequisites: CourseDetailData['prerequisites']; prerequisitesMet: boolean } }) {
+  const { t } = useTranslation('app')
+  return (
+    <div
+      className={`flex flex-col gap-2 rounded-lg border p-4 ${course.prerequisitesMet ? '' : 'border-warning/50 bg-warning-soft'}`}
+      data-testid="prerequisites"
+    >
+      <h3 className="font-semibold">{t('course.prerequisitesTitle')}</h3>
+      {!course.prerequisitesMet && <p className="text-sm">{t('course.prerequisitesUnmet')}</p>}
+      <ul className="flex flex-col gap-1 text-sm">
+        {course.prerequisites.map((p) => (
+          <li key={p.course.slug} className="flex flex-wrap items-center gap-2">
+            <span aria-hidden="true">{p.met ? '✓' : '○'}</span>
+            <Link to={`/courses/${p.course.slug}`} className="font-medium text-primary hover:underline">
+              {p.course.title}
+            </Link>
+            {p.minScore ? <span className="text-muted-foreground">{t('course.prerequisiteMinScore', { score: p.minScore })}</span> : null}
+            {p.modules.length > 0 && (
+              <span className="text-muted-foreground">{t('course.prerequisiteModules', { modules: p.modules.map((m) => m.name).join(', ') })}</span>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

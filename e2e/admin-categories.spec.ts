@@ -37,7 +37,7 @@ test.describe('admin categories (spec 040)', () => {
     // A category can't be moved under itself or its subcategories.
     await expect(page.getByLabel('Catégorie parente').locator('option', { hasText: `Child ${id}` })).toHaveCount(0)
     await page.getByLabel('Titre').fill(`Renamed ${id}`)
-    await page.getByRole('button', { name: 'Enregistrer' }).click()
+    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click()
     await expect(page.getByRole('status')).toHaveText(`Catégorie « parent-${id} » mise à jour`)
 
     await page.getByRole('link', { name: '← Retour aux catégories' }).click()
@@ -78,7 +78,7 @@ test.describe('admin categories (spec 040)', () => {
 
     await page.goto(`/admin/courses/${course.id}`)
     await page.getByLabel('Catégorie').selectOption({ label: `${parent.title} › ${child.title}` })
-    await page.getByRole('button', { name: 'Enregistrer' }).click()
+    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click()
     await expect(page.getByRole('status')).toHaveText(`Cours « ${course.slug} » mis à jour`)
 
     await page.goto(`/courses/${course.slug}`)

@@ -157,7 +157,8 @@ test.describe('course content (specs 053, 056, 067)', () => {
     adminRequest,
   }) => {
     const user = await createUser()
-    const course = await createCourse()
+    // Private: a public course would enroll the learner on the first module opened (spec 048).
+    const course = await createCourse({ visibility: 'private' })
     await setModules(course.id, [
       lesson('a', 'Module A', 'A'),
       lesson('secret', 'Secret', 'caché', { hidden: true }),
@@ -166,9 +167,7 @@ test.describe('course content (specs 053, 056, 067)', () => {
     ])
 
     await signIn(page, user)
-    await page.goto(`/courses/${course.slug}`)
-    await expect(page.getByText('📭 Inscrivez-vous pour accéder aux modules.')).toBeVisible()
-    expect((await page.request.get(`/api/courses/${course.slug}/modules`)).status()).toBe(403)
+    expect((await page.request.get(`/api/courses/${course.slug}/modules`)).status()).toBe(404)
 
     await adminRequest.post(`/api/admin/courses/${course.id}/enrollments`, { data: { userId: user.id } })
     const list = await (await page.request.get(`/api/courses/${course.slug}/modules`)).json()
@@ -182,6 +181,23 @@ test.describe('course content (specs 053, 056, 067)', () => {
     await page.goto(`/courses/${course.slug}`)
     await expect(page.getByTestId('module-c').getByRole('link')).toBeVisible()
     await expect(page.getByTestId('course-progress')).toHaveText('2/3 complétés')
+  })
+
+  test('opening a module of a public course enrolls the learner (spec 048); the list alone does not', async ({
+    page,
+    createUser,
+    createCourse,
+    setModules,
+  }) => {
+    const course = await createCourse()
+    await setModules(course.id, [lesson('a', 'Module A', 'A')])
+    await signIn(page, await createUser())
+    await page.goto(`/courses/${course.slug}`)
+    await expect(page.getByText('📭 Inscrivez-vous pour accéder aux modules.')).toBeVisible()
+    expect((await page.request.get(`/api/courses/${course.slug}/modules`)).status()).toBe(403)
+    expect((await page.request.get(`/api/courses/${course.slug}/modules/a`)).ok()).toBeTruthy()
+    const detail = await (await page.request.get(`/api/courses/${course.slug}`)).json()
+    expect(detail.enrolled).toBe(true)
   })
 })
 

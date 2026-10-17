@@ -40,6 +40,16 @@ export type CategoryCreateInput = z.input<typeof categoryCreateSchema>
 export const categoryUpdateSchema = categoryCreateSchema.partial()
 export type CategoryUpdateInput = z.input<typeof categoryUpdateSchema>
 
+/** Spec 050: a course that must be completed first: some progress, a minimum quiz score, and/or passed modules. */
+export const prerequisiteSchema = z.object({
+  courseId: z.string().min(1),
+  /** Sum of best quiz scores in that course. */
+  minScore: z.number().int().min(0).max(100_000).nullable().optional(),
+  /** Module slugs of that course that must be done. */
+  modules: z.array(z.string().min(1)).max(100).optional(),
+})
+export type PrerequisiteInput = z.input<typeof prerequisiteSchema>
+
 /** Admin create body for a course. Messages are English; the admin form validates first with translated messages. */
 export const courseCreateSchema = z.object({
   slug: z.string().trim().regex(SLUG_PATTERN, 'Invalid slug').max(100),
@@ -57,6 +67,8 @@ export const courseCreateSchema = z.object({
   badge: badgeSchema.nullable().optional(),
   /** Spec 150: in-person course, with sessions. */
   inPerson: z.boolean().optional(),
+  /** Spec 050. */
+  prerequisites: z.array(prerequisiteSchema).max(20).optional(),
 })
 export type CourseCreateInput = z.input<typeof courseCreateSchema>
 
@@ -109,8 +121,19 @@ export type CourseListResponse = {
   skillFilter: (SkillRef & { level: SkillLevel | null }) | null
 }
 
+/** Spec 050, on the course page: each prerequisite and whether the viewer meets it. */
+export type CoursePrerequisiteView = {
+  course: { slug: string; title: string }
+  minScore: number | null
+  modules: { slug: string; name: string }[]
+  met: boolean
+}
+
 /** `GET /api/courses/:slug` */
 export type CourseDetail = CourseSummary & {
+  prerequisites: CoursePrerequisiteView[]
+  /** Every prerequisite met (always true for admins and courses without any). */
+  prerequisitesMet: boolean
   visibility: CourseVisibility
   status: CourseStatus
   enrollment: null | {
@@ -149,6 +172,7 @@ export type AdminCourse = {
   status: CourseStatus
   badge: Badge | null
   inPerson: boolean
+  prerequisites: { courseId: string; minScore: number | null; modules: string[] }[]
   enrollmentCount: number
   createdAt: string
   updatedAt: string

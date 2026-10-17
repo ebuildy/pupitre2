@@ -171,6 +171,7 @@ Playwright is the only test runner. Every feature ships with e2e tests covering 
 - Sign-in is rate-limited per client IP (spec 009): every test gets its own random `X-Forwarded-For`. A second page or
   API client must get one too: `browser.newPage({ extraHTTPHeaders: { 'x-forwarded-for': randomIp() } })`,
   `await apiClient()` (both from `./fixtures.ts`).
+- Accessible names match by substring: use `exact: true` for short names (`{ name: 'Enregistrer', exact: true }`).
 - Use web-first assertions (`await expect(locator).toBeVisible()`, `toHaveURL`); no fixed waits.
 - `toHaveURL` for admin app roots: `/\/admin\/?$/` (the router may drop the trailing slash).
 - Direct database access from tests (`node:sqlite`) must open the file with a busy `timeout`.

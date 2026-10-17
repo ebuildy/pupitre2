@@ -64,9 +64,9 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 045 | Course detail page | ✅ | [045](docs/specs/045-course-page-and-enrollment.md) | |
 | 046 | Course visibility | ✅ | [040](docs/specs/040-courses-and-catalogue.md) | target model (visibility + status) |
 | 047 | Self-enrollment | ✅ | [045](docs/specs/045-course-page-and-enrollment.md) | |
-| 048 | Auto-enrollment in public courses | ⬜ | | |
+| 048 | Auto-enrollment in public courses | ✅ | [050](docs/specs/050-prerequisites-and-auto-enrollment.md) | not on the module list |
 | 049 | XP-gated enrollment | ✅ | [103](docs/specs/103-xp.md) | |
-| 050 | Course prerequisites | ⬜ | | |
+| 050 | Course prerequisites | ✅ | [050](docs/specs/050-prerequisites-and-auto-enrollment.md) |  |
 | 052 | My courses page | ✅ | [052](docs/specs/052-my-courses.md) |  |
 | 053 | Module list and sequential locking | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 | 054 | Module prerequisites | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
@@ -192,16 +192,16 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 163 | Admin user edit / deactivate / delete | ✅ | [162](docs/specs/162-admin-users.md) |  |
 | 165 | Admin course list | ✅ | [165](docs/specs/165-admin-courses.md) | |
 | 166 | Course create | ✅ | [165](docs/specs/165-admin-courses.md) | |
-| 167 | Course edit metadata | 🟡 | [165](docs/specs/165-admin-courses.md) | no badge, in-person, prerequisites |
+| 167 | Course edit metadata | ✅ | [165](docs/specs/165-admin-courses.md) | badge, in-person, prerequisites included |
 | 168 | Course delete | ✅ | [165](docs/specs/165-admin-courses.md) | |
-| 169 | Course definition API | 🟡 | [053](docs/specs/053-course-content-and-quizzes.md) | `PUT …/modules` only |
-| 170 | Course definition viewer | ⬜ | | |
-| 171 | Module editor | ⬜ | | |
-| 172 | Module reorder | ⬜ | | |
-| 173 | Markdown document format | ⬜ | | |
-| 174 | Markdown course import | ⬜ | | |
-| 175 | Markdown import preview | ⬜ | | |
-| 176 | Markdown course export | ⬜ | | |
+| 169 | Course definition API | ✅ | [169](docs/specs/169-course-authoring.md) |  |
+| 170 | Course definition viewer | ✅ | [169](docs/specs/169-course-authoring.md) |  |
+| 171 | Module editor | ✅ | [169](docs/specs/169-course-authoring.md) | lab / video fields with their features |
+| 172 | Module reorder | ✅ | [169](docs/specs/169-course-authoring.md) |  |
+| 173 | Markdown document format | ✅ | [169](docs/specs/169-course-authoring.md) | lab / video fields with their features |
+| 174 | Markdown course import | ✅ | [169](docs/specs/169-course-authoring.md) |  |
+| 175 | Markdown import preview | ✅ | [169](docs/specs/169-course-authoring.md) |  |
+| 176 | Markdown course export | ✅ | [169](docs/specs/169-course-authoring.md) |  |
 | 177 | Git cache admin | ⬜ | | |
 | 179 | Platform settings | 🟡 | [179](docs/specs/179-platform-settings.md) | OIDC/LDAP/GitLab keys come with their features |
 | 180 | Admin markdown patterns | ⬜ | | |

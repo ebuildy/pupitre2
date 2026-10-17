@@ -13,7 +13,9 @@ import { ContentUnavailableError } from '../content/loader.ts'
 import { renderMarkdown } from '../content/markdown.ts'
 import { validate } from '../lib/validate.ts'
 import { type AppEnv, requireAuth } from '../middleware/session.ts'
-import { canView, findCourseBySlug, grantsFor } from '../services/courses.ts'
+import { canSelfEnroll, canView, findCourseBySlug, grant, grantsFor } from '../services/courses.ts'
+import { prerequisiteViews } from '../services/prerequisites.ts'
+import { totalXp } from '../services/xp.ts'
 import {
   attemptStates,
   checkCourseCompletion,
@@ -28,16 +30,24 @@ import {
 } from '../services/learning.ts'
 
 /**
- * Course content is for enrolled learners (and admins). A course the user may not see is 404 (spec 046);
- * a visible course they are not enrolled in is 403.
+ * Course content is for enrolled learners (and admins). A course the user may not see is 404 (spec 046). Opening a
+ * module of a public course the learner may join enrolls them (spec 048); otherwise 403. Unmet prerequisites (spec
+ * 050) are 403 for non-admins.
  */
-async function access(user: NonNullable<AppEnv['Variables']['user']>, slug: string | undefined) {
+async function access(user: NonNullable<AppEnv['Variables']['user']>, slug: string | undefined, autoEnroll = true) {
   const course = slug ? await findCourseBySlug(slug) : undefined
   if (!course) throw new HTTPException(404, { message: 'Course not found' })
   const isAdmin = user.role === 'admin'
-  const enrolled = (await grantsFor(user.id, course.id)).length > 0
+  let enrolled = (await grantsFor(user.id, course.id)).length > 0
   if (!canView(course, user.role as Role, enrolled)) throw new HTTPException(404, { message: 'Course not found' })
+  if (autoEnroll && !isAdmin && !enrolled && canSelfEnroll(course) && (course.xpRequired === 0 || totalXp(user.id) >= course.xpRequired)) {
+    await grant(user.id, course.id, 'auto', null)
+    enrolled = true
+  }
   if (!isAdmin && !enrolled) throw new HTTPException(403, { message: 'Enroll in this course to access its content' })
+  if (!isAdmin && prerequisiteViews(user.id, course.id).some((p) => !p.met)) {
+    throw new HTTPException(403, { message: 'Complete prerequisite courses first' })
+  }
   const states = await moduleStates(course.id, user.id, isAdmin)
   return { user, course, isAdmin, states }
 }
@@ -54,7 +64,8 @@ function findModule(states: ModuleState[], slug: string) {
 export const moduleRoutes = new Hono<AppEnv>()
   .use(requireAuth)
   .get('/', async (c) => {
-    const { states } = await access(c.get('user')!, c.req.param('slug'))
+    // The list never enrolls: the course page reads it, and must not re-enroll right after an unenrollment.
+    const { states } = await access(c.get('user')!, c.req.param('slug'), false)
     const counted = states.filter((s) => !s.module.hidden)
     return c.json<CourseModulesResponse>({
       modules: states.map(toSummary),

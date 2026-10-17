@@ -85,6 +85,13 @@
       "when": 1792240811028,
       "tag": "0011_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1792241268625,
+      "tag": "0012_prerequisites",
+      "breakpoints": true
     }
   ]
 }

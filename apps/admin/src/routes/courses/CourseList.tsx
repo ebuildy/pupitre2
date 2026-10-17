@@ -4,6 +4,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { adminApi } from '../../lib/api.ts'
+import { ImportDialog } from './ImportDialog.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@pupitre/ui/components/ui/table'
 import { Card } from '@pupitre/ui/components/ui/card'
 import { Input } from '@pupitre/ui/components/ui/input'
@@ -13,6 +14,7 @@ import { cn } from '@pupitre/ui'
 /** Spec 165 (list), 168 (delete). */
 export function CourseList() {
   const { t } = useTranslation(['admin', 'common'])
+  const [importing, setImporting] = useState(false)
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebouncedValue(search.trim(), 280)
@@ -46,10 +48,16 @@ export function CourseList() {
             <span className="ml-2 text-base font-normal text-muted-foreground">{t('courses.count', { count: data.total })}</span>
           )}
         </h1>
-        <Link to="/courses/new" className={buttonVariants()}>
-          {t('courses.new')}
-        </Link>
+        <div className="flex gap-2">
+          <button type="button" className={buttonVariants({ variant: 'outline' })} onClick={() => setImporting(true)}>
+            {t('authoring.import.button')}
+          </button>
+          <Link to="/courses/new" className={buttonVariants()}>
+            {t('courses.new')}
+          </Link>
+        </div>
       </div>
+      <ImportDialog open={importing} onOpenChange={setImporting} />
 
       <Input
         type="search"

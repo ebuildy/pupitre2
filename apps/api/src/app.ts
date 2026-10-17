@@ -6,6 +6,7 @@ import { HTTPException } from 'hono/http-exception'
 import { logger } from 'hono/logger'
 import { requestId } from 'hono/request-id'
 import { secureHeaders } from 'hono/secure-headers'
+import { ZodError } from 'zod'
 import { auth } from './auth.ts'
 import { env } from './env.ts'
 import { type AppEnv, sessionMiddleware } from './middleware/session.ts'
@@ -84,6 +85,12 @@ app.notFound((c) => c.json<ApiError>({ error: 'Not found' }, 404))
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
     return c.json<ApiError>({ error: err.message }, err.status)
+  }
+  // Documents validated inside services (course definitions, markdown imports): 400 with the first issue.
+  if (err instanceof ZodError) {
+    const issue = err.issues[0]
+    const field = issue?.path.join('.')
+    return c.json<ApiError>({ error: issue ? (field ? `${field}: ${issue.message}` : issue.message) : 'Invalid request' }, 400)
   }
   console.error(err)
   return c.json<ApiError>({ error: 'Internal server error' }, 500)
