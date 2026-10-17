@@ -19,3 +19,4 @@ export { EmptyState, ErrorState, LoadingState, PageHeader } from './components/p
 export { UserAvatar } from './components/user-avatar.tsx'
 export { toast } from 'sonner'
 export { NameDialog } from './components/name-dialog.tsx'
+export { ExportsPanel } from './components/exports-panel.tsx'

@@ -10,7 +10,9 @@ import { CourseNew } from './routes/courses/CourseNew.tsx'
 import { Dashboard } from './routes/Dashboard.tsx'
 import { GroupDetail } from './routes/groups/GroupDetail.tsx'
 import { GroupList } from './routes/groups/GroupList.tsx'
+import { Exports } from './routes/Exports.tsx'
 import { Leaderboard } from './routes/Leaderboard.tsx'
+import { Monitoring } from './routes/Monitoring.tsx'
 import { PathDetail } from './routes/paths/PathDetail.tsx'
 import { PathList } from './routes/paths/PathList.tsx'
 import { Settings } from './routes/Settings.tsx'
@@ -39,6 +41,8 @@ export const router = createBrowserRouter(
         { path: 'users', element: <UserList /> },
         { path: 'users/:id', element: <UserDetail /> },
         { path: 'leaderboard', element: <Leaderboard /> },
+        { path: 'monitoring', element: <Monitoring /> },
+        { path: 'exports', element: <Exports /> },
         { path: 'paths', element: <PathList /> },
         { path: 'paths/:id', element: <PathDetail /> },
         { path: 'settings', element: <Settings /> },

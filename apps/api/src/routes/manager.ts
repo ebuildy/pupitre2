@@ -6,7 +6,7 @@ import {
   type ManagerScope,
 } from '@pupitre/shared'
 import { and, asc, count, eq, inArray, ne, sql } from 'drizzle-orm'
-import { Hono } from 'hono'
+import { type Context, Hono } from 'hono'
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
@@ -28,6 +28,7 @@ import {
   requireGroup,
 } from '../services/groups.ts'
 import { enrollInPath, pathEnrollmentRows, requirePath, unenrollFromPath } from '../services/paths.ts'
+import { exportRoutes } from './exports.ts'
 
 type ManagerEnv = AppEnv & { Variables: { managed: string[] } }
 
@@ -144,6 +145,9 @@ export const managerRoutes = new Hono<ManagerEnv>()
       .all()
     return c.json({ courses })
   })
+
+  // Spec 182: CSV exports limited to the manager's members.
+  .route('/exports', exportRoutes((c) => [...memberIdsOf((c as unknown as Context<ManagerEnv>).get('managed'))]))
 
   // Spec 143: path enrollments of users in scope.
   .get('/paths', (c) => {

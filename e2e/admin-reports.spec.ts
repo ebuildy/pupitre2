@@ -1,0 +1,82 @@
+import { ADMIN_PASSWORD } from './env.ts'
+import { apiClient, expect, signIn, test, uid } from './fixtures.ts'
+
+const admin = { email: 'admin', password: ADMIN_PASSWORD }
+
+test.describe('admin dashboard and monitoring (specs 160, 161)', () => {
+  test('the dashboard shows computed figures; monitoring lists the courses', async ({ page, adminRequest, createCourse }) => {
+    const course = await createCourse({ title: `Supervision ${uid()}` })
+    const stats = await (await adminRequest.get('/api/admin/stats')).json()
+    expect(stats.courses).toBeGreaterThan(0)
+    expect(stats).toHaveProperty('successRate')
+
+    await signIn(page, admin)
+    await page.goto('/admin/')
+    await expect(page.getByTestId('stat-courses')).toContainText('Cours')
+    await expect(page.getByTestId('stat-successRate')).toContainText('Taux de réussite')
+    await page.getByRole('link', { name: 'Supervision', exact: true }).first().click()
+    await expect(page.getByRole('heading', { name: 'Aperçu des cours' })).toBeVisible()
+    await expect(page.getByRole('row').filter({ hasText: course.title })).toBeVisible()
+  })
+})
+
+test.describe('CSV exports (spec 182)', () => {
+  test('an admin previews and downloads a users export', async ({ page, createUser }) => {
+    const user = await createUser({ role: 'manager' })
+    await signIn(page, admin)
+    await page.goto('/admin/exports')
+    await page.getByRole('radio', { name: 'Utilisateurs' }).click()
+    await page.getByRole('combobox', { name: 'Rôle' }).selectOption('manager')
+    await page.getByRole('button', { name: 'Aperçu' }).click()
+    const preview = page.getByTestId('export-preview')
+    await expect(preview.getByRole('columnheader', { name: "Nom d'utilisateur" })).toBeVisible()
+    await expect(preview).toContainText(/lignes? au total/)
+
+    const download = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'Télécharger le CSV' }).click()
+    const file = await download
+    expect(file.suggestedFilename()).toMatch(/^users-export-\d{4}-\d{2}-\d{2}\.csv$/)
+    const csv = (await (await file.createReadStream()).toArray()).join('')
+    expect(csv.charCodeAt(0)).toBe(0xfeff)
+    const [header, ...rows] = csv.slice(1).trim().split('\r\n')
+    expect(header).toBe("Nom d'utilisateur;Email;Rôle;Actif;Inscrit le")
+    expect(rows.some((r) => r.startsWith(`${user.username};${user.email};manager;yes;`))).toBe(true)
+    expect(rows.every((r) => r.split(';')[2] === 'manager')).toBe(true)
+  })
+
+  test('manager exports only contain their members; errors are explicit', async ({ adminRequest, createGroup, createUser, addMember }) => {
+    const group = await createGroup()
+    const managerUser = await createUser()
+    const member = await createUser()
+    const outsider = await createUser()
+    await addMember(group.id, managerUser.id, 'manager')
+    await addMember(group.id, member.id)
+
+    const manager = await apiClient()
+    await manager.post('/api/auth/sign-in/email', { data: { email: managerUser.email, password: managerUser.password } })
+    const res = await manager.post('/api/manager/exports/download', { data: { category: 'users', fields: ['username'] } })
+    const usernames = (await res.text()).slice(1).trim().split('\r\n').slice(1)
+    expect(usernames).toContain(member.username)
+    expect(usernames).not.toContain(outsider.username)
+    await manager.dispose()
+
+    expect((await adminRequest.post('/api/admin/exports/preview', { data: { category: 'nope', fields: ['x'] } })).status()).toBe(400)
+    const missing = await adminRequest.post('/api/admin/exports/preview', { data: { fields: ['x'] } })
+    expect((await missing.json()).error).toContain('Catégorie requise')
+    const student = await apiClient()
+    expect((await student.get('/api/admin/exports/categories')).status()).toBe(401)
+    await student.dispose()
+  })
+})
+
+test.describe('health and metrics (spec 006)', () => {
+  test('probes and Prometheus metrics', async ({ request }) => {
+    expect(await (await request.get('/health')).json()).toEqual({ status: 'ok' })
+    const api = 'http://localhost:3101'
+    expect((await request.get(`${api}/ready`)).ok()).toBeTruthy()
+    const metrics = await (await request.get(`${api}/metrics`)).text()
+    expect(metrics).toContain('# TYPE http_requests_total counter')
+    expect(metrics).toMatch(/pupitre_active_users_total \d+/)
+    expect(metrics).toMatch(/http_requests_total\{method="GET",route="\/health",status="200"\} \d+/)
+  })
+})

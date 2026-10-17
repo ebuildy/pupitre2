@@ -1,5 +1,6 @@
 import { LoginPage, RegisterPage, RequireAuth } from '@pupitre/auth-ui'
 import { createBrowserRouter, Navigate } from 'react-router'
+import { ManagerExports } from './routes/manager/ManagerExports.tsx'
 import { ManagerGroups } from './routes/manager/ManagerGroups.tsx'
 import { ManagerLayout } from './routes/manager/ManagerLayout.tsx'
 import { ManagerMembers } from './routes/manager/ManagerMembers.tsx'
@@ -145,6 +146,7 @@ export const router = createBrowserRouter([
           { path: 'users', element: <ManagerMembers /> },
           { path: 'groups', element: <ManagerGroups /> },
           { path: 'paths', element: <ManagerPaths /> },
+          { path: 'exports', element: <ManagerExports /> },
         ],
       },
     ],

@@ -8,6 +8,7 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | --- | --- | --- |
 | [001](001-roles-and-permissions.md) | Roles, account status and guards | Implemented |
 | [004](004-frontends-and-routing.md) | Frontends, routing and admin API prefix | Implemented |
+| [006](006-health-and-metrics.md) | Health, readiness and Prometheus metrics | Implemented |
 | [009](009-rate-limiting.md) | Rate limiting | Implemented |
 | [010](010-theme.md) | Theme, light / dark mode and UI components | Implemented |
 | [012](012-toast-notifications.md) | Toast notifications | Implemented |
@@ -32,6 +33,7 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | [130](130-groups.md) | Groups, memberships, group enrollments, default group, "Mes groupes" | Implemented (SSO sync later) |
 | [140](140-manager-space.md) | Manager space: scope, members, groups | Implemented (paths, sessions later) |
 | [150](150-in-person-sessions.md) | In-person courses: sessions, booking, agenda, attendance | Implemented |
+| [160](160-admin-dashboard-and-reports.md) | Admin dashboard, monitoring, CSV exports | Implemented |
 | [162](162-admin-users.md) | Admin: users (list, edit, deactivate, delete) | Implemented |
 | [165](165-admin-courses.md) | Admin: courses, categories and enrollments | Basic version |
 | [169](169-course-authoring.md) | Course authoring: definition, module editor, markdown import / export | Implemented |

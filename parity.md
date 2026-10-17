@@ -14,7 +14,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 003 | Browser session bridge and SSR guards | ➖ | [001](docs/specs/001-roles-and-permissions.md) | one cookie, no SSR; guards are `RequireAuth` |
 | 004 | API routing, single hostname and BFF | ✅ | [004](docs/specs/004-frontends-and-routing.md) | single origin, no BFF needed |
 | 005 | HTTP conventions | ✅ | [004](docs/specs/004-frontends-and-routing.md) | `{ error }` envelope, body limit, CORS |
-| 006 | Health checks and metrics | 🟡 | | `/health` only; no `/ready`, no Prometheus |
+| 006 | Health checks and metrics | ✅ | [006](docs/specs/006-health-and-metrics.md) | plus /ready |
 | 007 | Service configuration | ✅ | | `apps/api/src/env.ts` |
 | 008 | Service-to-service authentication | ➖ | | one API process, no internal services |
 | 009 | Rate limiting | ✅ | [009](docs/specs/009-rate-limiting.md) | credential endpoints, per client IP |
@@ -22,7 +22,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 011 | Navigation shell | ✅ | [010](docs/specs/010-theme.md) | |
 | 012 | Toast notifications | ✅ | [012](docs/specs/012-toast-notifications.md) | sonner |
 | 013 | Batch lookup endpoints | ➖ | | needed only between services |
-| 014 | Performance invariants | ⬜ | | |
+| 014 | Performance invariants | 🟡 |  | batched queries per request, no per-item I/O in lists; no query-count tests yet |
 | 015 | Dev seed data | ✅ | [015](docs/specs/015-dev-seed-data.md) | |
 | 016 | Admin bootstrap | ✅ | [016](docs/specs/016-admin-bootstrap.md) | |
 | 017 | Database and schema management | ✅ | | Drizzle migrations at startup (AGENTS.md) |
@@ -186,8 +186,8 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 
 | # | Feature | Status | Rewrite spec | Notes |
 | --- | --- | --- | --- | --- |
-| 160 | Admin dashboard | 🟡 | | shortcut cards only, no stats |
-| 161 | Admin monitoring | ⬜ | | |
+| 160 | Admin dashboard | ✅ | [160](docs/specs/160-admin-dashboard-and-reports.md) | computed figures |
+| 161 | Admin monitoring | ✅ | [160](docs/specs/160-admin-dashboard-and-reports.md) |  |
 | 162 | Admin user list | ✅ | [162](docs/specs/162-admin-users.md) | role/status filters instead of provider tabs |
 | 163 | Admin user edit / deactivate / delete | ✅ | [162](docs/specs/162-admin-users.md) |  |
 | 165 | Admin course list | ✅ | [165](docs/specs/165-admin-courses.md) | |
@@ -206,7 +206,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 179 | Platform settings | 🟡 | [179](docs/specs/179-platform-settings.md) | OIDC/LDAP/GitLab keys come with their features |
 | 180 | Admin markdown patterns | ⬜ | | |
 | 181 | Pattern config seeding | ⬜ | | |
-| 182 | CSV exports | ⬜ | | |
+| 182 | CSV exports | ✅ | [160](docs/specs/160-admin-dashboard-and-reports.md) | manager exports scoped to their members |
 | 183 | Lab check CSV export | ⬜ | | |
 | 184 | Admin progress sync | ➖ | | progress is computed from module ids, nothing to resync |
 | 185 | Slug rules | ✅ | [040](docs/specs/040-courses-and-catalogue.md) | `SLUG_PATTERN` |

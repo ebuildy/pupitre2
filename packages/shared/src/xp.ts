@@ -93,3 +93,33 @@ export const adminUserUpdateSchema = z
   })
   .partial()
 export type AdminUserUpdateInput = z.input<typeof adminUserUpdateSchema>
+
+/** `GET /api/admin/stats` (specs 160, 161). */
+export type AdminStats = {
+  users: number
+  activeUsers: number
+  courses: number
+  publishedCourses: number
+  enrollments: number
+  completions: number
+  quizSubmissions: number
+  /** Passed submissions / submissions, in %; null without submissions. */
+  successRate: number | null
+  badges: number
+  groups: number
+  paths: number
+  upcomingSessions: number
+}
+
+/** `GET /api/admin/stats/courses` (spec 161 "Aperçu des cours"). */
+export type AdminCourseOverview = {
+  id: string
+  slug: string
+  title: string
+  category: string | null
+  visibility: 'public' | 'private'
+  status: 'draft' | 'published' | 'archived'
+  modules: number
+  enrolled: number
+  completions: number
+}

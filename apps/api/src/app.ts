@@ -9,6 +9,8 @@ import { secureHeaders } from 'hono/secure-headers'
 import { ZodError } from 'zod'
 import { auth } from './auth.ts'
 import { env } from './env.ts'
+import { sqlite } from './db/index.ts'
+import { metricsMiddleware, renderMetrics } from './lib/metrics.ts'
 import { type AppEnv, sessionMiddleware } from './middleware/session.ts'
 import { adminRoutes } from './routes/admin/index.ts'
 import { courseRoutes, enrollmentRoutes, leaderboardRoutes, myRoutes } from './routes/courses.ts'
@@ -27,8 +29,19 @@ app.use(requestId())
 if (env.LOG_REQUESTS) app.use(logger())
 app.use(secureHeaders())
 
-// Spec 006: probes are public and never touch the database.
+app.use(metricsMiddleware)
+
+// Spec 006: the liveness probe never touches the database; readiness checks it; metrics for Prometheus.
 app.get('/health', (c) => c.json<HealthResponse>({ status: 'ok' }))
+app.get('/ready', (c) => {
+  try {
+    sqlite.prepare('SELECT 1').get()
+    return c.json({ status: 'ok' })
+  } catch {
+    return c.json({ status: 'unavailable' }, 503)
+  }
+})
+app.get('/metrics', (c) => c.body(renderMetrics(), 200, { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8' }))
 
 app.use(
   '/api/*',

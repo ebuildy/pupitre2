@@ -51,6 +51,9 @@ pnpm db:seed        # load mock data into the dev database (pnpm db:reset: start
 pnpm auth:generate  # regenerate the better-auth schema after changing auth config/plugins
 ```
 
+- Adding a dependency to `apps/api` can change how better-auth resolves (optional peers such as `@opentelemetry/api`)
+  and break the `Auth` type used by `@pupitre/auth-ui` (`role` disappears from the session): run `pnpm typecheck` after
+  `pnpm add`, and avoid such packages.
 - New native dependency with a build script: allow it in `pnpm-workspace.yaml` (`allowBuilds`).
 - The shell is zsh: quote globs and arguments like `'@pupitre/shared@workspace:*'`, and do not rely on
   word-splitting of unquoted variables (`$H`).
