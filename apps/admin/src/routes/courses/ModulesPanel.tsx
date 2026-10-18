@@ -27,7 +27,7 @@ import { Label } from '@pupitre/ui/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@pupitre/ui/components/ui/native-select'
 import { Textarea } from '@pupitre/ui/components/ui/textarea'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDownIcon, ArrowUpIcon, GripVerticalIcon } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, GripVerticalIcon, Trash2Icon } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { MediaField } from '../../components/MediaField.tsx'
 import { adminApi } from '../../lib/api.ts'
@@ -147,6 +147,24 @@ export function ModulesPanel({ courseId }: { courseId: string }) {
                       : m.slug}
                 </span>
               </span>
+              {m.content.kind === 'source' && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={t('authoring.cache.module', { name: m.name })}
+                  title={t('authoring.cache.module', { name: m.name })}
+                  onClick={async () => {
+                    try {
+                      await unwrap(adminApi.courses[':id'].modules[':slug'].cache.clear.$post({ param: { id: courseId, slug: m.slug } }))
+                      toast.success(t('authoring.cache.moduleDone'))
+                    } catch (err) {
+                      toast.error((err as Error).message)
+                    }
+                  }}
+                >
+                  <Trash2Icon />
+                </Button>
+              )}
               <Button variant="ghost" size="icon" disabled={i === 0 || save.isPending} onClick={() => move(i, i - 1)} aria-label={t('authoring.modules.moveUp', { name: m.name })}>
                 <ArrowUpIcon />
               </Button>

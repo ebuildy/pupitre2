@@ -27,6 +27,7 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | [052](052-my-courses.md) | "Mes cours" | Implemented |
 | [053](053-course-content-and-quizzes.md) | Course content, progress and quizzes | Implemented (fake content loader) |
 | [062](062-media.md) | Video and image modules, uploads, replication, thumbnails | Implemented |
+| [064](064-git-content.md) | Git-sourced content, module index files, git cache | Implemented |
 | [103](103-xp.md) | XP, levels, course completion, XP gate and leaderboard | Implemented (completion marked by admins) |
 | [106](106-badges.md) | Badges, "Mes badges", badge and admin leaderboards | Implemented |
 | [110](110-skills.md) | Skills, levels, skill page, "Mes compétences", skill filter | Implemented |

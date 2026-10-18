@@ -1106,6 +1106,17 @@ export const admin = {
     copied: 'Copied',
     exportMd: '↓ MD',
     exportMdLabel: 'Export as markdown',
+    cache: {
+      course: '🗑 Cache',
+      courseHelp: 'Clear the Git cache of this course’s modules',
+      courseDone: 'Cache cleared for {{slug}}',
+      all: '🗑 Clear the whole cache',
+      confirmAll: 'Clear the whole Git cache?',
+      confirmAllBody: 'Repositories will be cloned again on next read.',
+      allDone: 'Global cache cleared',
+      module: 'Clear the cache of {{name}}',
+      moduleDone: 'Module cache cleared',
+    },
     modules: {
       title_one: 'Modules ({{count}})',
       title_other: 'Modules ({{count}})',

@@ -77,7 +77,8 @@ pnpm auth:generate  # regenerate the better-auth schema after changing auth conf
 - Schema columns: call the builder helpers (`createdAt()`, `timestamps()`) per table; never share a column builder
   object between tables (it keeps the column name of the first table).
 - Course content (spec 053): module bodies come from `body` or a source read through `contentLoader` (`src/content/loader.ts`;
-  fake loader = `apps/api/content-samples/<repo>/<path>`). Render markdown only with `renderMarkdown` / `renderFragment`
+  `CONTENT_LOADER=auto`: repos found in `apps/api/content-samples/<repo>/` are read there, others are cloned with git;
+  tests can use local `file://` repositories, see `e2e/git-content.spec.ts`). Render markdown only with `renderMarkdown` / `renderFragment`
   (sanitized); the front end displays that HTML. Never put correct answers or feedback in a learner view before
   submission (`quizView`). Progress, attempts and submissions reference module ids. Quiz documents are validated by
   `quizDocumentSchema`; add sample quizzes there and check them with it.

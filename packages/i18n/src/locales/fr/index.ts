@@ -1138,6 +1138,17 @@ export const admin = {
     copied: 'Copié',
     exportMd: '↓ MD',
     exportMdLabel: 'Exporter en markdown',
+    cache: {
+      course: '🗑 Cache',
+      courseHelp: 'Vider le cache Git des modules de ce cours',
+      courseDone: 'Cache vidé pour {{slug}}',
+      all: '🗑 Vider tout le cache',
+      confirmAll: 'Vider tout le cache Git ?',
+      confirmAllBody: 'Les dépôts seront clonés à nouveau à la prochaine lecture.',
+      allDone: 'Cache global vidé',
+      module: 'Vider le cache de {{name}}',
+      moduleDone: 'Cache module vidé',
+    },
     modules: {
       title_one: 'Modules ({{count}})',
       title_other: 'Modules ({{count}})',

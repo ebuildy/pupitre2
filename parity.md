@@ -79,9 +79,9 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 061 | Markdown patterns rendering | ⬜ | | |
 | 062 | Video and image modules | ✅ | [062](docs/specs/062-media.md) | upload endpoint added |
 | 063 | Media replication | ✅ | [062](docs/specs/062-media.md) | falls back to the remote URL |
-| 064 | Git-sourced content | 🟡 | [053](docs/specs/053-course-content-and-quizzes.md) | fake loader only |
-| 065 | Module index expansion | ⬜ | | |
-| 066 | Git content cache and credentials | ⬜ | | |
+| 064 | Git-sourced content | ✅ | [064](docs/specs/064-git-content.md) | git binary; `auto` loader mode |
+| 065 | Module index expansion | ✅ | [064](docs/specs/064-git-content.md) | expanded at save time |
+| 066 | Git content cache and credentials | ✅ | [064](docs/specs/064-git-content.md) |  |
 | 067 | Lesson completion and navigation | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 | 068 | Course completion | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 | 069 | Lessons API | ➖ | [053](docs/specs/053-course-content-and-quizzes.md) | one module API serves lessons and quizzes |
@@ -202,7 +202,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 174 | Markdown course import | ✅ | [169](docs/specs/169-course-authoring.md) |  |
 | 175 | Markdown import preview | ✅ | [169](docs/specs/169-course-authoring.md) |  |
 | 176 | Markdown course export | ✅ | [169](docs/specs/169-course-authoring.md) |  |
-| 177 | Git cache admin | ⬜ | | |
+| 177 | Git cache admin | ✅ | [064](docs/specs/064-git-content.md) |  |
 | 179 | Platform settings | 🟡 | [179](docs/specs/179-platform-settings.md) | OIDC/LDAP/GitLab keys come with their features |
 | 180 | Admin markdown patterns | ⬜ | | |
 | 181 | Pattern config seeding | ⬜ | | |

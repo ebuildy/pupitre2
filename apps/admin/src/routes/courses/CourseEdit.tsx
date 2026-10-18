@@ -1,6 +1,6 @@
 import { useTranslation } from '@pupitre/i18n'
 import type { CourseCreateInput } from '@pupitre/shared'
-import { isNotFound, LoadingState, unwrap } from '@pupitre/ui'
+import { isNotFound, LoadingState, toast, unwrap } from '@pupitre/ui'
 import { Button } from '@pupitre/ui/components/ui/button'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -61,6 +61,21 @@ export function CourseEdit() {
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setDefinitionOpen(true)}>
                 {t('authoring.definition')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                title={t('authoring.cache.courseHelp')}
+                onClick={async () => {
+                  try {
+                    await unwrap(adminApi.courses[':id'].cache.clear.$post({ param: { id: course.id } }))
+                    toast.success(t('authoring.cache.courseDone', { slug: course.slug }))
+                  } catch (err) {
+                    toast.error((err as Error).message)
+                  }
+                }}
+              >
+                {t('authoring.cache.course')}
               </Button>
               <Button asChild variant="outline" size="sm">
                 {/* Download from the API (attachment): plain link. */}

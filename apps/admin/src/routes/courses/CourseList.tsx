@@ -5,16 +5,27 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { adminApi } from '../../lib/api.ts'
 import { ImportDialog } from './ImportDialog.tsx'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@pupitre/ui/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@pupitre/ui/components/ui/table'
 import { Card } from '@pupitre/ui/components/ui/card'
 import { Input } from '@pupitre/ui/components/ui/input'
 import { buttonVariants } from '@pupitre/ui/components/ui/button'
-import { cn } from '@pupitre/ui'
+import { cn, toast } from '@pupitre/ui'
 
 /** Spec 165 (list), 168 (delete). */
 export function CourseList() {
   const { t } = useTranslation(['admin', 'common'])
   const [importing, setImporting] = useState(false)
+  const [clearing, setClearing] = useState(false)
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebouncedValue(search.trim(), 280)
@@ -49,6 +60,9 @@ export function CourseList() {
           )}
         </h1>
         <div className="flex gap-2">
+          <button type="button" className={buttonVariants({ variant: 'outline' })} onClick={() => setClearing(true)}>
+            {t('authoring.cache.all')}
+          </button>
           <button type="button" className={buttonVariants({ variant: 'outline' })} onClick={() => setImporting(true)}>
             {t('authoring.import.button')}
           </button>
@@ -58,6 +72,29 @@ export function CourseList() {
         </div>
       </div>
       <ImportDialog open={importing} onOpenChange={setImporting} />
+      <AlertDialog open={clearing} onOpenChange={setClearing}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('authoring.cache.confirmAll')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('authoring.cache.confirmAllBody')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                try {
+                  await unwrap(adminApi.cache.clear.$post())
+                  toast.success(t('authoring.cache.allDone'))
+                } catch (err) {
+                  toast.error((err as Error).message)
+                }
+              }}
+            >
+              {t('authoring.cache.all')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Input
         type="search"
