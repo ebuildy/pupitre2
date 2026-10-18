@@ -63,3 +63,21 @@ export const groupCourseEnrollment = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.groupId, t.courseId] }), index('group_course_enrollment_course_idx').on(t.courseId)],
 )
+
+/**
+ * Spec 134 / 191 "IdentityProviderGroupMapping": a group name received from an identity provider gives a platform role
+ * and / or a role in the mirrored group, at SSO login.
+ */
+export const idpGroupMapping = sqliteTable(
+  'idp_group_mapping',
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    groupName: text().notNull(),
+    platformRole: text({ enum: ['student', 'manager', 'admin'] }),
+    membershipRole: text({ enum: MEMBERSHIP_ROLES }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('idp_group_mapping_name_idx').on(t.groupName)],
+)

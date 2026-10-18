@@ -11,16 +11,24 @@ import { type ReactNode, useEffect, useState } from 'react'
 import { adminApi } from '../lib/api.ts'
 
 /** The form keeps the whitelist and the minimum length as typed text; they are parsed on save. */
-type Draft = Omit<SettingValues, 'registration_email_whitelist' | 'password_min_length'> & {
+type Draft = Omit<SettingValues, 'registration_email_whitelist' | 'password_min_length' | 'oidc_group_admins'> & {
   registration_email_whitelist: string
   password_min_length: string
+  oidc_group_admins: string
 }
+
+const splitList = (v: string) =>
+  v
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean)
 
 function toDraft(s: SettingValues): Draft {
   return {
     ...s,
     registration_email_whitelist: s.registration_email_whitelist.join(', '),
     password_min_length: String(s.password_min_length),
+    oidc_group_admins: s.oidc_group_admins.join(', '),
   }
 }
 
@@ -32,6 +40,7 @@ function fromDraft(d: Draft): SettingValues {
       .map((v) => v.trim().toLowerCase())
       .filter(Boolean),
     password_min_length: Number(d.password_min_length),
+    oidc_group_admins: splitList(d.oidc_group_admins),
   }
 }
 
@@ -140,6 +149,65 @@ export function Settings() {
         {toggle('sso_local_login_enabled', t('settings.localLogin'), t('settings.localLoginHelp'))}
         <SettingRow id="gitlab_url" label={t('settings.gitlabUrl')} help={t('settings.gitlabUrlHelp')} lastChange={data.changes.gitlab_url?.updatedAt} stacked>
           <Input id="gitlab_url" value={draft.gitlab_url} placeholder="https://gitlab.example.com" onChange={(e) => set('gitlab_url', e.target.value)} />
+        </SettingRow>
+      </Section>
+
+      <Section title={t('settings.sections.oidc')}>
+        {toggle('oidc_enabled', t('settings.oidcEnabled'), t('settings.oidcCallback', { url: `${window.location.origin}/api/sso/oidc/callback` }))}
+        <SettingRow id="oidc_name" label={t('settings.oidcName')} help={t('settings.oidcNameHelp')} lastChange={data.changes.oidc_name?.updatedAt} stacked>
+          <Input id="oidc_name" type="text" value={draft.oidc_name} onChange={(e) => set('oidc_name', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="oidc_provider_url" label={t('settings.oidcProviderUrl')} help={t('settings.oidcProviderUrlHelp')} lastChange={data.changes.oidc_provider_url?.updatedAt} stacked>
+          <Input id="oidc_provider_url" type="text" value={draft.oidc_provider_url} onChange={(e) => set('oidc_provider_url', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="oidc_client_id" label={t('settings.oidcClientId')} lastChange={data.changes.oidc_client_id?.updatedAt} stacked>
+          <Input id="oidc_client_id" type="text" value={draft.oidc_client_id} onChange={(e) => set('oidc_client_id', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="oidc_client_secret" label={t('settings.oidcClientSecret')} help={t('settings.oidcClientSecretHelp')} lastChange={data.changes.oidc_client_secret?.updatedAt} stacked>
+          <Input id="oidc_client_secret" type="password" value={draft.oidc_client_secret} onChange={(e) => set('oidc_client_secret', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="oidc_scopes" label={t('settings.oidcScopes')} lastChange={data.changes.oidc_scopes?.updatedAt} stacked>
+          <Input id="oidc_scopes" type="text" value={draft.oidc_scopes} onChange={(e) => set('oidc_scopes', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="oidc_group_claim" label={t('settings.oidcGroupClaim')} lastChange={data.changes.oidc_group_claim?.updatedAt} stacked>
+          <Input id="oidc_group_claim" type="text" value={draft.oidc_group_claim} onChange={(e) => set('oidc_group_claim', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="oidc_group_admins" label={t('settings.oidcGroupAdmins')} help={t('settings.oidcGroupAdminsHelp')} lastChange={data.changes.oidc_group_admins?.updatedAt} stacked>
+          <Input id="oidc_group_admins" type="text" value={draft.oidc_group_admins} onChange={(e) => set('oidc_group_admins', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="oidc_issuer_url" label={t('settings.oidcIssuerUrl')} lastChange={data.changes.oidc_issuer_url?.updatedAt} stacked>
+          <Input id="oidc_issuer_url" type="text" value={draft.oidc_issuer_url} onChange={(e) => set('oidc_issuer_url', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="oidc_redirect_base" label={t('settings.oidcRedirectBase')} lastChange={data.changes.oidc_redirect_base?.updatedAt} stacked>
+          <Input id="oidc_redirect_base" type="text" value={draft.oidc_redirect_base} onChange={(e) => set('oidc_redirect_base', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="oidc_browser_base_url" label={t('settings.oidcBrowserBaseUrl')} lastChange={data.changes.oidc_browser_base_url?.updatedAt} stacked>
+          <Input id="oidc_browser_base_url" type="text" value={draft.oidc_browser_base_url} onChange={(e) => set('oidc_browser_base_url', e.target.value)} />
+        </SettingRow>
+      </Section>
+
+      <Section title={t('settings.sections.ldap')}>
+        {toggle('ldap_enabled', t('settings.ldapEnabled'))}
+        <SettingRow id="ldap_server_url" label={t('settings.ldapServerUrl')} help={t('settings.ldapServerUrlHelp')} lastChange={data.changes.ldap_server_url?.updatedAt} stacked>
+          <Input id="ldap_server_url" type="text" value={draft.ldap_server_url} onChange={(e) => set('ldap_server_url', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="ldap_bind_dn" label={t('settings.ldapBindDn')} lastChange={data.changes.ldap_bind_dn?.updatedAt} stacked>
+          <Input id="ldap_bind_dn" type="text" value={draft.ldap_bind_dn} onChange={(e) => set('ldap_bind_dn', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="ldap_bind_password" label={t('settings.ldapBindPassword')} help={t('settings.oidcClientSecretHelp')} lastChange={data.changes.ldap_bind_password?.updatedAt} stacked>
+          <Input id="ldap_bind_password" type="password" value={draft.ldap_bind_password} onChange={(e) => set('ldap_bind_password', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="ldap_user_base_dn" label={t('settings.ldapUserBaseDn')} lastChange={data.changes.ldap_user_base_dn?.updatedAt} stacked>
+          <Input id="ldap_user_base_dn" type="text" value={draft.ldap_user_base_dn} onChange={(e) => set('ldap_user_base_dn', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="ldap_user_filter" label={t('settings.ldapUserFilter')} help={t('settings.ldapUserFilterHelp')} lastChange={data.changes.ldap_user_filter?.updatedAt} stacked>
+          <Input id="ldap_user_filter" type="text" value={draft.ldap_user_filter} onChange={(e) => set('ldap_user_filter', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="ldap_group_base_dn" label={t('settings.ldapGroupBaseDn')} lastChange={data.changes.ldap_group_base_dn?.updatedAt} stacked>
+          <Input id="ldap_group_base_dn" type="text" value={draft.ldap_group_base_dn} onChange={(e) => set('ldap_group_base_dn', e.target.value)} />
+        </SettingRow>
+        <SettingRow id="ldap_group_filter" label={t('settings.ldapGroupFilter')} help={t('settings.ldapGroupFilterHelp')} lastChange={data.changes.ldap_group_filter?.updatedAt} stacked>
+          <Input id="ldap_group_filter" type="text" value={draft.ldap_group_filter} onChange={(e) => set('ldap_group_filter', e.target.value)} />
         </SettingRow>
       </Section>
 

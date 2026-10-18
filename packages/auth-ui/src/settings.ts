@@ -22,3 +22,23 @@ export function usePublicSettings() {
   }, [])
   return settings
 }
+
+export type SsoProviderInfo = { id: string; name: string; kind: 'oidc' | 'github' }
+let providersCache: Promise<SsoProviderInfo[]> | null = null
+
+/** Specs 027, 028: the SSO providers shown on the login page. */
+export function useSsoProviders() {
+  const [providers, setProviders] = useState<SsoProviderInfo[]>([])
+  useEffect(() => {
+    let active = true
+    providersCache ??= fetch('/api/sso/providers')
+      .then((r) => (r.ok ? (r.json() as Promise<{ providers: SsoProviderInfo[] }>) : { providers: [] }))
+      .then((d) => d.providers)
+      .catch(() => [])
+    providersCache.then((p) => active && setProviders(p))
+    return () => {
+      active = false
+    }
+  }, [])
+  return providers
+}

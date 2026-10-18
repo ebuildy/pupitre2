@@ -39,18 +39,18 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 024 | Local login toggle (SSO-only) | ✅ | [020](docs/specs/020-registration-and-password-policy.md) | admins keep local login in SSO-only mode |
 | 025 | Post-login landing | ✅ | [025](docs/specs/025-post-login-landing.md) | |
 | 026 | Logout | ✅ | [026](docs/specs/026-logout.md) | |
-| 027 | OAuth provider login | ⬜ | | |
-| 028 | Runtime-configured OIDC login | ⬜ | | |
-| 029 | OIDC bootstrap from deployment config | ⬜ | | |
-| 030 | LDAP login | ⬜ | | |
-| 031 | SSO account linking | ⬜ | | |
-| 032 | SSO group sync and role | ⬜ | | |
-| 033 | OIDC authoritative admin groups | ⬜ | | |
+| 027 | OAuth provider login | ✅ | [027](docs/specs/027-sso.md) |  |
+| 028 | Runtime-configured OIDC login | ✅ | [027](docs/specs/027-sso.md) |  |
+| 029 | OIDC bootstrap from deployment config | ✅ | [027](docs/specs/027-sso.md) |  |
+| 030 | LDAP login | ✅ | [027](docs/specs/027-sso.md) |  |
+| 031 | SSO account linking | ✅ | [027](docs/specs/027-sso.md) |  |
+| 032 | SSO group sync and role | ✅ | [027](docs/specs/027-sso.md) |  |
+| 033 | OIDC authoritative admin groups | ✅ | [027](docs/specs/027-sso.md) |  |
 | 034 | Current user | ✅ | [034](docs/specs/034-current-user.md) | |
 | 035 | Edit profile | ✅ | [035](docs/specs/035-profile.md) |  |
 | 036 | Change password | ✅ | [035](docs/specs/035-profile.md) |  |
 | 037 | Public user profile | ✅ | [035](docs/specs/035-profile.md) |  |
-| 038 | Default group and group-enrollment sync | 🟡 | [130](docs/specs/130-groups.md) | default group done; grants applied at once (no login sync needed); SSO later |
+| 038 | Default group and group-enrollment sync | ✅ | [130](docs/specs/130-groups.md) | grants applied at once; SSO sync in [027](docs/specs/027-sso.md) |
 
 ## Catalogue & course consumption
 
@@ -157,7 +157,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 131 | Admin group CRUD | ✅ | [130](docs/specs/130-groups.md) |  |
 | 132 | Subgroups and move | ✅ | [130](docs/specs/130-groups.md) |  |
 | 133 | Group membership | ✅ | [130](docs/specs/130-groups.md) |  |
-| 134 | Group role mappings | ⬜ |  | IdP role mappings, with SSO |
+| 134 | Group role mappings | ✅ | [027](docs/specs/027-sso.md) |  |
 | 135 | Group course enrollment | ✅ | [130](docs/specs/130-groups.md) | group grants applied immediately |
 | 136 | My groups page | ✅ | [130](docs/specs/130-groups.md) |  |
 
@@ -203,7 +203,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 175 | Markdown import preview | ✅ | [169](docs/specs/169-course-authoring.md) |  |
 | 176 | Markdown course export | ✅ | [169](docs/specs/169-course-authoring.md) |  |
 | 177 | Git cache admin | ✅ | [064](docs/specs/064-git-content.md) |  |
-| 179 | Platform settings | 🟡 | [179](docs/specs/179-platform-settings.md) | OIDC / LDAP keys with SSO |
+| 179 | Platform settings | ✅ | [179](docs/specs/179-platform-settings.md) |  |
 | 180 | Admin markdown patterns | ✅ | [061](docs/specs/061-markdown-patterns.md) | course scope supported |
 | 181 | Pattern config seeding | ✅ | [061](docs/specs/061-markdown-patterns.md) | `PATTERNS_FILE` |
 | 182 | CSV exports | ✅ | [160](docs/specs/160-admin-dashboard-and-reports.md) | manager exports scoped to their members |

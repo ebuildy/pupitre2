@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
-import { ADMIN_PASSWORD, ADMIN_PORT, API_PORT, APP_PORT, BASE_URL, GITLAB_PORT } from './e2e/env.ts'
+import { ADMIN_PASSWORD, ADMIN_PORT, API_PORT, APP_PORT, BASE_URL, GITLAB_PORT, IDP_PORT, LDAP_HTTP_PORT, LDAP_PORT } from './e2e/env.ts'
 
 export default defineConfig({
   testDir: './e2e',
@@ -28,6 +28,20 @@ export default defineConfig({
   ],
   webServer: [
     {
+      name: 'idp',
+      command: 'node e2e/fake-idp.mjs',
+      url: `http://localhost:${IDP_PORT}/health`,
+      reuseExistingServer: !process.env.CI,
+      env: { PORT: String(IDP_PORT) },
+    },
+    {
+      name: 'ldap',
+      command: 'node e2e/fake-ldap.mjs',
+      url: `http://localhost:${LDAP_HTTP_PORT}/health`,
+      reuseExistingServer: !process.env.CI,
+      env: { PORT: String(LDAP_HTTP_PORT), LDAP_PORT: String(LDAP_PORT) },
+    },
+    {
       name: 'gitlab',
       command: 'node e2e/fake-gitlab.mjs',
       url: `http://localhost:${GITLAB_PORT}/health`,
@@ -48,6 +62,13 @@ export default defineConfig({
         GIT_CACHE_DIR: './data/e2e-git-cache',
         PATTERNS_FILE: '../../e2e/patterns.yaml',
         GITLAB_URL: `http://localhost:${GITLAB_PORT}`,
+        // Specs 027–029: a runtime OIDC provider from OIDC_* and two deploy-time ones, all served by e2e/fake-idp.mjs.
+        OIDC_ENABLED: 'true',
+        OIDC_NAME: 'Fake IdP',
+        OIDC_PROVIDER_URL: `http://localhost:${IDP_PORT}/.well-known/openid-configuration`,
+        OIDC_CLIENT_ID: 'pupitre',
+        OIDC_CLIENT_SECRET: 'e2e-secret',
+        SSO_PROVIDERS_FILE: '../../e2e/sso-providers.yaml',
         BETTER_AUTH_URL: BASE_URL,
         CORS_ORIGINS: BASE_URL,
         LOG_REQUESTS: 'false',

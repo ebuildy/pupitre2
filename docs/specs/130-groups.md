@@ -68,7 +68,7 @@ groupe" (links), members (avatar chips linking to public profiles).
 
 - Group grants are applied at once instead of at the member's next login.
 - Group-manager is a membership role (spec 191) instead of "member of a group + platform role manager".
-- SSO group sync and IdP role mappings (032–034) come with SSO.
+- SSO group sync and identity provider role mappings: [027](027-sso.md).
 
 ## Source
 

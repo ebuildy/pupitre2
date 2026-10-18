@@ -6,6 +6,8 @@ import { runMigrations } from './db/migrate.ts'
 import { env } from './env.ts'
 import { ensureDefaultMemberships } from './services/groups.ts'
 import { seedPatterns } from './services/patterns.ts'
+import { updateSettings } from './services/settings.ts'
+import { bootstrapOidcSettings } from './services/sso.ts'
 
 runMigrations()
 await ensureAdmin()
@@ -16,6 +18,8 @@ if (env.SEED_DEV_DATA) {
 }
 // Spec 038: accounts created before the default group existed, or outside better-auth.
 ensureDefaultMemberships()
+// Spec 029: OIDC settings from the deployment (they win over admin edits).
+if (bootstrapOidcSettings((values) => updateSettings(values, null))) console.log('OIDC settings bootstrapped from OIDC_*')
 // Spec 181: patterns shipped with the deployment.
 const seeded = seedPatterns(env.PATTERNS_FILE)
 if (seeded) console.log(`markdown patterns from ${env.PATTERNS_FILE}: ${seeded}`)

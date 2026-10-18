@@ -19,6 +19,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { adminApi } from '../../lib/api.ts'
+import { IdpMappings } from './IdpMappings.tsx'
 
 /** Specs 130–132: the group tree; create, add a subgroup, delete. Rename, move and members are on the group page. */
 export function GroupList() {
@@ -123,6 +124,8 @@ export function GroupList() {
           </Table>
         </Card>
       )}
+
+      <IdpMappings />
 
       <NameDialog
         open={!!creating}

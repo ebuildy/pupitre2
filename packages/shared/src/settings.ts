@@ -19,7 +19,38 @@ export const SETTINGS = {
   sso_local_login_enabled: { type: 'boolean', default: true, public: true },
   /** Spec 092: GitLab instance of the lab checks (empty: the GITLAB_URL environment variable). */
   gitlab_url: { type: 'text', default: '', public: false },
+  /** Spec 028: one OIDC provider configured from this page. */
+  oidc_enabled: { type: 'boolean', default: false, public: true },
+  /** Login button label ("Continuer avec …"). */
+  oidc_name: { type: 'text', default: 'SSO', public: true },
+  /** Discovery URL (`…/.well-known/openid-configuration`) or issuer URL. */
+  oidc_provider_url: { type: 'text', default: '', public: false },
+  /** Expected token issuer when it differs from the discovery host (split-horizon). */
+  oidc_issuer_url: { type: 'text', default: '', public: false },
+  /** Public origin of the callback (default: the app's URL). */
+  oidc_redirect_base: { type: 'text', default: '', public: false },
+  /** Browser-visible origin replacing the internal one in the authorize URL. */
+  oidc_browser_base_url: { type: 'text', default: '', public: false },
+  oidc_client_id: { type: 'text', default: '', public: false },
+  oidc_client_secret: { type: 'secret', default: '', public: false },
+  oidc_scopes: { type: 'text', default: 'openid email profile groups', public: false },
+  oidc_group_claim: { type: 'text', default: 'groups', public: false },
+  /** Spec 033: when set, members of these groups are admins and everyone else students. */
+  oidc_group_admins: { type: 'list', default: [] as string[], public: false },
+  /** Spec 030: LDAP / Active Directory. */
+  ldap_enabled: { type: 'boolean', default: false, public: true },
+  ldap_server_url: { type: 'text', default: '', public: false },
+  ldap_bind_dn: { type: 'text', default: '', public: false },
+  ldap_bind_password: { type: 'secret', default: '', public: false },
+  ldap_user_base_dn: { type: 'text', default: '', public: false },
+  ldap_user_filter: { type: 'text', default: '(mail=%s)', public: false },
+  ldap_group_base_dn: { type: 'text', default: '', public: false },
+  ldap_group_filter: { type: 'text', default: '(|(member=%s)(uniqueMember=%s)(memberUid=%s))', public: false },
 } as const
+
+/** Shown as this placeholder; sending it back leaves the stored secret unchanged. */
+export const SECRET_PLACEHOLDER = '********'
+export const SECRET_SETTING_KEYS = (Object.keys(SETTINGS) as (keyof typeof SETTINGS)[]).filter((k) => SETTINGS[k].type === 'secret')
 
 export type SettingKey = keyof typeof SETTINGS
 export const SETTING_KEYS = Object.keys(SETTINGS) as SettingKey[]
@@ -56,6 +87,25 @@ export const settingsUpdateSchema = z
     profile_allow_username_change: z.boolean(),
     sso_local_login_enabled: z.boolean(),
     gitlab_url: z.string().trim().max(500),
+    oidc_enabled: z.boolean(),
+    oidc_name: z.string().trim().max(100),
+    oidc_provider_url: z.string().trim().max(500),
+    oidc_issuer_url: z.string().trim().max(500),
+    oidc_redirect_base: z.string().trim().max(500),
+    oidc_browser_base_url: z.string().trim().max(500),
+    oidc_client_id: z.string().trim().max(500),
+    oidc_client_secret: z.string().max(2000),
+    oidc_scopes: z.string().trim().max(500),
+    oidc_group_claim: z.string().trim().max(100),
+    oidc_group_admins: z.array(z.string().trim().min(1).max(200)).max(100),
+    ldap_enabled: z.boolean(),
+    ldap_server_url: z.string().trim().max(500),
+    ldap_bind_dn: z.string().trim().max(500),
+    ldap_bind_password: z.string().max(2000),
+    ldap_user_base_dn: z.string().trim().max(500),
+    ldap_user_filter: z.string().trim().max(500),
+    ldap_group_base_dn: z.string().trim().max(500),
+    ldap_group_filter: z.string().trim().max(500),
   } satisfies Record<SettingKey, z.ZodType>)
   .partial()
   .refine((v) => Object.keys(v).length > 0, 'No setting to update')

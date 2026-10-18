@@ -19,6 +19,7 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | [023](023-local-login.md) | Local login (username or e-mail + password) | Implemented |
 | [025](025-post-login-landing.md) | Post-login redirect and landing page | Implemented |
 | [026](026-logout.md) | Logout | Implemented |
+| [027](027-sso.md) | SSO: OAuth / OIDC providers, LDAP, account linking, group sync and role mappings | Implemented |
 | [034](034-current-user.md) | Current user (`GET /api/me`) | Implemented |
 | [035](035-profile.md) | Profile, change password, public profile | Implemented (badge avatars with 106) |
 | [040](040-courses-and-catalogue.md) | Courses, categories, visibility, catalogue, cards, "Reprendre" | Implemented |

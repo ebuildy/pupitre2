@@ -1,12 +1,14 @@
 import { defaultSettings } from '@pupitre/shared'
-import { ADMIN_PASSWORD } from './env.ts'
-import { apiClient, expect, login, signIn, test, uid } from './fixtures.ts'
+import { ADMIN_PASSWORD, LDAP_HTTP_PORT, LDAP_PORT } from './env.ts'
+import { apiClient, expect, fakeIdpUser, login, signIn, ssoLogin, test, uid } from './fixtures.ts'
 
 // Runs in the `global-settings` project: alone, after every other test, one test at a time (see playwright.config.ts).
 
 test.describe('platform settings (specs 021, 022, 024, 035, 179)', () => {
   test.afterEach(async ({ adminRequest }) => {
-    const res = await adminRequest.put('/api/admin/settings', { data: defaultSettings() })
+    // The OIDC provider of the e2e run is configured by OIDC_* at startup (spec 029): keep it.
+    const { oidc_enabled: _, oidc_name: _n, oidc_provider_url: _u, oidc_client_id: _c, oidc_client_secret: _s, ...defaults } = defaultSettings()
+    const res = await adminRequest.put('/api/admin/settings', { data: defaults })
     expect(res.ok()).toBeTruthy()
   })
 
@@ -132,5 +134,66 @@ test.describe('platform settings (specs 021, 022, 024, 035, 179)', () => {
     expect(unknown.status()).toBe(400)
     const empty = await adminRequest.put('/api/admin/settings', { data: {} })
     expect(empty.status()).toBe(400)
+  })
+
+  test('OIDC admin groups are authoritative; the client secret is never shown (specs 033, 179)', async ({ page, adminRequest }) => {
+    const settings = (await (await adminRequest.get('/api/admin/settings')).json()).settings
+    expect(settings.oidc_client_secret).toBe('********')
+    // Sending the placeholder back keeps the stored secret: sign-in still works.
+    await adminRequest.put('/api/admin/settings', { data: { oidc_client_secret: '********', oidc_group_admins: ['idp-admins'] } })
+    const id = uid()
+    await fakeIdpUser(id, { sub: `sub-${id}`, email: `boss-${id}@example.test`, name: `Boss ${id}`, groups: ['idp-admins'] })
+    await ssoLogin(page, 'oidc', id)
+    await expect(page).toHaveURL(/\/admin\/?$/)
+    expect((await (await page.request.get('/api/me')).json()).role).toBe('admin')
+
+    // Leaving the admin group demotes at next sign-in.
+    await fakeIdpUser(id, { sub: `sub-${id}`, email: `boss-${id}@example.test`, name: `Boss ${id}`, groups: [] })
+    await page.context().clearCookies()
+    await ssoLogin(page, 'oidc', id)
+    await expect(page).toHaveURL(/\/courses$/)
+    expect((await (await page.request.get('/api/me')).json()).role).toBe('student')
+  })
+
+  test('LDAP sign-in from its tab, with groups; wrong passwords are refused (spec 030)', async ({ page, adminRequest }) => {
+    await adminRequest.put('/api/admin/settings', {
+      data: {
+        ldap_enabled: true,
+        ldap_server_url: `ldap://localhost:${LDAP_PORT}`,
+        ldap_bind_dn: 'cn=reader,dc=pupitre,dc=test',
+        ldap_bind_password: 'reader-secret',
+        ldap_user_base_dn: 'ou=people,dc=pupitre,dc=test',
+        ldap_user_filter: '(|(uid=%s)(mail=%s))',
+        ldap_group_base_dn: 'ou=groups,dc=pupitre,dc=test',
+        ldap_group_filter: '(member=%s)',
+      },
+    })
+    const id = uid()
+    const group = `ldap-${id}`
+    await fetch(`http://localhost:${LDAP_HTTP_PORT}/__fake/people`, {
+      method: 'POST',
+      body: JSON.stringify({ uid: `jdoe${id}`, mail: `jdoe-${id}@example.test`, cn: `Jane Doe ${id}`, password: 'ldap-pass', groups: [group] }),
+    })
+    await page.goto('/login')
+    await page.getByRole('tab', { name: 'LDAP' }).click()
+    const form = page.getByRole('form', { name: 'LDAP' })
+    await form.getByLabel('identifiant LDAP').fill(`jdoe${id}`)
+    await form.getByLabel('Mot de passe').fill('wrong')
+    await form.getByRole('button', { name: 'Se connecter' }).click()
+    await expect(page.getByRole('alert')).toHaveText('Identifiants LDAP invalides')
+    await form.getByLabel('Mot de passe').fill('ldap-pass')
+    await form.getByRole('button', { name: 'Se connecter' }).click()
+    await expect(page).toHaveURL(/\/courses$/)
+    const me = await (await page.request.get('/api/me')).json()
+    expect(me).toMatchObject({ email: `jdoe-${id}@example.test`, name: `Jane Doe ${id}`, hasPassword: false })
+    const groups = (await (await page.request.get('/api/my/groups')).json()).groups
+    expect(groups.map((g: { name: string }) => g.name)).toEqual([group])
+
+    // The bind password is never shown back.
+    expect((await (await adminRequest.get('/api/admin/settings')).json()).settings.ldap_bind_password).toBe('********')
+    const disabled = await adminRequest.put('/api/admin/settings', { data: { ldap_enabled: false } })
+    expect(disabled.ok()).toBeTruthy()
+    const res = await page.request.post('/api/sso/ldap/login', { data: { identifier: `jdoe${id}`, password: 'ldap-pass' } })
+    expect(res.status()).toBe(400)
   })
 })

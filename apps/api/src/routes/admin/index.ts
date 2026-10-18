@@ -5,6 +5,7 @@ import { adminCategoryRoutes } from './categories.ts'
 import { adminCourseRoutes } from './courses.ts'
 import { adminImportRoutes } from './import.ts'
 import { adminGroupRoutes } from './groups.ts'
+import { adminIdpMappingRoutes } from './idp-mappings.ts'
 import { adminLabRoutes } from './labs.ts'
 import { adminLeaderboardRoutes } from './leaderboard.ts'
 import { adminMediaRoutes } from './media.ts'
@@ -28,6 +29,7 @@ export const adminRoutes = new Hono<AppEnv>()
   .route('/courses/import', adminImportRoutes)
   .route('/courses', adminCourseRoutes)
   .route('/groups', adminGroupRoutes)
+  .route('/idp-mappings', adminIdpMappingRoutes)
   .route('/lab-checks', adminLabRoutes)
   .route('/leaderboard', adminLeaderboardRoutes)
   .route('/media', adminMediaRoutes)

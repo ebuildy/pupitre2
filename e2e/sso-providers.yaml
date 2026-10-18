@@ -1,0 +1,15 @@
+# Spec 027: providers declared at deploy time, served by e2e/fake-idp.mjs.
+providers:
+  - id: corp
+    name: Corp
+    type: oidc
+    issuerUrl: http://localhost:3104
+    clientId: corp
+    clientSecret: corp-secret
+  - id: github
+    name: GitHub
+    type: github
+    clientId: gh
+    clientSecret: gh-secret
+    githubUrl: http://localhost:3104
+    githubApiUrl: http://localhost:3104/api

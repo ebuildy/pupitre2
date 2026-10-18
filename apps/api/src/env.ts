@@ -50,6 +50,21 @@ const schema = z.object({
   /** Spec 092: GitLab of the lab step checks (the `gitlab_url` setting wins) and its API token. */
   GITLAB_URL: z.string().optional(),
   GITLAB_TOKEN: z.string().optional(),
+  /** Spec 027: OAuth / OIDC providers declared at deploy time (YAML `providers: [{id, name, type, clientId, …}]`). */
+  SSO_PROVIDERS_FILE: z.string().optional(),
+  /** Spec 029: OIDC settings upserted at startup from OIDC_* variables (deployment config wins). */
+  OIDC_ENABLED: z.stringbool().default(false),
+  OIDC_NAME: z.string().optional(),
+  OIDC_PROVIDER_URL: z.string().optional(),
+  OIDC_ISSUER_URL: z.string().optional(),
+  OIDC_CLIENT_ID: z.string().optional(),
+  OIDC_CLIENT_SECRET: z.string().optional(),
+  OIDC_CLIENT_SECRET_FILE: z.string().optional(),
+  OIDC_SCOPES: z.string().optional(),
+  OIDC_GROUP_CLAIM: z.string().optional(),
+  OIDC_GROUP_ADMINS: z.string().optional(),
+  OIDC_REDIRECT_BASE: z.string().optional(),
+  OIDC_BROWSER_BASE_URL: z.string().optional(),
   /** Spec 015: load the mock data (`src/fixtures`) at startup. Development only. */
   SEED_DEV_DATA: z.stringbool().default(false),
 })

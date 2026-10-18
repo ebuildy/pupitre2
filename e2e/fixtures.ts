@@ -9,7 +9,7 @@ import type {
   ModuleInput,
   Role,
 } from '@pupitre/shared'
-import { ADMIN_PASSWORD, API_DB_PATH, BASE_URL } from './env.ts'
+import { ADMIN_PASSWORD, API_DB_PATH, BASE_URL, IDP_PORT } from './env.ts'
 
 export type TestUser = { id: string; username: string; email: string; password: string; role: Role }
 
@@ -157,3 +157,20 @@ export async function login(page: Page, identifier: string, password: string) {
   await page.getByLabel('Mot de passe').fill(password)
   await page.getByRole('button', { name: 'Se connecter', exact: true }).click()
 }
+
+// ─── SSO (e2e/fake-idp.mjs) ───────────────────────────────────────────────────
+
+type FakeUser = { sub: string; email: string; name: string; groups?: string[]; picture?: string; bio?: string; error?: string }
+
+/** Registers who signs in at the fake IdP (e2e/fake-idp.mjs) for this hint. */
+export async function fakeIdpUser(hint: string, user: FakeUser) {
+  const res = await fetch(`http://localhost:${IDP_PORT}/__fake/users`, { method: 'POST', body: JSON.stringify({ hint, ...user }) })
+  if (!res.ok) throw new Error('fake idp')
+}
+
+/** What the login button does, with the test's login hint so parallel tests don't share an identity. */
+export async function ssoLogin(page: Page, provider: string, hint: string, redirect?: string) {
+  const params = new URLSearchParams({ login_hint: hint, ...(redirect ? { redirect } : {}) })
+  await page.goto(`/api/sso/${provider}/authorize?${params}`)
+}
+

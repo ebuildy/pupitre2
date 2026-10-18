@@ -24,7 +24,8 @@ each change.
 | `sso_local_login_enabled` | `true` | yes | 024 |
 | `gitlab_url` | `''` (then `GITLAB_URL`) | no | 092 |
 
-SSO, OIDC and LDAP keys are added with their features.
+OIDC (`oidc_*`) and LDAP (`ldap_*`) keys: [027](027-sso.md). Secret keys (`oidc_client_secret`, `ldap_bind_password`)
+are returned as `********`; sending that placeholder back keeps the stored value.
 
 ## API
 

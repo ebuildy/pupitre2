@@ -20,6 +20,7 @@ import { badgeRoutes, myBadgeRoutes, mySkillRoutes, skillRoutes } from './routes
 import { myGroupRoutes } from './routes/groups.ts'
 import { myPathRoutes, pathRoutes } from './routes/paths.ts'
 import { sessionRoutes } from './routes/sessions.ts'
+import { ssoRoutes } from './routes/sso.ts'
 import { managerRoutes } from './routes/manager.ts'
 import { meRoutes } from './routes/me.ts'
 import { moduleRoutes } from './routes/modules.ts'
@@ -75,6 +76,8 @@ app.get('/api/auth/get-session', async (c, next) => {
   await next()
 })
 app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
+
+app.route('/api/sso', ssoRoutes)
 
 app.use('/api/*', sessionMiddleware)
 

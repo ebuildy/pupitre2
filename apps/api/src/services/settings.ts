@@ -2,6 +2,8 @@ import {
   type AdminSettingsResponse,
   defaultSettings,
   PUBLIC_SETTING_KEYS,
+  SECRET_PLACEHOLDER,
+  SECRET_SETTING_KEYS,
   type PublicSettings,
   SETTINGS,
   type SettingKey,
@@ -38,21 +40,34 @@ export function settingChanges(): AdminSettingsResponse['changes'] {
   )
 }
 
-/** Stores the changed values (who and when) and records an audit event. */
-export function updateSettings(input: SettingsUpdateInput, actor: { id: string; email: string }) {
+/** Spec 179: what admins see — secrets replaced by the placeholder when set. */
+export function adminSettings(): Settings {
+  const all = { ...getSettings() } as Record<SettingKey, unknown>
+  for (const k of SECRET_SETTING_KEYS) if (all[k]) all[k] = SECRET_PLACEHOLDER
+  return all as Settings
+}
+
+/** Stores the changed values (who and when) and records an audit event. Secrets sent back masked are left as they are. */
+export function updateSettings(rawInput: SettingsUpdateInput, actor: { id: string; email: string } | null) {
+  const input = Object.fromEntries(
+    Object.entries(rawInput).filter(([k, v]) => !(SECRET_SETTING_KEYS as string[]).includes(k) || v !== SECRET_PLACEHOLDER),
+  ) as SettingsUpdateInput
   const now = new Date()
   const before = getSettings()
   db.transaction((tx) => {
     for (const [key, value] of Object.entries(input)) {
       tx.insert(platformSetting)
-        .values({ key, value, updatedBy: actor.id, updatedAt: now })
-        .onConflictDoUpdate({ target: platformSetting.key, set: { value, updatedBy: actor.id, updatedAt: now } })
+        .values({ key, value, updatedBy: actor?.id ?? null, updatedAt: now })
+        .onConflictDoUpdate({ target: platformSetting.key, set: { value, updatedBy: actor?.id ?? null, updatedAt: now } })
         .run()
     }
   })
   cache = null
+  if (Object.keys(input).length === 0) return getSettings()
   const changed = Object.fromEntries(
-    Object.entries(input).map(([k, v]) => [k, { from: before[k as SettingKey], to: v }]),
+    Object.entries(input).map(([k, v]) =>
+      (SECRET_SETTING_KEYS as string[]).includes(k) ? [k, { changed: true }] : [k, { from: before[k as SettingKey], to: v }],
+    ),
   )
   audit(actor, 'settings.update', { type: 'settings' }, changed)
   return getSettings()
