@@ -165,6 +165,7 @@ test.describe('group course enrollment (specs 135, 136)', () => {
 test.describe('manager space (specs 140–142)', () => {
   test('a group manager enrolls a member of their group; users outside the scope are refused', async ({
     page,
+    adminRequest,
     createGroup,
     createUser,
     createCourse,
@@ -175,6 +176,12 @@ test.describe('manager space (specs 140–142)', () => {
     const member = await createUser()
     const outsider = await createUser()
     const course = await createCourse({ visibility: 'private' })
+    const pathCourse = await createCourse({ visibility: 'private' })
+    const token = uid()
+    const path = { title: `Parcours ${token}` }
+    await adminRequest.post('/api/admin/paths', {
+      data: { slug: `m-${token}`, title: path.title, kind: 'course', status: 'published', items: [pathCourse.id] },
+    })
     await addMember(group.id, manager.id, 'manager')
     await addMember(group.id, member.id)
 
@@ -187,12 +194,26 @@ test.describe('manager space (specs 140–142)', () => {
 
     await row.getByRole('button', { name: /Gérer les inscriptions/ }).click()
     const dialog = page.getByRole('dialog')
-    await dialog.getByRole('combobox', { name: 'Inscrire à un cours' }).selectOption({ label: course.title })
-    await dialog.getByRole('button', { name: 'Inscrire' }).click()
+    const courseForm = dialog.getByRole('form', { name: 'Inscrire à un cours' })
+    await courseForm.getByRole('combobox').selectOption({ label: course.title })
+    await courseForm.getByRole('button', { name: 'Inscrire' }).click()
     await expect(page.getByText('Inscrit avec succès')).toBeVisible()
-    await expect(dialog.getByRole('list', { name: 'Cours actuels' })).toContainText(course.title)
+    await expect(dialog.getByRole('list', { name: 'Cours actuels', exact: true })).toContainText(course.title)
     await dialog.getByRole('button', { name: `Retirer ${course.title}` }).click()
     await expect(page.getByText('Inscription retirée')).toBeVisible()
+
+    // Paths, in the same dialog.
+    await expect(dialog.getByText('Aucun parcours')).toBeVisible()
+    const pathForm = dialog.getByRole('form', { name: 'Inscrire à un parcours' })
+    await pathForm.getByRole('combobox').selectOption({ label: path.title })
+    await pathForm.getByRole('button', { name: 'Inscrire' }).click()
+    await expect(page.getByText('Inscrit au parcours')).toBeVisible()
+    await expect(dialog.getByRole('list', { name: 'Parcours actuels' })).toContainText(path.title)
+    // The path's course is listed, managed by the path.
+    await expect(dialog.getByRole('list', { name: 'Cours actuels', exact: true })).toContainText(`${pathCourse.title}Inscription gérée ailleurs`)
+    await dialog.getByRole('button', { name: `Retirer ${path.title}` }).click()
+    await expect(page.getByText('Parcours retiré')).toBeVisible()
+    await expect(dialog.getByText('Aucun parcours')).toBeVisible()
 
     const res = await page.request.post(`/api/manager/users/${outsider.id}/enrollments`, { data: { courseId: course.id } })
     expect(res.status()).toBe(403)

@@ -22,7 +22,7 @@ Covers the original 140 (scope), 141 ("Mes membres") and 142 ("Mes groupes"). Pa
 | --- | --- | --- |
 | GET | `/scope` | `{groups, canManage}` (any signed-in user; drives the "Mon espace" link) |
 | GET | `/users` | members in scope with their groups (in scope) and number of enrolled courses |
-| GET | `/users/:userId/enrollments` | the member's courses with their grant sources; `removable` when a manager grant exists |
+| GET | `/users/:userId/enrollments` | the member's courses with their grant sources (`removable` when a manager grant exists) and their published paths |
 | POST | `/users/:userId/enrollments {courseId}` | `manager` grant on a published course (public or private) |
 | DELETE | `/users/:userId/enrollments/:courseId` | removes the manager grant only |
 | GET | `/courses` | published courses |
@@ -36,6 +36,8 @@ Covers the original 140 (scope), 141 ("Mes membres") and 142 ("Mes groupes"). Pa
 - "Mes membres": table Membre (avatar, name, e-mail), Groupes, Cours inscrits, "Gérer les inscriptions" → dialog
   "Inscriptions — <name>": "Cours actuels" ("Retirer" for manager grants, "Inscription gérée ailleurs" otherwise),
   "Inscrire à un cours" ("Choisissez un cours", "Inscrire"); toasts "Inscrit avec succès", "Inscription retirée".
+  Then "Parcours actuels" ("Aucun parcours", "Retirer" → toast "Parcours retiré") and "Inscrire à un parcours"
+  ("Choisissez un parcours", "Inscrire" → toast "Inscrit au parcours"), through the path endpoints of spec 143.
 - "Mes groupes": tree; "+ Nouveau groupe" ("ex : equipe-frontend"), "+ sous-groupe", "Membres" (dialog: list,
   "Retirer", "Choisir un membre…" + "Ajouter"), "Supprimer" (confirmation).
 

@@ -11,7 +11,7 @@ import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { db } from '../db/index.ts'
-import { course, enrollmentGrant, groupMembership, learningPath, user, userGroup } from '../db/schema/index.ts'
+import { course, enrollmentGrant, groupMembership, learningPath, pathEnrollment, user, userGroup } from '../db/schema/index.ts'
 import { validate } from '../lib/validate.ts'
 import { type AppEnv, requireAuth } from '../middleware/session.ts'
 import { audit } from '../services/audit.ts'
@@ -117,7 +117,15 @@ export const managerRoutes = new Hono<ManagerEnv>()
       const sources = r.sources.split(',').sort()
       return { ...r, sources, removable: sources.includes('manager') }
     })
-    return c.json({ courses })
+    // Spec 141: the member's published paths, next to their courses.
+    const paths = db
+      .select({ id: learningPath.id, slug: learningPath.slug, title: learningPath.title })
+      .from(pathEnrollment)
+      .innerJoin(learningPath, eq(learningPath.id, pathEnrollment.pathId))
+      .where(and(eq(pathEnrollment.userId, userId), eq(learningPath.status, 'published')))
+      .orderBy(asc(learningPath.title))
+      .all()
+    return c.json({ courses, paths })
   })
   .post('/users/:userId/enrollments', validate('json', z.object({ courseId: z.string().min(1) })), async (c) => {
     const userId = c.req.param('userId')

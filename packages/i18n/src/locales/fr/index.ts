@@ -599,6 +599,12 @@ export const app = {
       enrolled: 'Inscrit avec succès',
       removed: 'Inscription retirée',
       otherSource: 'Inscription gérée ailleurs',
+      currentPaths: 'Parcours actuels',
+      noPaths: 'Aucun parcours',
+      pathRemoved: 'Parcours retiré',
+      enrollPathTitle: 'Inscrire à un parcours',
+      choosePath: 'Choisissez un parcours',
+      pathEnrolled: 'Inscrit au parcours',
     },
     groups: {
       title: 'Mes groupes',

@@ -166,7 +166,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | # | Feature | Status | Rewrite spec | Notes |
 | --- | --- | --- | --- | --- |
 | 140 | Manager scope | ✅ | [140](docs/specs/140-manager-space.md) | scope = managed groups + subgroups; gaps fixed |
-| 141 | Manager members page | 🟡 | [140](docs/specs/140-manager-space.md) | path enrollments on the "Parcours" tab, not in the member dialog |
+| 141 | Manager members page | ✅ | [140](docs/specs/140-manager-space.md) | |
 | 142 | Manager groups page | ✅ | [140](docs/specs/140-manager-space.md) |  |
 | 143 | Manager paths page | ✅ | [120](docs/specs/120-learning-paths.md) |  |
 | 145 | Admin course enrollments | ✅ | [165](docs/specs/165-admin-courses.md) | |

@@ -87,10 +87,36 @@ function EnrollmentsDialog({ member, onClose }: { member: ManagerMember | null; 
     queryFn: () => unwrap(api.api.manager.courses.$get()),
     enabled: !!member,
   })
+  const paths = useQuery({
+    queryKey: ['manager-paths'],
+    queryFn: () => unwrap(api.api.manager.paths.$get()),
+    enabled: !!member,
+  })
+  const [pathId, setPathId] = useState('')
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['manager-enrollments', userId] })
     await queryClient.invalidateQueries({ queryKey: ['manager-users'] })
+    await queryClient.invalidateQueries({ queryKey: ['manager-path-enrollments'] })
   }
+  const enrollPath = useMutation({
+    mutationFn: (id: string) =>
+      unwrap(api.api.manager.paths[':id'].enrollments.$post({ param: { id }, json: { userId } })),
+    onSuccess: async () => {
+      toast.success(t('manager.members.pathEnrolled'))
+      setPathId('')
+      await refresh()
+    },
+    onError: (err) => toast.error(err.message),
+  })
+  const removePath = useMutation({
+    mutationFn: (id: string) =>
+      unwrap(api.api.manager.paths[':id'].enrollments[':userId'].$delete({ param: { id, userId } })),
+    onSuccess: async () => {
+      toast.success(t('manager.members.pathRemoved'))
+      await refresh()
+    },
+    onError: (err) => toast.error(err.message),
+  })
   const enroll = useMutation({
     mutationFn: (id: string) =>
       unwrap(api.api.manager.users[':userId'].enrollments.$post({ param: { userId }, json: { courseId: id } })),
@@ -113,6 +139,8 @@ function EnrollmentsDialog({ member, onClose }: { member: ManagerMember | null; 
 
   const enrolledIds = new Set(enrollments.data?.courses.map((c) => c.courseId))
   const candidates = (courses.data?.courses ?? []).filter((c) => !enrolledIds.has(c.id))
+  const enrolledPathIds = new Set(enrollments.data?.paths.map((p) => p.id))
+  const pathCandidates = (paths.data?.paths ?? []).filter((p) => !enrolledPathIds.has(p.id))
 
   return (
     <Dialog open={!!member} onOpenChange={(open) => !open && onClose()}>
@@ -155,6 +183,7 @@ function EnrollmentsDialog({ member, onClose }: { member: ManagerMember | null; 
         </section>
         <form
           className="flex flex-col gap-2"
+          aria-label={t('manager.members.enrollTitle')}
           onSubmit={(e) => {
             e.preventDefault()
             if (!courseId) return toast.error(t('manager.members.chooseCourse'))
@@ -177,6 +206,60 @@ function EnrollmentsDialog({ member, onClose }: { member: ManagerMember | null; 
               ))}
             </NativeSelect>
             <Button type="submit" disabled={enroll.isPending}>
+              {t('manager.members.enroll')}
+            </Button>
+          </div>
+        </form>
+        <section className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold">{t('manager.members.currentPaths')}</h3>
+          {enrollments.data &&
+            (enrollments.data.paths.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t('manager.members.noPaths')}</p>
+            ) : (
+              <ul className="flex flex-col divide-y" aria-label={t('manager.members.currentPaths')}>
+                {enrollments.data.paths.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-2 py-2 text-sm">
+                    <span>{p.title}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive"
+                      disabled={removePath.isPending}
+                      onClick={() => removePath.mutate(p.id)}
+                      aria-label={`${t('common:remove')} ${p.title}`}
+                    >
+                      {t('common:remove')}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ))}
+        </section>
+        <form
+          className="flex flex-col gap-2"
+          aria-label={t('manager.members.enrollPathTitle')}
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!pathId) return toast.error(t('manager.members.choosePath'))
+            enrollPath.mutate(pathId)
+          }}
+        >
+          <h3 className="text-sm font-semibold">{t('manager.members.enrollPathTitle')}</h3>
+          <div className="flex gap-2">
+            <NativeSelect
+              aria-label={t('manager.members.enrollPathTitle')}
+              value={pathId}
+              onChange={(e) => setPathId(e.target.value)}
+              containerClassName="flex-1"
+            >
+              <NativeSelectOption value="">{t('manager.members.choosePath')}</NativeSelectOption>
+              {pathCandidates.map((p) => (
+                <NativeSelectOption key={p.id} value={p.id}>
+                  {p.title}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+            <Button type="submit" disabled={enrollPath.isPending}>
               {t('manager.members.enroll')}
             </Button>
           </div>

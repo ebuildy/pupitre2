@@ -578,6 +578,12 @@ export const app = {
       enrolled: 'Enrolled',
       removed: 'Enrollment removed',
       otherSource: 'Enrollment managed elsewhere',
+      currentPaths: 'Current paths',
+      noPaths: 'No paths',
+      pathRemoved: 'Path removed',
+      enrollPathTitle: 'Enroll in a path',
+      choosePath: 'Choose a path',
+      pathEnrolled: 'Enrolled in the path',
     },
     groups: {
       title: 'My groups',
