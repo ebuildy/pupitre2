@@ -15,6 +15,7 @@ import { Leaderboard } from './routes/Leaderboard.tsx'
 import { Monitoring } from './routes/Monitoring.tsx'
 import { PathDetail } from './routes/paths/PathDetail.tsx'
 import { PathList } from './routes/paths/PathList.tsx'
+import { Patterns } from './routes/Patterns.tsx'
 import { Settings } from './routes/Settings.tsx'
 import { UserDetail } from './routes/users/UserDetail.tsx'
 import { UserList } from './routes/users/UserList.tsx'
@@ -45,6 +46,7 @@ export const router = createBrowserRouter(
         { path: 'exports', element: <Exports /> },
         { path: 'paths', element: <PathList /> },
         { path: 'paths/:id', element: <PathDetail /> },
+        { path: 'patterns', element: <Patterns /> },
         { path: 'settings', element: <Settings /> },
       ],
     },

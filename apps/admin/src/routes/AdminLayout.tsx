@@ -4,7 +4,7 @@ import { useTranslation } from '@pupitre/i18n'
 import { cn, LanguageSwitcher, ThemeToggle } from '@pupitre/ui'
 import { Button } from '@pupitre/ui/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@pupitre/ui/components/ui/sheet'
-import { ActivityIcon, ArrowLeftIcon, FileDownIcon, BookOpenIcon, FolderTreeIcon, LayoutDashboardIcon, UsersRoundIcon, LogOutIcon, MapIcon, MenuIcon, SettingsIcon, TrophyIcon, UsersIcon } from 'lucide-react'
+import { ActivityIcon, ArrowLeftIcon, FileDownIcon, BookOpenIcon, FolderTreeIcon, LayoutDashboardIcon, UsersRoundIcon, LogOutIcon, MapIcon, MenuIcon, PuzzleIcon, SettingsIcon, TrophyIcon, UsersIcon } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 
@@ -13,6 +13,7 @@ const sections = [
   { to: '/', label: 'nav.dashboard', end: true, icon: LayoutDashboardIcon },
   { to: '/courses', label: 'nav.courses', end: false, icon: BookOpenIcon },
   { to: '/paths', label: 'nav.paths', end: false, icon: MapIcon },
+  { to: '/patterns', label: 'nav.patterns', end: false, icon: PuzzleIcon },
   { to: '/categories', label: 'nav.categories', end: false, icon: FolderTreeIcon },
   { to: '/groups', label: 'nav.groups', end: false, icon: UsersRoundIcon },
   { to: '/users', label: 'nav.users', end: false, icon: UsersIcon },

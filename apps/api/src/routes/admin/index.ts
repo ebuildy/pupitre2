@@ -8,6 +8,7 @@ import { adminGroupRoutes } from './groups.ts'
 import { adminLeaderboardRoutes } from './leaderboard.ts'
 import { adminMediaRoutes } from './media.ts'
 import { adminPathRoutes } from './paths.ts'
+import { adminPatternRoutes } from './patterns.ts'
 import { adminSkillRoutes } from './skills.ts'
 import { adminStatsRoutes } from './stats.ts'
 import { exportRoutes } from '../exports.ts'
@@ -29,6 +30,7 @@ export const adminRoutes = new Hono<AppEnv>()
   .route('/leaderboard', adminLeaderboardRoutes)
   .route('/media', adminMediaRoutes)
   .route('/paths', adminPathRoutes)
+  .route('/patterns', adminPatternRoutes)
   .route('/skills', adminSkillRoutes)
   .route('/stats', adminStatsRoutes)
   .route('/exports', exportRoutes(() => null))

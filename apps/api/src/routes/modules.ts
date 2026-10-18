@@ -15,6 +15,7 @@ import { validate } from '../lib/validate.ts'
 import { type AppEnv, requireAuth } from '../middleware/session.ts'
 import { canSelfEnroll, canView, findCourseBySlug, grant, grantsFor } from '../services/courses.ts'
 import { mediaUrlFor } from '../services/media.ts'
+import { patternsFor } from '../services/patterns.ts'
 import { prerequisiteViews } from '../services/prerequisites.ts'
 import { totalXp } from '../services/xp.ts'
 import {
@@ -74,7 +75,7 @@ export const moduleRoutes = new Hono<AppEnv>()
     })
   })
   .get('/:moduleSlug', async (c) => {
-    const { user, states } = await access(c.get('user')!, c.req.param('slug'))
+    const { user, course, states } = await access(c.get('user')!, c.req.param('slug'))
     const { state, index } = findModule(states, c.req.param('moduleSlug'))
     const m = state.module
 
@@ -94,7 +95,7 @@ export const moduleRoutes = new Hono<AppEnv>()
       quiz = quizView(await loadQuiz(m), attemptStates(user.id, m.id))
     } else {
       try {
-        lesson = { ...renderMarkdown(await moduleBody(m)), unavailable: false, styles: '' }
+        lesson = { ...renderMarkdown(await moduleBody(m), patternsFor(course.id)), unavailable: false }
       } catch (err) {
         if (!(err instanceof ContentUnavailableError)) throw err
         lesson = { html: '', toc: [], unavailable: true, styles: '' }

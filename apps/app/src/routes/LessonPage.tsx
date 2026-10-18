@@ -167,12 +167,16 @@ export function LessonPage() {
             <AlertDescription className="text-current">{t('lesson.unavailable')}</AlertDescription>
           </Alert>
         ) : detail.lesson?.html ? (
+          <>
+          {/* Spec 061: CSS of the markdown patterns used by this lesson. */}
+          {detail.lesson.styles && <style>{detail.lesson.styles}</style>}
           <div
             ref={contentRef}
             className="content prose prose-neutral max-w-none dark:prose-invert prose-headings:tracking-tight prose-a:text-primary"
             data-testid="lesson-content"
             dangerouslySetInnerHTML={{ __html: detail.lesson.html }}
           />
+          </>
         ) : (
           <EmptyState title={t('lesson.empty')} />
         )}

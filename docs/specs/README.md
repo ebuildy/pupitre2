@@ -26,6 +26,7 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | [050](050-prerequisites-and-auto-enrollment.md) | Course prerequisites and automatic enrollment | Implemented |
 | [052](052-my-courses.md) | "Mes cours" | Implemented |
 | [053](053-course-content-and-quizzes.md) | Course content, progress and quizzes | Implemented (fake content loader) |
+| [061](061-markdown-patterns.md) | Markdown patterns (rendering, administration, seeding) | Implemented |
 | [062](062-media.md) | Video and image modules, uploads, replication, thumbnails | Implemented |
 | [064](064-git-content.md) | Git-sourced content, module index files, git cache | Implemented |
 | [103](103-xp.md) | XP, levels, course completion, XP gate and leaderboard | Implemented (completion marked by admins) |

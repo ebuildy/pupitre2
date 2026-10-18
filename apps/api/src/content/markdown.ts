@@ -140,17 +140,84 @@ const SANITIZE: sanitizeHtml.IOptions = {
   },
 }
 
-/** A whole document: sanitized HTML and its table of contents. */
-export function renderMarkdown(source: string): { html: string; toc: TocEntry[] } {
+/** A markdown pattern (spec 061): admin-authored HTML with a `{{content}}` placeholder, and optional CSS. */
+export type PatternDef = { name: string; html: string; css: string | null }
+
+type Slot = { pattern: PatternDef; content: string; block: boolean }
+
+const token = (i: number) => `PUPITREPATTERN${i}PUPITRE`
+const BLOCK_OPEN = /^\|\|\|([a-z0-9][a-z0-9_-]*)\s*$/
+const BLOCK_CLOSE = /^\|\|\|\s*$/
+const INLINE = /\|\|\|([a-z0-9][a-z0-9_-]*) (.+?)\|\|\|/g
+
+/**
+ * Spec 061: replaces `|||name … |||` blocks (own lines) and `|||name text|||` inline uses of known patterns with
+ * placeholders, outside fenced code. Unknown names and unclosed blocks are left as written.
+ */
+function extractPatterns(source: string, patterns: Map<string, PatternDef>) {
+  const slots: Slot[] = []
+  if (patterns.size === 0) return { text: source, slots }
+  const lines = source.split('\n')
+  const out: string[] = []
+  let fence: string | null = null
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!
+    const f = FENCE.exec(line)
+    if (fence || f) {
+      if (f) fence = fence === null ? f[1]! : fence === f[1] ? null : fence
+      out.push(line)
+      continue
+    }
+    const open = BLOCK_OPEN.exec(line)
+    const pattern = open ? patterns.get(open[1]!) : undefined
+    if (pattern) {
+      const end = lines.findIndex((l, j) => j > i && BLOCK_CLOSE.test(l))
+      if (end > 0) {
+        slots.push({ pattern, content: lines.slice(i + 1, end).join('\n'), block: true })
+        out.push('', token(slots.length - 1), '')
+        i = end
+        continue
+      }
+    }
+    out.push(
+      line.replace(INLINE, (match, name: string, content: string) => {
+        const p = patterns.get(name)
+        if (!p) return match
+        slots.push({ pattern: p, content: content.trim(), block: false })
+        return token(slots.length - 1)
+      }),
+    )
+  }
+  return { text: out.join('\n'), slots }
+}
+
+/** The pattern HTML is trusted (admins); the content inside it is rendered and sanitized like the rest. */
+function fillPatterns(html: string, slots: Slot[]) {
+  const fill = (i: number) => {
+    const slot = slots[i]!
+    const env: RenderEnv = { headingCount: 0, toc: [] }
+    const inner = sanitizeHtml(slot.block ? md.render(slot.content, env) : md.renderInline(slot.content, env), SANITIZE)
+    return slot.pattern.html.split('{{content}}').join(inner)
+  }
+  return html
+    .replace(/<p>PUPITREPATTERN(\d+)PUPITRE<\/p>/g, (_, i: string) => fill(Number(i)))
+    .replace(/PUPITREPATTERN(\d+)PUPITRE/g, (_, i: string) => fill(Number(i)))
+}
+
+/** A whole document: sanitized HTML, its table of contents, and the CSS of the patterns it uses. */
+export function renderMarkdown(source: string, patterns: PatternDef[] = []): { html: string; toc: TocEntry[]; styles: string } {
   const env: RenderEnv = { headingCount: 0, toc: [] }
-  const html = splitAdmonitions(source)
+  const { text, slots } = extractPatterns(source, new Map(patterns.map((p) => [p.name, p])))
+  const rendered = splitAdmonitions(text)
     .map((chunk) =>
       chunk.kind === 'markdown'
         ? md.render(chunk.text, env)
         : `<div class="admonition admonition-${chunk.type}"><p class="admonition-title">${ADMONITIONS[chunk.type]} ${escapeHtml(chunk.title)}</p>${md.render(chunk.body, env)}</div>`,
     )
     .join('')
-  return { html: sanitizeHtml(html, SANITIZE), toc: env.toc }
+  const html = fillPatterns(sanitizeHtml(rendered, SANITIZE), slots)
+  const used = [...new Set(slots.map((s) => s.pattern))]
+  return { html, toc: env.toc, styles: used.map((p) => p.css ?? '').filter(Boolean).join('\n') }
 }
 
 /** A short fragment (quiz question, answer, feedback): sanitized HTML, no TOC. */

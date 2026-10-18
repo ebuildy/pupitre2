@@ -45,6 +45,8 @@ const schema = z.object({
   /** Spec 062: uploaded and replicated media files, served at /uploads. */
   UPLOADS_DIR: z.string().default('./data/uploads'),
   MEDIA_MAX_BYTES: z.coerce.number().int().positive().default(512 * 1024 * 1024),
+  /** Spec 181: YAML list of markdown patterns upserted at startup (`origin: config`). */
+  PATTERNS_FILE: z.string().optional(),
   /** Spec 015: load the mock data (`src/fixtures`) at startup. Development only. */
   SEED_DEV_DATA: z.stringbool().default(false),
 })

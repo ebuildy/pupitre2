@@ -5,6 +5,7 @@ import { sqlite } from './db/index.ts'
 import { runMigrations } from './db/migrate.ts'
 import { env } from './env.ts'
 import { ensureDefaultMemberships } from './services/groups.ts'
+import { seedPatterns } from './services/patterns.ts'
 
 runMigrations()
 await ensureAdmin()
@@ -15,6 +16,9 @@ if (env.SEED_DEV_DATA) {
 }
 // Spec 038: accounts created before the default group existed, or outside better-auth.
 ensureDefaultMemberships()
+// Spec 181: patterns shipped with the deployment.
+const seeded = seedPatterns(env.PATTERNS_FILE)
+if (seeded) console.log(`markdown patterns from ${env.PATTERNS_FILE}: ${seeded}`)
 
 const server = serve({ fetch: app.fetch, port: env.PORT }, (info) => {
   console.log(`api listening on http://localhost:${info.port}`)

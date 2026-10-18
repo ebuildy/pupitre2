@@ -1,0 +1,6 @@
+# Spec 181: patterns seeded at API startup in the e2e run (PATTERNS_FILE).
+- name: e2e-callout
+  label: Encadré
+  description: Un encadré mis en avant
+  html: '<aside class="md-pat-callout">{{content}}</aside>'
+  css: '.md-pat-callout { border-left: 4px solid; padding-left: 1rem; }'

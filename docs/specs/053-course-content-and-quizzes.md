@@ -130,7 +130,7 @@ one, `order`'s `correctOrder` lists every item once, keys are unique.
 - Quiz settings live in the quiz document for both inline and git-sourced quizzes; questions are identified by key.
 - URLs use module slugs instead of positions.
 - Locked questions are defined: they score 0 until an admin resets the learner's attempts.
-- Not yet: lab modules (090), markdown patterns (061), source references in feedback. Git content, indexes and cache:
+- Not yet: lab modules (090), source references in feedback. Markdown patterns: [061](061-markdown-patterns.md). Git content, indexes and cache:
   [064](064-git-content.md). Done since: video / image modules ([062](062-media.md)), module editor ([169](169-course-authoring.md)),
   prerequisites and auto-enrollment ([050](050-prerequisites-and-auto-enrollment.md)).
 

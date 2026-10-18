@@ -1,7 +1,7 @@
 import { useTranslation } from '@pupitre/i18n'
 import { PageHeader } from '@pupitre/ui'
 import { Card, CardDescription, CardHeader, CardTitle } from '@pupitre/ui/components/ui/card'
-import { ActivityIcon, BookOpenIcon, FileDownIcon, MapIcon, FolderTreeIcon, SettingsIcon, TrophyIcon, UsersIcon, UsersRoundIcon } from 'lucide-react'
+import { ActivityIcon, BookOpenIcon, FileDownIcon, MapIcon, PuzzleIcon, FolderTreeIcon, SettingsIcon, TrophyIcon, UsersIcon, UsersRoundIcon } from 'lucide-react'
 import { Link } from 'react-router'
 import { StatCards, TopLearners } from '../components/StatCards.tsx'
 
@@ -11,6 +11,7 @@ export function Dashboard() {
   const shortcuts = [
     { to: '/courses', title: t('nav.courses'), hint: t('dashboard.coursesHint'), icon: BookOpenIcon },
     { to: '/paths', title: t('nav.paths'), hint: t('dashboard.pathsHint'), icon: MapIcon },
+    { to: '/patterns', title: t('nav.patterns'), hint: t('dashboard.patternsHint'), icon: PuzzleIcon },
     { to: '/categories', title: t('nav.categories'), hint: t('dashboard.categoriesHint'), icon: FolderTreeIcon },
     { to: '/groups', title: t('nav.groups'), hint: t('dashboard.groupsHint'), icon: UsersRoundIcon },
     { to: '/users', title: t('nav.users'), hint: t('dashboard.usersHint'), icon: UsersIcon },

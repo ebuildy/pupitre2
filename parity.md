@@ -76,7 +76,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 058 | Markdown rendering | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 | 059 | Admonitions | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | |
 | 060 | Mermaid diagrams | ✅ | [053](docs/specs/053-course-content-and-quizzes.md) | lazy-loaded |
-| 061 | Markdown patterns rendering | ⬜ | | |
+| 061 | Markdown patterns rendering | ✅ | [061](docs/specs/061-markdown-patterns.md) | server-side; no pattern JS |
 | 062 | Video and image modules | ✅ | [062](docs/specs/062-media.md) | upload endpoint added |
 | 063 | Media replication | ✅ | [062](docs/specs/062-media.md) | falls back to the remote URL |
 | 064 | Git-sourced content | ✅ | [064](docs/specs/064-git-content.md) | git binary; `auto` loader mode |
@@ -204,8 +204,8 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 176 | Markdown course export | ✅ | [169](docs/specs/169-course-authoring.md) |  |
 | 177 | Git cache admin | ✅ | [064](docs/specs/064-git-content.md) |  |
 | 179 | Platform settings | 🟡 | [179](docs/specs/179-platform-settings.md) | OIDC/LDAP/GitLab keys come with their features |
-| 180 | Admin markdown patterns | ⬜ | | |
-| 181 | Pattern config seeding | ⬜ | | |
+| 180 | Admin markdown patterns | ✅ | [061](docs/specs/061-markdown-patterns.md) | course scope supported |
+| 181 | Pattern config seeding | ✅ | [061](docs/specs/061-markdown-patterns.md) | `PATTERNS_FILE` |
 | 182 | CSV exports | ✅ | [160](docs/specs/160-admin-dashboard-and-reports.md) | manager exports scoped to their members |
 | 183 | Lab check CSV export | ⬜ | | |
 | 184 | Admin progress sync | ➖ | | progress is computed from module ids, nothing to resync |
