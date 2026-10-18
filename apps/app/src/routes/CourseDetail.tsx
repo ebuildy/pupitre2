@@ -14,6 +14,7 @@ import { SkillChips } from '../components/CourseCard.tsx'
 import { ModuleList } from '../components/ModuleList.tsx'
 import { CourseSessions } from '../components/sessions/CourseSessions.tsx'
 import { api } from '../lib/api.ts'
+import { returnPathFor } from '../lib/return-path.ts'
 import { moduleHref, nextModule, useCourseModules } from '../lib/learning.ts'
 
 /** Spec 045 (enrollment area; modules come with their feature). */
@@ -82,6 +83,11 @@ export function CourseDetail() {
             {course.thumbnailUrl ? <img src={course.thumbnailUrl} alt="" className="h-full w-full object-cover" /> : courseIcon(course)}
           </div>
           <CardContent className="flex flex-col gap-4 p-5">
+            {returnPathFor(course.slug) && (
+              <Link to={returnPathFor(course.slug)!.to} className="text-sm text-muted-foreground hover:text-foreground">
+                {t('myPaths.backToPath', { title: returnPathFor(course.slug)!.title })}
+              </Link>
+            )}
             <h1 className="text-2xl font-bold tracking-tight">{course.title}</h1>
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               {course.difficulty && <DifficultyBadge difficulty={course.difficulty} />}

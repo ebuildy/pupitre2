@@ -54,6 +54,9 @@ Covers the original 120 (model), 121 (catalogue API), 122 (enrollment), 123 ("Me
   progress "x/y"); empty "Aucun parcours en cours" + "Voir le catalogue". `/my-paths/:slug` ("◂ Mes parcours"): skill
   chips (course paths) and a winding road (SVG) with one numbered node per item — Terminé (green ✓), Disponible (blue,
   pulsing), Verrouillé (grey); available and completed nodes open the course or skill page, locked ones are not links.
+- Return to the path: opening a course from a course-path roadmap remembers the path for the tab (`sessionStorage`).
+  The course page then shows "◂ Retour au parcours « … »"; finishing the course (last lesson, lab, or a passed quiz via
+  its button) goes back to `/my-paths/:slug` instead of the course page, once.
 - Manager `/manager/paths` ("Parcours" tab): "Parcours :" select, member select + "Inscrire" ("Membre inscrit au
   parcours"), table Membre / Progression / Inscrit le / "Désinscrire" (confirm "Désinscrire ce membre du parcours ?").
 
@@ -62,7 +65,7 @@ Covers the original 120 (model), 121 (catalogue API), 122 (enrollment), 123 ("Me
 - Paths reference courses and skills by id; definitions are edited in a form, not as YAML.
 - Unenrolling removes the course access the path gave (spec 191), instead of keeping direct enrollments.
 - Enrollments are on the path page instead of a separate "Inscriptions" tab with a path select.
-- No "return to the path" after finishing a course yet.
+- The return target lives in `sessionStorage` (per tab), not in the URL.
 
 ## Source
 

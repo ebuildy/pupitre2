@@ -685,6 +685,7 @@ export const app = {
     progress: '{{done}}/{{total}}',
     notFound: 'Parcours introuvable',
     roadmap: 'Feuille de route',
+    backToPath: '◂ Retour au parcours « {{title}} »',
   },
   managerPaths: {
     title: 'Parcours',

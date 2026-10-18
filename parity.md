@@ -143,7 +143,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 120 | Learning path model | ✅ | [120](docs/specs/120-learning-paths.md) |  |
 | 121 | Path catalogue API | ✅ | [120](docs/specs/120-learning-paths.md) |  |
 | 122 | Path enrollment | ✅ | [120](docs/specs/120-learning-paths.md) |  |
-| 123 | My paths page | 🟡 | [120](docs/specs/120-learning-paths.md) | no "return to path" after a course |
+| 123 | My paths page | ✅ | [120](docs/specs/120-learning-paths.md) | return target kept per tab |
 | 124 | Path progress rules | ✅ | [120](docs/specs/120-learning-paths.md) |  |
 | 125 | Path grants course access | ✅ | [120](docs/specs/120-learning-paths.md) |  |
 | 126 | Admin path management | ✅ | [120](docs/specs/120-learning-paths.md) |  |

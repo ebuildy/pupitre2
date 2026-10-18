@@ -104,6 +104,36 @@ test.describe('path access and progress (specs 122–125)', () => {
     expect((await page.request.get(`/api/courses/${second.slug}`)).status()).toBe(404)
   })
 
+  test('finishing a course opened from the roadmap goes back to the path (spec 123)', async ({
+    page,
+    adminRequest,
+    createCourse,
+    createUser,
+    setModules,
+  }) => {
+    const token = uid()
+    const course = await createCourse({ title: `${token} un` })
+    await setModules(course.id, [lesson('a')])
+    const created = await (
+      await adminRequest.post('/api/admin/paths', {
+        data: { slug: `r-${token}`, title: `Parcours ${token}`, kind: 'course', status: 'published', items: [course.id] },
+      })
+    ).json()
+    const learner = await createUser()
+    await adminRequest.post(`/api/admin/paths/${created.id}/enrollments`, { data: { userId: learner.id } })
+
+    await signIn(page, learner)
+    await page.goto(`/my-paths/r-${token}`)
+    await page.getByRole('link', { name: `${course.title} — Disponible` }).click()
+    await expect(page).toHaveURL(new RegExp(`/courses/${course.slug}$`))
+    await expect(page.getByRole('link', { name: `◂ Retour au parcours « Parcours ${token} »` })).toBeVisible()
+
+    await page.goto(`/courses/${course.slug}/lessons/a`)
+    await page.getByRole('button', { name: 'Terminer le cours ▸' }).click()
+    await expect(page).toHaveURL(new RegExp(`/my-paths/r-${token}$`))
+    await expect(page.getByTestId(`path-node-${course.slug}`)).toHaveAttribute('data-status', 'completed')
+  })
+
   test('removing a course from the path removes the access it gave', async ({ adminRequest, createCourse, createUser }) => {
     const token = uid()
     const kept = await createCourse({ visibility: 'private' })

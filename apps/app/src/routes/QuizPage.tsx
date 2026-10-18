@@ -2,6 +2,7 @@ import { useTranslation } from '@pupitre/i18n'
 import { ApiRequestError, isNotFound, LoadingState, PageHeader } from '@pupitre/ui'
 import { Button } from '@pupitre/ui/components/ui/button'
 import { ChevronRightIcon } from 'lucide-react'
+import { afterCourseCompleted, returnPathFor } from '../lib/return-path.ts'
 import { Link, Navigate, useParams } from 'react-router'
 import { QuizForm } from '../components/quiz/QuizForm.tsx'
 import { moduleHref, useModule, useRefreshLearning } from '../lib/learning.ts'
@@ -53,6 +54,14 @@ export function QuizPage() {
           <>
             {result.courseCompleted && (
               <p className="w-full font-medium text-success-foreground">{t('lesson.courseCompleted')}</p>
+            )}
+            {result.courseCompleted && returnPathFor(slug) && (
+              <Button asChild>
+                {/* Rendering must not forget the target: it is cleared on click. */}
+                <Link to={returnPathFor(slug)!.to} onClick={() => afterCourseCompleted(slug)}>
+                  {t('myPaths.backToPath', { title: returnPathFor(slug)!.title })}
+                </Link>
+              </Button>
             )}
             {result.passed && detail.next && (
               <Button asChild>

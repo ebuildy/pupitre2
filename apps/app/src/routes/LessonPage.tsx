@@ -11,6 +11,7 @@ import { LabContent } from '../components/lab/LabContent.tsx'
 import { QuizForm } from '../components/quiz/QuizForm.tsx'
 import { completeModule, moduleHref, useCourseModules, useModule, useRefreshLearning } from '../lib/learning.ts'
 import { useMermaid } from '../lib/mermaid.ts'
+import { afterCourseCompleted } from '../lib/return-path.ts'
 
 type ReadingMode = 'docs' | 'focus'
 const READING_MODE_KEY = 'pupitre.readingMode'
@@ -49,7 +50,8 @@ export function LessonPage() {
     mutationFn: () => completeModule(slug, moduleSlug),
     onSuccess: async ({ courseCompleted }) => {
       await refresh()
-      if (courseCompleted || !detail?.next) navigate(`/courses/${slug}`, { state: { completed: courseCompleted } })
+      if (courseCompleted) navigate(afterCourseCompleted(slug), { state: { completed: true } })
+      else if (!detail?.next) navigate(`/courses/${slug}`)
       else navigate(moduleHref(slug, detail.next))
     },
   })
@@ -178,7 +180,8 @@ export function LessonPage() {
                 await refresh()
                 // Spec 090: every step validated → on to the next module (or back to the course).
                 if (r.completed) {
-                  if (r.courseCompleted || !detail.next) navigate(`/courses/${slug}`, { state: { completed: r.courseCompleted } })
+                  if (r.courseCompleted) navigate(afterCourseCompleted(slug), { state: { completed: true } })
+                  else if (!detail.next) navigate(`/courses/${slug}`)
                   else navigate(moduleHref(slug, detail.next))
                 }
               }}

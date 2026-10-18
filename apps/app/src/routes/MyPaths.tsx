@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router'
 import { SkillChips } from '../components/CourseCard.tsx'
 import { api } from '../lib/api.ts'
+import { rememberReturnPath } from '../lib/return-path.ts'
 
 function useMyPaths() {
   return useQuery({ queryKey: ['my-paths'], queryFn: () => unwrap(api.api.my.paths.$get()) })
@@ -167,7 +168,12 @@ function Roadmap({ path }: { path: MyPath }) {
           return item.status === 'locked' ? (
             <g key={item.slug}>{node}</g>
           ) : (
-            <Link key={item.slug} to={href} aria-label={`${item.title} — ${t(`common:pathStatus.${item.status}`)}`}>
+            <Link
+              key={item.slug}
+              to={href}
+              aria-label={`${item.title} — ${t(`common:pathStatus.${item.status}`)}`}
+              onClick={() => path.kind === 'course' && rememberReturnPath({ courseSlug: item.slug, to: `/my-paths/${path.slug}`, title: path.title })}
+            >
               {node}
             </Link>
           )
