@@ -17,6 +17,8 @@ export const SETTINGS = {
   profile_allow_username_change: { type: 'boolean', default: true, public: true },
   /** Spec 024 */
   sso_local_login_enabled: { type: 'boolean', default: true, public: true },
+  /** Spec 092: GitLab instance of the lab checks (empty: the GITLAB_URL environment variable). */
+  gitlab_url: { type: 'text', default: '', public: false },
 } as const
 
 export type SettingKey = keyof typeof SETTINGS
@@ -53,6 +55,7 @@ export const settingsUpdateSchema = z
     password_require_number: z.boolean(),
     profile_allow_username_change: z.boolean(),
     sso_local_login_enabled: z.boolean(),
+    gitlab_url: z.string().trim().max(500),
   } satisfies Record<SettingKey, z.ZodType>)
   .partial()
   .refine((v) => Object.keys(v).length > 0, 'No setting to update')

@@ -153,6 +153,15 @@ function toModule(name: string, body: string, used: Set<string>, warnings: strin
     skills: (directive.skills as string[] | undefined) ?? [],
     prerequisites: (directive.prerequisites as string[] | undefined) ?? [],
     content,
+    // Spec 090: the original's keys (`labUrl`, `checkProvider`, `steps`).
+    lab:
+      type === 'lab'
+        ? {
+            labUrl: (directive.labUrl as string | undefined) ?? null,
+            provider: (directive.checkProvider as 'gitlab' | 'local' | undefined) ?? 'gitlab',
+            steps: (directive.steps as { title: string; checkType: string; checkParams?: Record<string, unknown> }[] | undefined) ?? [],
+          }
+        : null,
   }
 }
 
@@ -200,6 +209,11 @@ export function exportMarkdownCourse(slug: string, spec: CourseSpec, requested?:
     if (m.inline) directive.inline = true
     if (m.skills?.length) directive.skills = m.skills
     if (m.prerequisites?.length) directive.prerequisites = m.prerequisites
+    if (m.lab) {
+      if (m.lab.labUrl) directive.labUrl = m.lab.labUrl
+      directive.checkProvider = m.lab.provider ?? 'gitlab'
+      if (m.lab.steps?.length) directive.steps = m.lab.steps
+    }
     let body = ''
     if (m.content.kind === 'media') {
       directive.url = m.content.url

@@ -22,8 +22,9 @@ each change.
 | `password_require_number` | `false` | yes | 022 |
 | `profile_allow_username_change` | `true` | yes | 035 |
 | `sso_local_login_enabled` | `true` | yes | 024 |
+| `gitlab_url` | `''` (then `GITLAB_URL`) | no | 092 |
 
-SSO, OIDC, LDAP and GitLab keys are added with their features.
+SSO, OIDC and LDAP keys are added with their features.
 
 ## API
 

@@ -7,6 +7,7 @@ import { CheckIcon, ChevronRightIcon, Columns3Icon, LockIcon, MaximizeIcon } fro
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
+import { LabContent } from '../components/lab/LabContent.tsx'
 import { QuizForm } from '../components/quiz/QuizForm.tsx'
 import { completeModule, moduleHref, useCourseModules, useModule, useRefreshLearning } from '../lib/learning.ts'
 import { useMermaid } from '../lib/mermaid.ts'
@@ -76,6 +77,8 @@ export function LessonPage() {
   if (detail.type === 'quiz') return <Navigate to={moduleHref(slug, detail)} replace />
 
   const isLast = !detail.next
+  // Spec 090: a lab with steps is completed by its checks, not by the button.
+  const labPending = !!detail.lab?.steps.length && !detail.done
   const inlinePending = !!detail.inlineQuiz && !detail.inlineQuiz.module.done
   const nextLabel = isLast
     ? inlinePending
@@ -162,6 +165,25 @@ export function LessonPage() {
           ) : (
             <img src={detail.media.url} alt={detail.name} className="w-full rounded-xl" data-testid="module-image" />
           )
+        ) : detail.lab && detail.lesson && !detail.lesson.unavailable ? (
+          <>
+            {detail.lesson.styles && <style>{detail.lesson.styles}</style>}
+            <LabContent
+              html={detail.lesson.html}
+              lab={detail.lab}
+              courseSlug={slug}
+              moduleSlug={moduleSlug}
+              contentRef={contentRef}
+              onChecked={async (r) => {
+                await refresh()
+                // Spec 090: every step validated → on to the next module (or back to the course).
+                if (r.completed) {
+                  if (r.courseCompleted || !detail.next) navigate(`/courses/${slug}`, { state: { completed: r.courseCompleted } })
+                  else navigate(moduleHref(slug, detail.next))
+                }
+              }}
+            />
+          </>
         ) : detail.lesson?.unavailable ? (
           <Alert variant="warning">
             <AlertDescription className="text-current">{t('lesson.unavailable')}</AlertDescription>
@@ -200,7 +222,9 @@ export function LessonPage() {
                 {detail.previous ? t('lesson.previous') : t('lesson.backToCourse')}
               </Link>
             </Button>
-            {!detail.done || isLast ? (
+            {labPending ? (
+              <p className="text-sm text-muted-foreground">{t('lab.finishHint')}</p>
+            ) : !detail.done || isLast ? (
               <Button disabled={complete.isPending} onClick={() => complete.mutate()}>
                 {nextLabel}
               </Button>

@@ -176,6 +176,8 @@ Playwright is the only test runner. Every feature ships with e2e tests covering 
   API client must get one too: `browser.newPage({ extraHTTPHeaders: { 'x-forwarded-for': randomIp() } })`,
   `await apiClient()` (both from `./fixtures.ts`).
 - Accessible names match by substring: use `exact: true` for short names (`{ name: 'Enregistrer', exact: true }`).
+- Labs: GitLab step checks hit `e2e/fake-gitlab.mjs` (port 3103, started by Playwright); describe the learner's project
+  with `POST http://localhost:3103/__fake/projects {path, branches, mergeRequests, commits, files}`.
 - Use web-first assertions (`await expect(locator).toBeVisible()`, `toHaveURL`); no fixed waits.
 - `toHaveURL` for admin app roots: `/\/admin\/?$/` (the router may drop the trailing slash).
 - Direct database access from tests (`node:sqlite`) must open the file with a busy `timeout`.

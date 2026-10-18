@@ -138,6 +138,9 @@ export function Settings() {
 
       <Section title={t('settings.sections.auth')}>
         {toggle('sso_local_login_enabled', t('settings.localLogin'), t('settings.localLoginHelp'))}
+        <SettingRow id="gitlab_url" label={t('settings.gitlabUrl')} help={t('settings.gitlabUrlHelp')} lastChange={data.changes.gitlab_url?.updatedAt} stacked>
+          <Input id="gitlab_url" value={draft.gitlab_url} placeholder="https://gitlab.example.com" onChange={(e) => set('gitlab_url', e.target.value)} />
+        </SettingRow>
       </Section>
 
       <div className="flex justify-end">{saveButton}</div>

@@ -26,6 +26,7 @@ export async function adminModules(courseId: string): Promise<AdminModule[]> {
     inline: m.inline,
     prerequisites: (prerequisites.get(m.id) ?? []).map((id) => slugById.get(id)!),
     skills: (skills.get(m.id) ?? []).map((sk) => sk.slug),
+    lab: m.lab ?? null,
     content: m.mediaUrl
       ? { kind: 'media', url: m.mediaUrl, replicate: m.mediaReplicate }
       : m.sourceRepo && m.sourcePath
@@ -138,6 +139,7 @@ export function replaceModules(courseId: string, modules: ParsedModules) {
         sourcePath: m.content.kind === 'source' ? m.content.path : null,
         mediaUrl: m.content.kind === 'media' ? m.content.url : null,
         mediaReplicate: m.content.kind === 'media' ? m.content.replicate : false,
+        lab: m.type === 'lab' ? (m.lab ?? null) : null,
       }
       const id = existing.get(m.slug)
       if (id) {

@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
-import { ADMIN_PASSWORD, ADMIN_PORT, API_PORT, APP_PORT, BASE_URL } from './e2e/env.ts'
+import { ADMIN_PASSWORD, ADMIN_PORT, API_PORT, APP_PORT, BASE_URL, GITLAB_PORT } from './e2e/env.ts'
 
 export default defineConfig({
   testDir: './e2e',
@@ -28,6 +28,13 @@ export default defineConfig({
   ],
   webServer: [
     {
+      name: 'gitlab',
+      command: 'node e2e/fake-gitlab.mjs',
+      url: `http://localhost:${GITLAB_PORT}/health`,
+      reuseExistingServer: !process.env.CI,
+      env: { PORT: String(GITLAB_PORT) },
+    },
+    {
       name: 'api',
       command: 'rm -rf data/e2e.db* data/e2e-uploads && pnpm start',
       cwd: './apps/api',
@@ -40,6 +47,7 @@ export default defineConfig({
         UPLOADS_DIR: './data/e2e-uploads',
         GIT_CACHE_DIR: './data/e2e-git-cache',
         PATTERNS_FILE: '../../e2e/patterns.yaml',
+        GITLAB_URL: `http://localhost:${GITLAB_PORT}`,
         BETTER_AUTH_URL: BASE_URL,
         CORS_ORIGINS: BASE_URL,
         LOG_REQUESTS: 'false',

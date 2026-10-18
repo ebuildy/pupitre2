@@ -47,6 +47,9 @@ const schema = z.object({
   MEDIA_MAX_BYTES: z.coerce.number().int().positive().default(512 * 1024 * 1024),
   /** Spec 181: YAML list of markdown patterns upserted at startup (`origin: config`). */
   PATTERNS_FILE: z.string().optional(),
+  /** Spec 092: GitLab of the lab step checks (the `gitlab_url` setting wins) and its API token. */
+  GITLAB_URL: z.string().optional(),
+  GITLAB_TOKEN: z.string().optional(),
   /** Spec 015: load the mock data (`src/fixtures`) at startup. Development only. */
   SEED_DEV_DATA: z.stringbool().default(false),
 })

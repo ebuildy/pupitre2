@@ -3,18 +3,21 @@ import {
   type CourseModulesResponse,
   type ModuleCompleteResult,
   type ModuleDetail,
+  type LabStepCheckResponse,
   type QuizResult,
   quizSubmitSchema,
   type Role,
 } from '@pupitre/shared'
 import { Hono } from 'hono'
+import { z } from 'zod'
 import { HTTPException } from 'hono/http-exception'
 import { ContentUnavailableError } from '../content/loader.ts'
 import { renderMarkdown } from '../content/markdown.ts'
 import { validate } from '../lib/validate.ts'
 import { type AppEnv, requireAuth } from '../middleware/session.ts'
-import { canSelfEnroll, canView, findCourseBySlug, grant, grantsFor } from '../services/courses.ts'
+import { canSelfEnroll, canView, type Course, findCourseBySlug, grant, grantsFor } from '../services/courses.ts'
 import { mediaUrlFor } from '../services/media.ts'
+import { gitlabCheck, labView, markStepPlaceholders, placeSteps, recordCheck, resolvedStep } from '../services/labs.ts'
 import { patternsFor } from '../services/patterns.ts'
 import { prerequisiteViews } from '../services/prerequisites.ts'
 import { totalXp } from '../services/xp.ts'
@@ -24,6 +27,7 @@ import {
   loadQuiz,
   markViewed,
   moduleBody,
+  type Module,
   type ModuleState,
   moduleStates,
   quizView,
@@ -52,6 +56,41 @@ async function access(user: NonNullable<AppEnv['Variables']['user']>, slug: stri
   }
   const states = await moduleStates(course.id, user.id, isAdmin)
   return { user, course, isAdmin, states }
+}
+
+/** The learner's identity in lab parameters (`{{username}}`). */
+function labUsername(user: { username?: string | null; email: string }) {
+  return user.username ?? user.email.split('@')[0]!
+}
+
+function labStep(m: Module, raw: string) {
+  const config = m.type === 'lab' ? m.lab : null
+  if (!config) throw new HTTPException(400, { message: 'Module is not a lab' })
+  const index = Number(raw)
+  const step = Number.isInteger(index) ? config.steps[index] : undefined
+  if (!step) throw new HTTPException(404, { message: 'Step not found' })
+  return { config, step, index }
+}
+
+/** Records the result; once every step has passed, the lab is done (and maybe the course). */
+async function recordStep(
+  user: { id: string; email: string; username?: string | null },
+  course: Course,
+  m: Module,
+  index: number,
+  title: string,
+  result: { allow: boolean; violations: string[] },
+  verified: boolean,
+): Promise<LabStepCheckResponse> {
+  recordCheck({ userId: user.id, userEmail: user.email, moduleId: m.id, stepIndex: index, stepTitle: title, result, verified })
+  const view = labView(m.lab!, m.id, user.id, labUsername(user))
+  const completed = view.steps.every((s) => s.passed)
+  let courseCompleted = false
+  if (completed) {
+    markViewed(user.id, course, m)
+    courseCompleted = await checkCourseCompletion(user.id, course)
+  }
+  return { ...result, completed, courseCompleted }
 }
 
 function findModule(states: ModuleState[], slug: string) {
@@ -95,12 +134,15 @@ export const moduleRoutes = new Hono<AppEnv>()
       quiz = quizView(await loadQuiz(m), attemptStates(user.id, m.id))
     } else {
       try {
-        lesson = { ...renderMarkdown(await moduleBody(m), patternsFor(course.id)), unavailable: false }
+        const steps = m.type === 'lab' ? (m.lab?.steps.length ?? 0) : 0
+        const rendered = renderMarkdown(steps ? markStepPlaceholders(await moduleBody(m)) : await moduleBody(m), patternsFor(course.id))
+        lesson = { ...rendered, html: steps ? placeSteps(rendered.html, steps) : rendered.html, unavailable: false }
       } catch (err) {
         if (!(err instanceof ContentUnavailableError)) throw err
         lesson = { html: '', toc: [], unavailable: true, styles: '' }
       }
     }
+    const lab = m.type === 'lab' && m.lab ? labView(m.lab, m.id, user.id, labUsername(user)) : null
 
     const following = states[index + 1]
     const inlineQuiz =
@@ -113,6 +155,7 @@ export const moduleRoutes = new Hono<AppEnv>()
       lesson,
       quiz,
       media,
+      lab,
       inlineQuiz,
       hostSlug: m.inline ? (before?.module.slug ?? null) : null,
       previous: previous && !m.inline ? { slug: previous.module.slug, type: previous.module.type } : null,
@@ -125,8 +168,36 @@ export const moduleRoutes = new Hono<AppEnv>()
     const { user, course, states } = await access(c.get('user')!, c.req.param('slug'))
     const { state } = findModule(states, c.req.param('moduleSlug'))
     if (state.module.type === 'quiz') throw new HTTPException(400, { message: 'Quiz modules are completed by passing them' })
+    // Spec 090: a lab with steps is completed by validating its steps.
+    if (state.module.type === 'lab' && state.module.lab?.steps.length) {
+      throw new HTTPException(400, { message: 'Validate the lab steps to complete it' })
+    }
     markViewed(user.id, course, state.module)
     return c.json<ModuleCompleteResult>({ courseCompleted: await checkCourseCompletion(user.id, course) })
+  })
+  // Spec 092: a GitLab step, checked by the server; recorded in the history (verified).
+  .post('/:moduleSlug/steps/:index/check', async (c) => {
+    const { user, course, states } = await access(c.get('user')!, c.req.param('slug'))
+    const { state } = findModule(states, c.req.param('moduleSlug'))
+    const { config, step, index } = labStep(state.module, c.req.param('index'))
+    if (config.provider !== 'gitlab') throw new HTTPException(400, { message: 'Module does not have GitLab step checks' })
+    const resolved = resolvedStep(step, labUsername(user))
+    let result
+    try {
+      result = await gitlabCheck(resolved.checkType, resolved.checkParams, labUsername(user))
+    } catch (err) {
+      console.error('lab check failed', err)
+      throw new HTTPException(502, { message: 'GitLab could not be reached' })
+    }
+    return c.json<LabStepCheckResponse>(await recordStep(user, course, state.module, index, step.title, result, true))
+  })
+  // Spec 093: a local step checked by the desktop app on the learner's machine (client-reported, not verified).
+  .post('/:moduleSlug/steps/:index/record', validate('json', z.object({ allow: z.boolean(), violations: z.array(z.string().max(500)).max(50).default([]) })), async (c) => {
+    const { user, course, states } = await access(c.get('user')!, c.req.param('slug'))
+    const { state } = findModule(states, c.req.param('moduleSlug'))
+    const { config, step, index } = labStep(state.module, c.req.param('index'))
+    if (config.provider !== 'local') throw new HTTPException(400, { message: 'Module does not have local checks' })
+    return c.json<LabStepCheckResponse>(await recordStep(user, course, state.module, index, step.title, c.req.valid('json'), false))
   })
   .post('/:moduleSlug/submit', validate('json', quizSubmitSchema), async (c) => {
     const { user, course, states } = await access(c.get('user')!, c.req.param('slug'))

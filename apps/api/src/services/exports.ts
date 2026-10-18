@@ -11,6 +11,8 @@ type Filter =
 
 type Definition = {
   id: string
+  /** Not offered to managers (spec 183). */
+  adminOnly?: boolean
   /** FROM … JOINs; must expose the user as `u`. */
   from: string
   fields: Record<string, string>
@@ -166,7 +168,38 @@ const DEFINITIONS: Definition[] = [
     ],
     orderBy: 's.starts_at, u.name',
   },
+  {
+    id: 'labChecks',
+    adminOnly: true,
+    from:
+      'lab_check l JOIN module m ON m.id = l.module_id JOIN course c ON c.id = m.course_id LEFT JOIN user u ON u.id = l.user_id',
+    fields: {
+      id: 'l.id',
+      username: 'coalesce(u.username, u.name, l.user_email)',
+      email: 'l.user_email',
+      courseSlug: 'c.slug',
+      courseTitle: 'c.title',
+      moduleName: 'm.name',
+      step: 'l.step_title',
+      result: yesNo('l.allow'),
+      violations: "(SELECT group_concat(value, ' | ') FROM json_each(l.violations))",
+      verified: yesNo('l.verified'),
+      checkedAt: iso('l.checked_at'),
+    },
+    defaultFields: ['username', 'courseSlug', 'moduleName', 'step', 'result', 'checkedAt'],
+    filters: [
+      { id: 'course', type: 'text', column: 'c.slug' },
+      ...dates('checked', 'l.checked_at'),
+      { id: 'result', type: 'select', options: ['yes', 'no'], where: (v) => sql`l.allow = ${v === 'yes' ? 1 : 0}` },
+    ],
+    orderBy: 'l.checked_at DESC',
+  },
 ]
+
+/** Categories offered to admins, or to managers (`forManager`: without the admin-only ones). */
+export function exportCategories(forManager: boolean): ExportCategory[] {
+  return EXPORT_CATEGORIES.filter((c) => !forManager || !DEFINITIONS.find((d) => d.id === c.id)?.adminOnly)
+}
 
 export const EXPORT_CATEGORIES: ExportCategory[] = DEFINITIONS.map((d) => ({
   id: d.id,
@@ -177,7 +210,7 @@ export const EXPORT_CATEGORIES: ExportCategory[] = DEFINITIONS.map((d) => ({
 
 /** `scope`: user ids a manager may export (spec 182 gap fixed: manager exports are limited to their members). */
 function build(input: ExportRequest, scope: string[] | null) {
-  const def = DEFINITIONS.find((d) => d.id === input.category)
+  const def = DEFINITIONS.find((d) => d.id === input.category && (!scope || !d.adminOnly))
   if (!def) throw new HTTPException(400, { message: 'Catégorie requise' })
   const unknown = input.fields.find((f) => !(f in def.fields))
   if (unknown) throw new HTTPException(400, { message: `Unknown field: ${unknown}` })

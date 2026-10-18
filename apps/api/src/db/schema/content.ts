@@ -1,4 +1,4 @@
-import { MODULE_TYPES } from '@pupitre/shared'
+import { type LabConfig, MODULE_TYPES } from '@pupitre/shared'
 import { sql } from 'drizzle-orm'
 import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { user } from './auth.ts'
@@ -38,6 +38,8 @@ export const courseModule = sqliteTable(
     /** Video / image modules (spec 062): uploaded `/uploads/…` or remote URL; `mediaReplicate` copies it locally (063). */
     mediaUrl: text(),
     mediaReplicate: integer({ mode: 'boolean' }).notNull().default(false),
+    /** Lab modules (spec 090): JSON `LabConfig` (workspace link, provider, steps). */
+    lab: text({ mode: 'json' }).$type<LabConfig>(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -127,4 +129,31 @@ export const questionAttemptState = sqliteTable(
     updatedAt: updatedAt(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.moduleId, t.questionKey] })],
+)
+
+/**
+ * Spec 094 / 191 "LabCheck": every verification of a lab step — by the server (`verified`, GitLab) or reported by the
+ * learner's desktop app (local checks). Kept with the module; `userEmail` keeps who it was.
+ */
+export const labCheck = sqliteTable(
+  'lab_check',
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    userEmail: text().notNull(),
+    moduleId: text()
+      .notNull()
+      .references(() => courseModule.id, { onDelete: 'cascade' }),
+    stepIndex: integer(),
+    stepTitle: text(),
+    allow: integer({ mode: 'boolean' }).notNull(),
+    violations: text({ mode: 'json' }).$type<string[]>().notNull(),
+    verified: integer({ mode: 'boolean' }).notNull(),
+    checkedAt: createdAt(),
+  },
+  (t) => [index('lab_check_user_module_idx').on(t.userId, t.moduleId), index('lab_check_checked_idx').on(t.checkedAt)],
 )

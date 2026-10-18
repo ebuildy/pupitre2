@@ -1,7 +1,7 @@
 import { useTranslation } from '@pupitre/i18n'
 import { PageHeader } from '@pupitre/ui'
 import { Card, CardDescription, CardHeader, CardTitle } from '@pupitre/ui/components/ui/card'
-import { ActivityIcon, BookOpenIcon, FileDownIcon, MapIcon, PuzzleIcon, FolderTreeIcon, SettingsIcon, TrophyIcon, UsersIcon, UsersRoundIcon } from 'lucide-react'
+import { ActivityIcon, FlaskConicalIcon, BookOpenIcon, FileDownIcon, MapIcon, PuzzleIcon, FolderTreeIcon, SettingsIcon, TrophyIcon, UsersIcon, UsersRoundIcon } from 'lucide-react'
 import { Link } from 'react-router'
 import { StatCards, TopLearners } from '../components/StatCards.tsx'
 
@@ -15,6 +15,7 @@ export function Dashboard() {
     { to: '/categories', title: t('nav.categories'), hint: t('dashboard.categoriesHint'), icon: FolderTreeIcon },
     { to: '/groups', title: t('nav.groups'), hint: t('dashboard.groupsHint'), icon: UsersRoundIcon },
     { to: '/users', title: t('nav.users'), hint: t('dashboard.usersHint'), icon: UsersIcon },
+    { to: '/labs', title: t('nav.labs'), hint: t('dashboard.labsHint'), icon: FlaskConicalIcon },
     { to: '/leaderboard', title: t('nav.leaderboard'), hint: t('dashboard.leaderboardHint'), icon: TrophyIcon },
     { to: '/monitoring', title: t('nav.monitoring'), hint: t('dashboard.monitoringHint'), icon: ActivityIcon },
     { to: '/exports', title: t('nav.exports'), hint: t('dashboard.exportsHint'), icon: FileDownIcon },

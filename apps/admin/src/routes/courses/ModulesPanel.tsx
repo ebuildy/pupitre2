@@ -1,5 +1,5 @@
 import { useTranslation } from '@pupitre/i18n'
-import type { AdminModule, ModuleInput } from '@pupitre/shared'
+import { type AdminModule, GITLAB_CHECK_TYPES, LAB_PROVIDERS, type LabProvider, type LabStep, type ModuleInput } from '@pupitre/shared'
 import { ErrorState, LoadingState, toast, unwrap } from '@pupitre/ui'
 import { Alert, AlertDescription } from '@pupitre/ui/components/ui/alert'
 import {
@@ -43,6 +43,7 @@ const toInput = (m: Editable): ModuleInput => ({
   prerequisites: m.prerequisites,
   skills: m.skills,
   content: m.content,
+  lab: m.type === 'lab' ? m.lab : null,
 })
 
 /** "Qu'est-ce que Linux ?" → "qu-est-ce-que-linux" (module slugs; spec 185). */
@@ -255,6 +256,12 @@ function ModuleDialog({
   const media = type === 'video' || type === 'image'
   const [kind, setKind] = useState<'inline' | 'source'>(module?.content.kind === 'source' ? 'source' : 'inline')
   const [mediaUrl, setMediaUrl] = useState(module?.content.kind === 'media' ? module.content.url : '')
+  const [labProvider, setLabProvider] = useState<LabProvider>(module?.lab?.provider ?? 'gitlab')
+  const [labUrl, setLabUrl] = useState(module?.lab?.labUrl ?? '')
+  const [steps, setSteps] = useState(
+    (module?.lab?.steps ?? []).map((st) => ({ title: st.title, checkType: st.checkType, params: JSON.stringify(st.checkParams, null, 2) })),
+  )
+  const [paramsInvalid, setParamsInvalid] = useState(false)
   const [body, setBody] = useState(module?.content.kind === 'inline' ? module.content.body : '')
   const [invalid, setInvalid] = useState(false)
 
@@ -264,6 +271,19 @@ function ModuleDialog({
     const name = String(form.get('name') ?? '').trim()
     if (!name) return setInvalid(true)
     setInvalid(false)
+    let labSteps: LabStep[] = []
+    if (type === 'lab') {
+      try {
+        labSteps = steps.map((st) => {
+          const params = st.params.trim() ? JSON.parse(st.params) : {}
+          if (typeof params !== 'object' || params === null || Array.isArray(params)) throw new Error('not an object')
+          return { title: st.title.trim(), checkType: st.checkType.trim(), checkParams: params as Record<string, unknown> }
+        })
+      } catch {
+        return setParamsInvalid(true)
+      }
+    }
+    setParamsInvalid(false)
     const slug = String(form.get('slug') ?? '').trim() || slugify(name) || 'module'
     onSave({
       slug,
@@ -276,6 +296,7 @@ function ModuleDialog({
         .map((s) => s.trim().toLowerCase().replace(/\s+/g, '-'))
         .filter(Boolean),
       prerequisites: form.getAll('prerequisites').map(String),
+      lab: type === 'lab' ? { provider: labProvider, labUrl: labUrl.trim() || null, steps: labSteps } : null,
       // Writing a body clears the git fields and the other way round (spec 171).
       content: media
         ? { kind: 'media', url: mediaUrl.trim(), replicate: form.get('replicate') === 'on' }
@@ -316,7 +337,7 @@ function ModuleDialog({
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="module-type">{t('authoring.modules.type')}</Label>
               <NativeSelect id="module-type" value={type} onChange={(e) => setType(e.target.value as ModuleInput['type'])}>
-                {(['text', 'quiz', 'video', 'image'] as const).map((ty) => (
+                {(['text', 'quiz', 'video', 'image', 'lab'] as const).map((ty) => (
                   <NativeSelectOption key={ty} value={ty}>
                     {t(`authoring.modules.types.${ty}`)}
                   </NativeSelectOption>
@@ -385,6 +406,81 @@ function ModuleDialog({
                 <Input id="module-path" name="path" defaultValue={module?.content.kind === 'source' ? module.content.path : ''} placeholder="01-intro.md" />
               </div>
             </div>
+          )}
+          {type === 'lab' && (
+            <fieldset className="flex flex-col gap-3 rounded-lg border p-3">
+              <legend className="px-1 text-sm font-medium">{t('authoring.modules.labTitle')}</legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="lab-provider">{t('authoring.modules.provider')}</Label>
+                  <NativeSelect id="lab-provider" value={labProvider} onChange={(e) => setLabProvider(e.target.value as LabProvider)}>
+                    {LAB_PROVIDERS.map((p) => (
+                      <NativeSelectOption key={p} value={p}>
+                        {t(`authoring.modules.providers.${p}`)}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="lab-url">{t('authoring.modules.labUrl')}</Label>
+                  <Input id="lab-url" value={labUrl} onChange={(e) => setLabUrl(e.target.value)} placeholder="https://gitlab.example.com/e-learning/{{username}}" />
+                  <span className="text-xs text-muted-foreground">{t('authoring.modules.labUrlHelp', { username: '{{username}}', interpolation: { skipOnVariables: true } })}</span>
+                </div>
+              </div>
+              <h4 className="text-sm font-medium">{t('authoring.modules.steps')}</h4>
+              <p className="text-xs text-muted-foreground">{t('authoring.modules.stepsHelp')}</p>
+              {paramsInvalid && <p className="text-sm text-destructive">{t('authoring.modules.checkParamsInvalid')}</p>}
+              {steps.map((st, i) => (
+                <div key={i} className="flex flex-col gap-2 rounded-md border p-2" data-testid={`step-editor-${i}`}>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <label className="flex min-w-48 flex-1 flex-col gap-1 text-sm">
+                      {t('authoring.modules.stepTitle')}
+                      <Input value={st.title} onChange={(e) => setSteps((l) => l.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))} />
+                    </label>
+                    <label className="flex min-w-48 flex-col gap-1 text-sm">
+                      {t('authoring.modules.checkType')}
+                      <Input
+                        list="gitlab-check-types"
+                        value={st.checkType}
+                        onChange={(e) => setSteps((l) => l.map((x, j) => (j === i ? { ...x, checkType: e.target.value } : x)))}
+                      />
+                    </label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={t('authoring.modules.removeStep', { n: i + 1 })}
+                      onClick={() => setSteps((l) => l.filter((_, j) => j !== i))}
+                    >
+                      <Trash2Icon />
+                    </Button>
+                  </div>
+                  <label className="flex flex-col gap-1 text-sm">
+                    {t('authoring.modules.checkParams')}
+                    <Textarea
+                      value={st.params}
+                      onChange={(e) => setSteps((l) => l.map((x, j) => (j === i ? { ...x, params: e.target.value } : x)))}
+                      className="min-h-16 font-mono text-xs"
+                      placeholder='{"project": "e-learning/{{username}}", "pattern": "^feature/"}'
+                    />
+                  </label>
+                </div>
+              ))}
+              <datalist id="gitlab-check-types">
+                {GITLAB_CHECK_TYPES.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="self-start"
+                onClick={() => setSteps((l) => [...l, { title: '', checkType: labProvider === 'gitlab' ? 'gitlab_branch' : '', params: '{}' }])}
+              >
+                {t('authoring.modules.addStep')}
+              </Button>
+            </fieldset>
           )}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="module-skills">{t('authoring.modules.skills')}</Label>

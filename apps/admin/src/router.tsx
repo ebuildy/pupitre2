@@ -11,6 +11,7 @@ import { Dashboard } from './routes/Dashboard.tsx'
 import { GroupDetail } from './routes/groups/GroupDetail.tsx'
 import { GroupList } from './routes/groups/GroupList.tsx'
 import { Exports } from './routes/Exports.tsx'
+import { Labs } from './routes/Labs.tsx'
 import { Leaderboard } from './routes/Leaderboard.tsx'
 import { Monitoring } from './routes/Monitoring.tsx'
 import { PathDetail } from './routes/paths/PathDetail.tsx'
@@ -41,6 +42,7 @@ export const router = createBrowserRouter(
         { path: 'groups/:id', element: <GroupDetail /> },
         { path: 'users', element: <UserList /> },
         { path: 'users/:id', element: <UserDetail /> },
+        { path: 'labs', element: <Labs /> },
         { path: 'leaderboard', element: <Leaderboard /> },
         { path: 'monitoring', element: <Monitoring /> },
         { path: 'exports', element: <Exports /> },

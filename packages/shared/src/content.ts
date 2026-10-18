@@ -1,12 +1,13 @@
 import { z } from 'zod'
 import { type SkillRef, skillSlugSchema } from './gamification.ts'
+import { type LabConfig, labConfigSchema, type LabView } from './labs.ts'
 
 // ─── Modules (spec 191 "Module") ──────────────────────────────────────────────
 
 /** All module types of the model; labs come with their feature. */
 export const MODULE_TYPES = ['text', 'video', 'image', 'quiz', 'lab'] as const
 export type ModuleType = (typeof MODULE_TYPES)[number]
-export const SUPPORTED_MODULE_TYPES = ['text', 'quiz', 'video', 'image'] as const
+export const SUPPORTED_MODULE_TYPES = ['text', 'quiz', 'video', 'image', 'lab'] as const
 export const MEDIA_MODULE_TYPES = ['video', 'image'] as const
 /** Spec 065: an index file listing modules; expanded into real modules when the course is saved. */
 export const INPUT_MODULE_TYPES = [...SUPPORTED_MODULE_TYPES, 'modules'] as const
@@ -48,6 +49,8 @@ export const moduleInputSchema = z.object({
   prerequisites: z.array(z.string()).default([]),
   /** Spec 110: skills taught (kebab-case tags, created on the fly). */
   skills: z.array(skillSlugSchema).max(20).default([]),
+  /** Spec 090: lab settings (lab modules only). */
+  lab: labConfigSchema.nullable().optional(),
   /** A quiz's content is a quiz document (YAML, `quizDocumentSchema`); a text module's is markdown. */
   content: moduleContentSchema,
 })
@@ -63,6 +66,9 @@ export const courseModulesSchema = z
       slugs.add(m.slug)
       if (m.inline && m.type !== 'quiz') {
         ctx.addIssue({ code: 'custom', path: ['modules', i, 'inline'], message: 'Only quizzes can be inline' })
+      }
+      if ((m.type === 'lab') !== !!m.lab) {
+        ctx.addIssue({ code: 'custom', path: ['modules', i, 'lab'], message: m.type === 'lab' ? 'A lab needs its settings' : 'Only labs have lab settings' })
       }
       if (m.type === 'modules' && m.content.kind !== 'source') {
         ctx.addIssue({ code: 'custom', path: ['modules', i, 'content'], message: 'A module index is a file in a repository' })
@@ -240,6 +246,8 @@ export type ModuleDetail = ModuleSummary & {
   lesson: LessonView | null
   /** Video and image modules (spec 062); `url` is the local copy when replicated (063). */
   media: { url: string } | null
+  /** Lab modules (spec 090). The lesson HTML holds `<div data-lab-step="N"></div>` where steps go. */
+  lab: LabView | null
   quiz: QuizView | null
   /** A lesson followed by an inline quiz embeds it (spec 083). */
   inlineQuiz: { module: ModuleSummary; quiz: QuizView } | null
@@ -292,4 +300,5 @@ export type AdminModule = {
   prerequisites: string[]
   skills: string[]
   content: ModuleContent
+  lab: LabConfig | null
 }
