@@ -40,7 +40,13 @@ test.describe('catalogue (specs 040, 041)', () => {
     await expect(page.getByRole('listitem')).toContainText(`Alpha ${token} › Alpha child ${token}`)
     await expect(page).toHaveURL(new RegExp(`category=${a.slug}`))
 
-    await page.getByLabel('Difficulté').selectOption('advanced')
+    // The difficulty filter is a stepped slider: Toutes, Débutant, Intermédiaire, Avancé.
+    const level = page.getByRole('slider', { name: 'Difficulté' })
+    await expect(level).toHaveAttribute('aria-valuetext', 'Toutes')
+    await level.focus()
+    await page.keyboard.press('End')
+    await expect(level).toHaveAttribute('aria-valuetext', 'Avancé')
+    await expect(page).toHaveURL(/difficulty=advanced/)
     await expect(page.getByText('Aucun cours trouvé')).toBeVisible()
 
     await chips.getByRole('button', { name: 'Tout' }).click()
@@ -48,8 +54,18 @@ test.describe('catalogue (specs 040, 041)', () => {
     await expect(page.getByRole('status')).toHaveText('1 cours')
 
     await page.reload()
-    await expect(page.getByLabel('Difficulté')).toHaveValue('advanced')
+    await expect(level).toHaveAttribute('aria-valuetext', 'Avancé')
     await expect(page.getByLabel('Rechercher un cours')).toHaveValue(token)
+
+    // One step down with the keyboard; a stop label is a shortcut too.
+    await level.focus()
+    await page.keyboard.press('ArrowLeft')
+    await expect(page).toHaveURL(/difficulty=intermediate/)
+    await expect(page.getByText('Aucun cours trouvé')).toBeVisible()
+    await page.getByTestId('difficulty-slider').getByText('Toutes').click()
+    await expect(page).not.toHaveURL(/difficulty=/)
+    await expect(page.getByRole('status')).toHaveText('2 cours')
+    await expect(page.getByTestId('catalogue-results')).toHaveAttribute('aria-busy', 'false')
   })
 
   test('search matches category titles, parents included; courses are sorted by title', async ({

@@ -76,7 +76,13 @@ A course the user may not see answers 404 `Course not found` (its existence is n
 
 ## UI — `/courses` ("Catalogue")
 
-- Toolbar: search "Rechercher un cours…" (debounced 280 ms), difficulty select ("Toutes difficultés", …), result count "N cours" (`role="status"`).
+- Toolbar: search "Rechercher un cours…" (debounced 280 ms), difficulty **slider** with four stops "Toutes",
+  "Débutant", "Intermédiaire", "Avancé" (`role="slider"` named "Difficulté", value text = the stop; arrows / Home / End,
+  drag, or click a stop label; the URL changes on release), result count "N cours" (`role="status"`).
+- Transitions (`motion`): when the results change, cards that stay glide to their new place, removed ones fade and
+  shrink out, new ones rise in (slightly staggered); category chips slide the same way; the count rolls to its new
+  value; loading, empty and results cross-fade. While new results load, the previous ones stay, dimmed
+  (`aria-busy="true"` on the list). Everything follows the system's "reduce motion" setting (`MotionConfig` at the app root).
 - Category chips "Tout" + one per top-level category (icon, title, count including subcategories; multi-select, OR). Shown when there are ≥ 2 categories, or a category is selected (selected categories stay visible with count 0 so they can be cleared).
 - Filters are kept in the URL (`?search=&difficulty=&category=`), so a filtered view can be shared and survives reload.
 - Grid of course cards sorted by title in the current language (accent-insensitive, numeric).
@@ -100,6 +106,7 @@ Category icon, category path ("DevOps › Docker"), title, "⚡ N XP requis" whe
 - Courses have an id and a mutable slug (the original slug was immutable).
 - Categories are managed objects (a tree with titles) instead of free-text slugs with built-in French labels.
 - Not yet: thumbnails, prerequisites (050), in-person sessions.
+- The difficulty filter is a stepped slider (the original had a select), and filter changes are animated.
 
 ## Card, hero (specs 043, 044)
 

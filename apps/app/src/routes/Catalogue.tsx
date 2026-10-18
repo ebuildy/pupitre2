@@ -1,16 +1,23 @@
 import { useTranslation } from '@pupitre/i18n'
-import { DIFFICULTIES, type Difficulty } from '@pupitre/shared'
+import type { Difficulty } from '@pupitre/shared'
 import { categoryIcon, EmptyState, ErrorState, LoadingState, PageHeader, sortByTitle, unwrap, useDebouncedValue } from '@pupitre/ui'
 import { Button } from '@pupitre/ui/components/ui/button'
 import { Input } from '@pupitre/ui/components/ui/input'
-import { NativeSelect, NativeSelectOption } from '@pupitre/ui/components/ui/native-select'
 import { SearchIcon } from 'lucide-react'
+import { AnimatePresence, LayoutGroup, motion, type Transition } from 'motion/react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { ContinueHero } from '../components/ContinueHero.tsx'
 import { CourseCard } from '../components/CourseCard.tsx'
+import { DifficultySlider } from '../components/DifficultySlider.tsx'
 import { api } from '../lib/api.ts'
+
+const EASE_OUT = [0.22, 1, 0.36, 1] as const
+/** Cards and chips glide to their new place when the results change (FLIP), new ones rise in, old ones fade out. */
+const LAYOUT: Transition = { type: 'spring', stiffness: 380, damping: 34, mass: 0.8 }
+const enter = (index: number): Transition => ({ layout: LAYOUT, default: { duration: 0.28, ease: EASE_OUT, delay: Math.min(index, 8) * 0.035 } })
+const leave = { opacity: 0, scale: 0.94, transition: { duration: 0.16, ease: 'easeIn' } } as const
 
 /**
  * Spec 041. Filters live in the URL (`?search=&difficulty=&category=<slug>&category=<slug>`) so views can be shared.
@@ -49,7 +56,7 @@ export function Catalogue() {
     difficulty: difficulty || undefined,
     category: categories.length ? categories : undefined,
   }
-  const { data, isPending, isError, error } = useQuery({
+  const { data, isPending, isError, error, isPlaceholderData } = useQuery({
     queryKey: ['courses', query],
     queryFn: () => unwrap(api.api.courses.$get({ query })),
     placeholderData: keepPreviousData,
@@ -71,6 +78,8 @@ export function Catalogue() {
       for (const c of updated) next.append('category', c)
     })
   }
+
+  const courses = data ? sortByTitle(data.courses) : []
 
   return (
     <div className="flex flex-col gap-6">
@@ -109,72 +118,117 @@ export function Catalogue() {
             className="h-10 pl-9"
           />
         </div>
-        <NativeSelect
-          value={difficulty}
-          onChange={(e) => update((next) => (e.target.value ? next.set('difficulty', e.target.value) : next.delete('difficulty')))}
-          aria-label={t('catalogue.difficultyLabel')}
-          className="h-10"
-        >
-          <NativeSelectOption value="">{t('catalogue.allDifficulties')}</NativeSelectOption>
-          {DIFFICULTIES.map((d) => (
-            <NativeSelectOption key={d} value={d}>
-              {t(`common:difficulty.${d}`)}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+        <DifficultySlider value={difficulty} onChange={(d) => update((next) => (d ? next.set('difficulty', d) : next.delete('difficulty')))} />
         {data && (
-          <span className="text-sm text-muted-foreground" role="status">
-            {t('catalogue.count', { count: data.total })}
+          <span className="relative inline-flex overflow-hidden text-sm text-muted-foreground" role="status">
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={data.total}
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.2, ease: EASE_OUT }}
+              >
+                {t('catalogue.count', { count: data.total })}
+              </motion.span>
+            </AnimatePresence>
           </span>
         )}
       </div>
 
       {data && showChips && (
-        <div role="group" aria-label={t('catalogue.categoriesLabel')} className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant={categories.length === 0 ? 'default' : 'outline'}
-            aria-pressed={categories.length === 0}
-            className="rounded-full"
-            onClick={() => update((next) => next.delete('category'))}
-          >
-            {t('catalogue.allCategories')}
-          </Button>
-          {chips.map((c) => {
-            const active = categories.includes(c.slug)
-            return (
+        <LayoutGroup id="category-chips">
+          <div role="group" aria-label={t('catalogue.categoriesLabel')} className="flex flex-wrap gap-2">
+            <motion.div layout transition={LAYOUT}>
               <Button
-                key={c.slug}
                 type="button"
                 size="sm"
-                variant={active ? 'default' : 'outline'}
-                aria-pressed={active}
+                variant={categories.length === 0 ? 'default' : 'outline'}
+                aria-pressed={categories.length === 0}
                 className="rounded-full"
-                onClick={() => toggleCategory(c.slug)}
+                onClick={() => update((next) => next.delete('category'))}
               >
-                <span aria-hidden="true">{categoryIcon(c)}</span> {c.title} <span className="opacity-70">{c.count}</span>
+                {t('catalogue.allCategories')}
               </Button>
-            )
-          })}
-        </div>
+            </motion.div>
+            <AnimatePresence mode="popLayout" initial={false}>
+              {chips.map((c) => {
+                const active = categories.includes(c.slug)
+                return (
+                  <motion.div
+                    key={c.slug}
+                    layout
+                    initial={{ opacity: 0, scale: 0.85 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.14 } }}
+                    transition={{ layout: LAYOUT, default: { duration: 0.2, ease: EASE_OUT } }}
+                  >
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={active ? 'default' : 'outline'}
+                      aria-pressed={active}
+                      className="rounded-full"
+                      onClick={() => toggleCategory(c.slug)}
+                    >
+                      <span aria-hidden="true">{categoryIcon(c)}</span> {c.title} <span className="opacity-70 tabular-nums">{c.count}</span>
+                    </Button>
+                  </motion.div>
+                )
+              })}
+            </AnimatePresence>
+          </div>
+        </LayoutGroup>
       )}
 
-      {isPending ? (
-        <LoadingState label={t('catalogue.loading')} />
-      ) : isError ? (
-        <ErrorState message={error.message} />
-      ) : data.courses.length === 0 ? (
-        <EmptyState icon="📭" title={t('catalogue.emptyTitle')} description={t('catalogue.emptyBody')} />
-      ) : (
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {sortByTitle(data.courses).map((course) => (
-            <li key={course.slug}>
-              <CourseCard course={course} />
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* Loading, empty and results cross-fade; inside the results, cards move instead of being replaced. */}
+      <AnimatePresence mode="wait" initial={false}>
+        {isPending ? (
+          <motion.div key="loading" exit={{ opacity: 0, transition: { duration: 0.12 } }}>
+            <LoadingState label={t('catalogue.loading')} />
+          </motion.div>
+        ) : isError ? (
+          <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <ErrorState message={error.message} />
+          </motion.div>
+        ) : courses.length === 0 ? (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8, transition: { duration: 0.14 } }}
+            transition={{ duration: 0.26, ease: EASE_OUT }}
+          >
+            <EmptyState icon="📭" title={t('catalogue.emptyTitle')} description={t('catalogue.emptyBody')} />
+          </motion.div>
+        ) : (
+          <motion.ul
+            key="results"
+            data-testid="catalogue-results"
+            aria-busy={isPlaceholderData}
+            className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            // Previous results stay while the new ones load, dimmed.
+            animate={{ opacity: isPlaceholderData ? 0.55 : 1, filter: isPlaceholderData ? 'saturate(0.6)' : 'saturate(1)' }}
+            exit={{ opacity: 0, transition: { duration: 0.12 } }}
+            transition={{ duration: 0.2 }}
+          >
+            <AnimatePresence mode="popLayout">
+              {courses.map((course, i) => (
+                <motion.li
+                  key={course.slug}
+                  layout
+                  initial={{ opacity: 0, y: 16, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={leave}
+                  transition={enter(i)}
+                >
+                  <CourseCard course={course} />
+                </motion.li>
+              ))}
+            </AnimatePresence>
+          </motion.ul>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -301,7 +301,7 @@ export const app = {
     searchLabel: 'Rechercher un cours',
     searchPlaceholder: 'Rechercher un cours…',
     difficultyLabel: 'Difficulté',
-    allDifficulties: 'Toutes difficultés',
+    difficultyAll: 'Toutes',
     categoriesLabel: 'Catégories',
     allCategories: 'Tout',
     count_one: '{{count}} cours',
