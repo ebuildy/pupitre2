@@ -1,5 +1,5 @@
 import { useTranslation } from '@pupitre/i18n'
-import { EmptyState, ErrorState, LoadingState, PageHeader, SkillLevelBadge, unwrap } from '@pupitre/ui'
+import { EmptyState, ErrorState, LoadingState, SkillLevelBadge, unwrap } from '@pupitre/ui'
 import { Button } from '@pupitre/ui/components/ui/button'
 import { Card } from '@pupitre/ui/components/ui/card'
 import { Progress } from '@pupitre/ui/components/ui/progress'
@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { api } from '../lib/api.ts'
 
-/** Spec 114: one card per skill with a level; "En cours" for skills of unfinished courses. */
+/** Spec 114: one card per skill with a level; "En cours" for skills of unfinished courses. A tab of the profile page. */
 export function MySkills() {
   const { t } = useTranslation('app')
   const { data, isPending, isError, error } = useQuery({
@@ -19,7 +19,6 @@ export function MySkills() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={t('mySkills.title')} />
       {data.skills.length === 0 && data.inProgress.length === 0 ? (
         <EmptyState
           icon="🎯"

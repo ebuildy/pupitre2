@@ -40,7 +40,7 @@ highest difficulty completed so far (a course without difficulty counts as begin
 - `/skills/:slug`: title "🎯 Label", intro "Ces cours contiennent des modules qui développent la compétence « … »",
   "Votre niveau : …", "Voir les cours adaptés à mon niveau"; courses grouped "Débutant", "Intermédiaire", "Avancé",
   "Autre", each with "x/y modules", a progress bar and its modules with their status. "← Retour" goes back in history.
-- `/my-skills` ("Mes compétences"): cards with the level ("Débutant" … "★ Maître", highlighted) and "x/y cours";
+- "🎯 Compétences" section of the profile (`/profile?tab=skills`; `/my-skills` redirects there): cards with the level ("Débutant" … "★ Maître", highlighted) and "x/y cours";
   dashed "En cours" cards; empty: "Aucune compétence pour l'instant" + "Découvrir le catalogue".
 - Catalogue with `?skill=`: banner "🎯 Cours adaptés à ton niveau — <skill> (<niveau> et +)" (or "🎯 Cours qui développent
   « … »" without a level) and "✕ Retirer le filtre".

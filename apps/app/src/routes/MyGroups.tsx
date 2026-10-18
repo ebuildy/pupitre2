@@ -1,12 +1,12 @@
 import { useTranslation } from '@pupitre/i18n'
-import { EmptyState, ErrorState, LoadingState, PageHeader, unwrap, UserAvatar } from '@pupitre/ui'
+import { EmptyState, ErrorState, LoadingState, unwrap, UserAvatar } from '@pupitre/ui'
 import { Badge } from '@pupitre/ui/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@pupitre/ui/components/ui/card'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { api } from '../lib/api.ts'
 
-/** Spec 136: one card per group (not the default one): courses of the group, members. */
+/** Spec 136: one card per group (not the default one): courses of the group, members. A section of the profile page. */
 export function MyGroups() {
   const { t } = useTranslation(['app', 'common'])
   const { data, isPending, isError, error } = useQuery({
@@ -16,7 +16,7 @@ export function MyGroups() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={t('myGroups.title')} description={t('myGroups.subtitle')} />
+      <p className="text-sm text-muted-foreground">{t('myGroups.subtitle')}</p>
       {isPending ? (
         <LoadingState label={t('myGroups.loading')} />
       ) : isError ? (

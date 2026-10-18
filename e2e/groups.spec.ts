@@ -151,7 +151,11 @@ test.describe('group course enrollment (specs 135, 136)', () => {
     await adminRequest.post(`/api/admin/groups/${group.id}/courses`, { data: { courseId: course.id } })
 
     await signIn(page, me)
-    await page.getByRole('link', { name: 'Mes groupes' }).first().click()
+    // A section of the profile, not a top-bar link.
+    await expect(page.getByRole('banner').getByRole('link', { name: 'Mes groupes' })).toHaveCount(0)
+    await page.goto('/profile')
+    await page.getByRole('tab', { name: '👥 Groupes' }).click()
+    await expect(page).toHaveURL(/\/profile\?tab=groups$/)
     const card = page.getByTestId(`my-group-${group.name}`)
     await expect(card.getByRole('link', { name: course.title })).toBeVisible()
     await expect(card.getByRole('link', { name: mate.username })).toBeVisible()

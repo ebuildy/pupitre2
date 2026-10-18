@@ -50,8 +50,8 @@ Covers the original 120 (model), 121 (catalogue API), 122 (enrollment), 123 ("Me
   "Title (slug)", or a skill field with autocomplete), "Enregistrer"; "Inscriptions (n)" (user search + "Inscrire", table
   Utilisateur / Progression (x/y + status per item) / Inscrit le / "Désinscrire"); "Supprimer" with "Les inscriptions à ce
   parcours seront perdues.".
-- Learner `/my-paths` ("Mes parcours"): "N parcours en cours", cards (level "Niveau n · …", type, title, description,
-  progress "x/y"); empty "Aucun parcours en cours" + "Voir le catalogue". `/my-paths/:slug` ("◂ Mes parcours"): skill
+- Learner: "🗺️ Parcours" section of the profile (`/profile?tab=paths`; `/my-paths` redirects there): "N parcours en cours", cards (level "Niveau n · …", type, title, description,
+  progress "x/y"); empty "Aucun parcours en cours" + "Voir le catalogue". `/my-paths/:slug` ("◂ Mes parcours", back to that section): skill
   chips (course paths) and a winding road (SVG) with one numbered node per item — Terminé (green ✓), Disponible (blue,
   pulsing), Verrouillé (grey); available and completed nodes open the course or skill page, locked ones are not links.
 - Return to the path: opening a course from a course-path roadmap remembers the path for the tab (`sessionStorage`).

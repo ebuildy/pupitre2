@@ -10,7 +10,14 @@ Covers the original 035 (edit profile), 036 (change password) and 037 (public us
 
 ## UI — `/profile` ("Mon profil", reached from the avatar in the top bar)
 
-- Header: avatar (80 px) with "✏️ Modifier", username, role badge for managers and admins, e-mail, "Voir mon profil public".
+- Layout: a sidebar and the selected section. On large screens the sidebar sticks on the left: an overview card
+  (avatar with "✏️ Modifier", username, role badge for managers and admins, e-mail, "Voir mon profil public") and the
+  section menu. On small screens the card comes first, then the sections as a row of pills that scrolls, the selected
+  one kept in view. Sections are tabs (`role="tab"`, vertical); the selected one is in the URL (`/profile?tab=paths`,
+  none for "Compte"): "👤 Compte", "🗺️ Parcours", "🏅 Badges", "🎯 Compétences", "👥 Groupes", "🔒 Sécurité".
+- "Parcours", "Badges", "Compétences" and "Groupes" are the former "Mes parcours" ([120](120-learning-paths.md)),
+  "Mes badges" ([106](106-badges.md)), "Mes compétences" ([110](110-skills.md)) and "Mes groupes" ([130](130-groups.md))
+  pages; they have no top-bar link. `/my-paths`, `/my-badges`, `/my-skills` and `/my-groups` redirect to their section.
 - Avatar dialog "Modifier la photo de profil": "URL externe" + "OK" (must start with `http://` or `https://`),
   "Retirer la photo". Toast "Photo de profil mise à jour". "Emoji de badge": the icons of earned badges ([106](106-badges.md)).
 - Tab "👤 Compte": card "Mon compte" in read mode (Nom d'utilisateur, Nom affiché, Email, Bio); "Modifier" switches to a
@@ -51,6 +58,8 @@ Leaderboard rows link to it.
 - Password change goes through better-auth; the original's "SSO account" error is replaced by hiding the form
   (`hasPassword`).
 - The public profile also shows XP and completed courses.
+- Paths, badges, skills and groups are sections of the profile (the original had separate pages in the top bar), and the
+  profile has a sidebar.
 
 ## Source
 

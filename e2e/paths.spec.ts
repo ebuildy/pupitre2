@@ -84,7 +84,10 @@ test.describe('path access and progress (specs 122–125)', () => {
     await signIn(page, learner)
     // Spec 125: the private course is visible and the learner is enrolled.
     expect((await page.request.get(`/api/courses/${first.slug}`)).ok()).toBeTruthy()
-    await page.getByRole('link', { name: 'Mes parcours' }).first().click()
+    // Paths are a tab of the profile page, not a top-bar link.
+    await expect(page.getByRole('banner').getByRole('link', { name: /Mes parcours|Mes badges|Mes compétences/ })).toHaveCount(0)
+    await page.goto('/profile')
+    await page.getByRole('tab', { name: '🗺️ Parcours' }).click()
     const card = page.getByTestId(`my-path-p-${token}`)
     await expect(card).toContainText('0/2')
     await card.click()

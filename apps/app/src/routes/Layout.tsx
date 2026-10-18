@@ -5,18 +5,14 @@ import { cn, LanguageSwitcher, ThemeToggle, UserAvatar } from '@pupitre/ui'
 import { Button } from '@pupitre/ui/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@pupitre/ui/components/ui/sheet'
 import {
-  AwardIcon,
   BookOpenIcon,
   BriefcaseIcon,
   CalendarDaysIcon,
   GraduationCapIcon,
   LogOutIcon,
-  MapIcon,
   MenuIcon,
   SettingsIcon,
-  TargetIcon,
   TrophyIcon,
-  UsersRoundIcon,
   ZapIcon,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -36,11 +32,7 @@ export function Layout() {
       ? [
           { to: '/my-courses', label: t('app:nav.myCourses'), icon: GraduationCapIcon, end: false },
           { to: '/my-xp', label: t('app:nav.myXp'), icon: ZapIcon, end: false },
-          { to: '/my-paths', label: t('app:nav.myPaths'), icon: MapIcon, end: false },
           { to: '/agenda', label: t('app:nav.agenda'), icon: CalendarDaysIcon, end: false },
-          { to: '/my-badges', label: t('app:nav.myBadges'), icon: AwardIcon, end: false },
-          { to: '/my-skills', label: t('app:nav.mySkills'), icon: TargetIcon, end: false },
-          { to: '/my-groups', label: t('app:nav.myGroups'), icon: UsersRoundIcon, end: false },
         ]
       : []),
     { to: '/leaderboard', label: t('app:nav.leaderboard'), icon: TrophyIcon, end: false },

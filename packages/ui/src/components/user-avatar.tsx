@@ -12,7 +12,7 @@ export function UserAvatar({ image, name, className }: { image: string | null | 
   return (
     <Avatar className={cn('size-8', className)}>
       {image && isImageUrl(image) && <AvatarImage src={image} alt="" />}
-      <AvatarFallback className={cn('font-semibold', emoji ? 'bg-secondary text-[1.1em]' : 'bg-primary/15 text-primary')}>
+      <AvatarFallback className={cn('font-semibold', emoji ? 'bg-secondary text-[1.1em]' : 'bg-primary/15 text-[1em] text-primary')}>
         {emoji ?? initial}
       </AvatarFallback>
     </Avatar>

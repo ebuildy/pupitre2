@@ -31,7 +31,7 @@ Covers the original 106 (course badges), 107 ("Mes badges"), 108 (badge leaderbo
 
 - Course page: card "Badge du cours" (icon greyed until earned, "✓ Badge obtenu", "Obtenu par N apprenants"); course
   cards show the badge icon before the title.
-- `/my-badges` ("Mes badges"): stats (badges obtenus, à débloquer, % complété), "Badges obtenus" (icon, name, course,
+- "🏅 Badges" section of the profile (`/profile?tab=badges`; `/my-badges` redirects there): stats (badges obtenus, à débloquer, % complété), "Badges obtenus" (icon, name, course,
   date, rarity), "À débloquer" (greyed, "🔒 Non obtenu", link to the course).
 - `/leaderboard`: tabs "XP" and "Badges" (🥇🥈🥉 for ranks 1–3, avatar, name → public profile, icons, "N badges").
 - Public profile: "Badges obtenus". Profile avatar dialog: "Emoji de badge" — the icons of earned badges; any other emoji

@@ -53,7 +53,7 @@ Covers the original 130 (model), 131 (create, rename, delete), 132 (subgroups, m
 - Course page: "Groupes inscrits (n)" with "— Ajouter un groupe —" (name and member count) and "Retirer"; the
   enrollment list shows the origin "Groupe".
 
-## UI — `/my-groups` ("Mes groupes")
+## UI — "👥 Groupes" section of the profile (`/profile?tab=groups`; `/my-groups` redirects there)
 
 `GET /api/my/groups` → the user's groups except `everyone`: name, path, description, role badge "Manager", "Cours du
 groupe" (links), members (avatar chips linking to public profiles).

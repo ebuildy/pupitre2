@@ -20,9 +20,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pupitre/ui/components
 import { Textarea } from '@pupitre/ui/components/ui/textarea'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { InfoIcon } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
-import { Link } from 'react-router'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
 import { api } from '../lib/api.ts'
+import { MyBadges } from './MyBadges.tsx'
+import { MyGroups } from './MyGroups.tsx'
+import { MyPaths } from './MyPaths.tsx'
+import { MySkills } from './MySkills.tsx'
+
+const TABS = ['account', 'paths', 'badges', 'skills', 'groups', 'security'] as const
 
 /** Saves profile fields, then refreshes the cached `me` and the session (the top bar shows username and avatar). */
 function useUpdateProfile() {
@@ -40,59 +46,116 @@ function useUpdateProfile() {
 /** Specs 035, 036: profile header with avatar, "Compte" and "Sécurité" tabs. */
 export function Profile() {
   const { t } = useTranslation(['app', 'common'])
+  const [params, setParams] = useSearchParams()
+  const requested = params.get('tab')
+  const tab = TABS.find((x) => x === requested) ?? 'account'
   const { data: me, isPending, isError, error } = useQuery({
     queryKey: ['me'],
     queryFn: () => unwrap(api.api.me.$get()),
   })
   const [avatarOpen, setAvatarOpen] = useState(false)
+  // On phones the sections are a scrolling row: keep the selected one in view.
+  const sectionList = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const list = sectionList.current
+    const active = list?.querySelector<HTMLElement>('[data-state="active"]')
+    if (active && list && list.scrollWidth > list.clientWidth) {
+      list.scrollTo({ left: active.offsetLeft - (list.clientWidth - active.offsetWidth) / 2, behavior: 'smooth' })
+    }
+  }, [tab, isPending])
 
   if (isPending) return <LoadingState label={t('profile.loading')} />
   if (isError) return <ErrorState message={error.message} />
 
   const displayName = me.username ?? me.name
+  const sections = [
+    { value: 'account', label: t('profile.tabs.account') },
+    { value: 'paths', label: t('profile.tabs.paths') },
+    { value: 'badges', label: t('profile.tabs.badges') },
+    { value: 'skills', label: t('profile.tabs.skills') },
+    { value: 'groups', label: t('profile.tabs.groups') },
+    { value: 'security', label: t('profile.tabs.security') },
+  ] as const
+  const sectionTitle = (label: string) => <h2 className="text-xl font-semibold">{label}</h2>
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={t('profile.title')} />
 
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-5">
-          <div className="flex flex-col items-center gap-1">
-            <UserAvatar image={me.image} name={displayName} className="size-20 text-3xl" />
-            <Button variant="ghost" size="sm" onClick={() => setAvatarOpen(true)} aria-label={t('profile.avatar.menuLabel')}>
-              {t('profile.avatar.edit')}
-            </Button>
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="truncate text-2xl font-bold" data-testid="profile-username">
-                {displayName}
-              </h2>
-              {me.role !== 'student' && (
-                <Badge variant={me.role === 'admin' ? 'destructive' : 'info'}>{t(`common:roles.${me.role}`)}</Badge>
-              )}
-            </div>
-            <p className="text-muted-foreground">{me.email}</p>
-            <Link to={`/users/${me.id}`} className="text-sm font-medium text-primary hover:underline">
-              {t('profile.viewPublic')}
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Sidebar (overview + sections) and the selected section. The section is in the URL (`?tab=paths`). */}
+      <Tabs
+        orientation="vertical"
+        value={tab}
+        onValueChange={(value) => setParams(value === 'account' ? {} : { tab: value }, { replace: true })}
+        className="flex-col gap-6 lg:flex-row lg:items-start"
+      >
+        <aside className="flex w-full shrink-0 flex-col gap-4 lg:sticky lg:top-32 lg:w-72" aria-label={t('profile.title')}>
+          <Card className="py-5">
+            <CardContent className="flex items-center gap-4 lg:flex-col lg:text-center">
+              <div className="flex flex-col items-center gap-1">
+                <UserAvatar image={me.image} name={displayName} className="size-16 text-2xl lg:size-24 lg:text-4xl" />
+                <Button variant="ghost" size="sm" onClick={() => setAvatarOpen(true)} aria-label={t('profile.avatar.menuLabel')}>
+                  {t('profile.avatar.edit')}
+                </Button>
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-1 lg:items-center">
+                <h2 className="max-w-full truncate text-xl font-bold" data-testid="profile-username">
+                  {displayName}
+                </h2>
+                {me.role !== 'student' && (
+                  <Badge variant={me.role === 'admin' ? 'destructive' : 'info'} className="self-start lg:self-center">
+                    {t(`common:roles.${me.role}`)}
+                  </Badge>
+                )}
+                <p className="max-w-full truncate text-sm text-muted-foreground">{me.email}</p>
+                <Link to={`/users/${me.id}`} className="text-sm font-medium text-primary hover:underline">
+                  {t('profile.viewPublic')}
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* A row of pills on small screens, a vertical menu beside the content on large ones. */}
+          <TabsList ref={sectionList} className="relative h-auto w-full justify-start gap-1 overflow-x-auto bg-transparent p-0 max-lg:flex-row! lg:items-stretch">
+            {sections.map((s) => (
+              <TabsTrigger
+                key={s.value}
+                value={s.value}
+                className="h-auto flex-none justify-start rounded-md px-3 py-2 max-lg:w-auto! text-muted-foreground hover:bg-muted data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=active]:shadow-none lg:w-full dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-secondary"
+              >
+                {s.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </aside>
+
+        <div className="min-w-0 flex-1">
+          <TabsContent value="account">
+            <AccountCard me={me} />
+          </TabsContent>
+          <TabsContent value="paths" className="flex flex-col gap-4">
+            {sectionTitle(t('profile.tabs.paths'))}
+            <MyPaths />
+          </TabsContent>
+          <TabsContent value="badges" className="flex flex-col gap-4">
+            {sectionTitle(t('profile.tabs.badges'))}
+            <MyBadges />
+          </TabsContent>
+          <TabsContent value="skills" className="flex flex-col gap-4">
+            {sectionTitle(t('profile.tabs.skills'))}
+            <MySkills />
+          </TabsContent>
+          <TabsContent value="groups" className="flex flex-col gap-4">
+            {sectionTitle(t('profile.tabs.groups'))}
+            <MyGroups />
+          </TabsContent>
+          <TabsContent value="security">
+            <SecurityCard hasPassword={me.hasPassword} />
+          </TabsContent>
+        </div>
+      </Tabs>
 
       <AvatarDialog me={me} open={avatarOpen} onOpenChange={setAvatarOpen} />
-
-      <Tabs defaultValue="account">
-        <TabsList>
-          <TabsTrigger value="account">{t('profile.tabs.account')}</TabsTrigger>
-          <TabsTrigger value="security">{t('profile.tabs.security')}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="account">
-          <AccountCard me={me} />
-        </TabsContent>
-        <TabsContent value="security">
-          <SecurityCard hasPassword={me.hasPassword} />
-        </TabsContent>
-      </Tabs>
     </div>
   )
 }

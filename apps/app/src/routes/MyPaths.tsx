@@ -25,7 +25,7 @@ function LevelLabel({ level }: { level: MyPath['level'] }) {
   )
 }
 
-/** Spec 123, list view: one card per path with its progress. */
+/** Spec 123, list view: one card per path with its progress. A tab of the profile page. */
 export function MyPaths() {
   const { t } = useTranslation(['app', 'common'])
   const { data, isPending, isError, error } = useMyPaths()
@@ -34,7 +34,7 @@ export function MyPaths() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={t('myPaths.title')} description={t('myPaths.subtitle', { count: data.paths.length })} />
+      <p className="text-sm text-muted-foreground">{t('myPaths.subtitle', { count: data.paths.length })}</p>
       {data.paths.length === 0 ? (
         <EmptyState
           icon="🗺️"
@@ -94,7 +94,7 @@ export function MyPathDetail() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Link to="/my-paths" className="text-sm text-muted-foreground hover:text-foreground">
+      <Link to="/profile?tab=paths" className="text-sm text-muted-foreground hover:text-foreground">
         {t('myPaths.back')}
       </Link>
       {!path ? (

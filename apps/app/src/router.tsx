@@ -5,10 +5,7 @@ import { ManagerGroups } from './routes/manager/ManagerGroups.tsx'
 import { ManagerLayout } from './routes/manager/ManagerLayout.tsx'
 import { ManagerMembers } from './routes/manager/ManagerMembers.tsx'
 import { ManagerPaths } from './routes/manager/ManagerPaths.tsx'
-import { MyPathDetail, MyPaths } from './routes/MyPaths.tsx'
-import { MyBadges } from './routes/MyBadges.tsx'
-import { MyGroups } from './routes/MyGroups.tsx'
-import { MySkills } from './routes/MySkills.tsx'
+import { MyPathDetail } from './routes/MyPaths.tsx'
 import { SkillPage } from './routes/SkillPage.tsx'
 import { demoAccounts } from './lib/demo-accounts.ts'
 import { Agenda } from './routes/Agenda.tsx'
@@ -77,14 +74,8 @@ export const router = createBrowserRouter([
         ),
       },
       { path: 'users/:id', element: <PublicProfile /> },
-      {
-        path: 'my-paths',
-        element: (
-          <RequireAuth>
-            <MyPaths />
-          </RequireAuth>
-        ),
-      },
+      // Now tabs of the profile page; old links keep working.
+      { path: 'my-paths', element: <Navigate to="/profile?tab=paths" replace /> },
       {
         path: 'my-paths/:slug',
         element: (
@@ -93,22 +84,10 @@ export const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
-      {
-        path: 'my-badges',
-        element: (
-          <RequireAuth>
-            <MyBadges />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'my-skills',
-        element: (
-          <RequireAuth>
-            <MySkills />
-          </RequireAuth>
-        ),
-      },
+      // Now tabs of the profile page; old links keep working.
+      { path: 'my-badges', element: <Navigate to="/profile?tab=badges" replace /> },
+      // Now tabs of the profile page; old links keep working.
+      { path: 'my-skills', element: <Navigate to="/profile?tab=skills" replace /> },
       { path: 'skills/:slug', element: <SkillPage /> },
       {
         path: 'agenda',
@@ -126,14 +105,8 @@ export const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
-      {
-        path: 'my-groups',
-        element: (
-          <RequireAuth>
-            <MyGroups />
-          </RequireAuth>
-        ),
-      },
+      // Now a section of the profile page; old links keep working.
+      { path: 'my-groups', element: <Navigate to="/profile?tab=groups" replace /> },
       {
         path: 'manager',
         element: (

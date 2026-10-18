@@ -20,7 +20,8 @@ test.describe('SSO sign-in (specs 027–032, 134)', () => {
     const { hint, user } = person([first])
     await fakeIdpUser(hint, user)
     await ssoLogin(page, 'oidc', hint, '/my-groups')
-    await expect(page).toHaveURL(/\/my-groups$/)
+    // The former page redirects to the profile section.
+    await expect(page).toHaveURL(/\/profile\?tab=groups$/)
     await expect(page.getByTestId(`my-group-${first}`)).toBeVisible()
     const me = await (await page.request.get('/api/me')).json()
     expect(me).toMatchObject({ email: user.email, name: user.name, role: 'student', hasPassword: false })

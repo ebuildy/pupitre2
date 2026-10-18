@@ -1,11 +1,11 @@
 import { useTranslation } from '@pupitre/i18n'
-import { ErrorState, LoadingState, PageHeader, unwrap } from '@pupitre/ui'
+import { ErrorState, LoadingState, unwrap } from '@pupitre/ui'
 import { Card } from '@pupitre/ui/components/ui/card'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { api } from '../lib/api.ts'
 
-/** Spec 107: stats, earned badges (with rarity), badges still to unlock. */
+/** Spec 107: stats, earned badges (with rarity), badges still to unlock. A tab of the profile page. */
 export function MyBadges() {
   const { t } = useTranslation('app')
   const { data, isPending, isError, error } = useQuery({
@@ -25,7 +25,6 @@ export function MyBadges() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title={t('myBadges.title')} />
       <dl className="grid grid-cols-3 gap-3" data-testid="badge-stats">
         {stats.map((s) => (
           <div key={s.label} className="flex flex-col-reverse rounded-xl border bg-card p-4 text-center shadow-xs">

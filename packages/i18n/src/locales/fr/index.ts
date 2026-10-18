@@ -288,11 +288,7 @@ export const app = {
     myXp: 'Mon XP',
     leaderboard: 'Classement',
     profile: 'Mon profil',
-    myGroups: 'Mes groupes',
-    myBadges: 'Mes badges',
-    myPaths: 'Mes parcours',
     agenda: 'Agenda',
-    mySkills: 'Mes compétences',
     managerSpace: 'Mon espace',
   },
   // Spec 041
@@ -508,6 +504,10 @@ export const app = {
     tabs: {
       account: '👤 Compte',
       security: '🔒 Sécurité',
+      paths: '🗺️ Parcours',
+      badges: '🏅 Badges',
+      skills: '🎯 Compétences',
+      groups: '👥 Groupes',
     },
     accountTitle: 'Mon compte',
     username: "Nom d'utilisateur",
@@ -561,7 +561,6 @@ export const app = {
   },
   // Spec 136
   myGroups: {
-    title: 'Mes groupes',
     subtitle: 'Les groupes dont vous faites partie',
     loading: 'Chargement…',
     empty: "Vous ne faites partie d'aucun groupe.",
@@ -632,7 +631,6 @@ export const app = {
   },
   // Specs 106, 107
   myBadges: {
-    title: 'Mes badges',
     loading: 'Chargement…',
     stats: {
       earned_one: 'Badge obtenu',
@@ -651,7 +649,6 @@ export const app = {
   },
   // Specs 111–114
   mySkills: {
-    title: 'Mes compétences',
     loading: 'Chargement…',
     empty: "Aucune compétence pour l'instant",
     browse: 'Découvrir le catalogue',
@@ -681,7 +678,6 @@ export const app = {
   },
   // Specs 123, 124
   myPaths: {
-    title: 'Mes parcours',
     subtitle_one: '{{count}} parcours en cours',
     subtitle_other: '{{count}} parcours en cours',
     loading: 'Chargement…',

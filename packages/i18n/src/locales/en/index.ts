@@ -282,11 +282,7 @@ export const app = {
     myXp: 'My XP',
     leaderboard: 'Leaderboard',
     profile: 'My profile',
-    myGroups: 'My groups',
-    myBadges: 'My badges',
-    myPaths: 'My paths',
     agenda: 'Agenda',
-    mySkills: 'My skills',
     managerSpace: 'My space',
   },
   catalogue: {
@@ -490,6 +486,10 @@ export const app = {
     tabs: {
       account: '👤 Account',
       security: '🔒 Security',
+      paths: '🗺️ Paths',
+      badges: '🏅 Badges',
+      skills: '🎯 Skills',
+      groups: '👥 Groups',
     },
     accountTitle: 'My account',
     username: 'Username',
@@ -541,7 +541,6 @@ export const app = {
     badgesEmpty: 'No badges yet.',
   },
   myGroups: {
-    title: 'My groups',
     subtitle: 'The groups you belong to',
     loading: 'Loading…',
     empty: 'You are not in any group.',
@@ -610,7 +609,6 @@ export const app = {
     },
   },
   myBadges: {
-    title: 'My badges',
     loading: 'Loading…',
     stats: {
       earned_one: 'Badge earned',
@@ -628,7 +626,6 @@ export const app = {
     empty: 'No badges yet. Complete a course to earn one!',
   },
   mySkills: {
-    title: 'My skills',
     loading: 'Loading…',
     empty: 'No skills yet',
     browse: 'Browse the catalogue',
@@ -657,7 +654,6 @@ export const app = {
     },
   },
   myPaths: {
-    title: 'My paths',
     subtitle_one: '{{count}} path in progress',
     subtitle_other: '{{count}} paths in progress',
     loading: 'Loading…',

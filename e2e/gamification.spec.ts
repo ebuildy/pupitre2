@@ -23,7 +23,10 @@ test.describe('badges (specs 106–109)', () => {
     const user = await createUser()
     await signIn(page, user)
 
-    await page.goto('/my-badges')
+    // Badges are a tab of the profile page; the old address leads there.
+    await page.goto('/profile?tab=badges')
+    await expect(page).toHaveURL(/\/profile\?tab=badges$/)
+    await expect(page.getByRole('tab', { name: '🏅 Badges' })).toHaveAttribute('aria-selected', 'true')
     const locked = page.getByRole('list', { name: 'À débloquer' })
     await expect(locked.getByText(`Badge ${token}`)).toBeVisible()
 
@@ -124,7 +127,9 @@ test.describe('skills (specs 042, 110–114)', () => {
     await expect(page.getByTestId(`skill-course-${beginner.slug}`).getByLabel('Terminé')).toHaveCount(1)
 
     // "En cours" before completion, then a level.
-    await page.goto('/my-skills')
+    await page.goto('/profile')
+    await page.getByRole('tab', { name: '🎯 Compétences' }).click()
+    await expect(page).toHaveURL(/\/profile\?tab=skills$/)
     await expect(page.getByTestId(`skill-${skill}`)).toContainText('En cours')
     await page.request.post(`/api/courses/${beginner.slug}/modules/b/complete`)
     await page.reload()
@@ -141,7 +146,7 @@ test.describe('skills (specs 042, 110–114)', () => {
     // Every course teaching the skill completed: master.
     await page.request.post(`/api/enrollments/${advanced.slug}`)
     await page.request.post(`/api/courses/${advanced.slug}/modules/a/complete`)
-    await page.goto('/my-skills')
+    await page.goto('/profile?tab=skills')
     await expect(page.getByTestId(`skill-${skill}`)).toContainText('★ Maître')
     await expect(page.getByTestId(`skill-${skill}`)).toContainText('2/2 cours')
   })
