@@ -216,4 +216,4 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | # | Feature | Status | Rewrite spec | Notes |
 | --- | --- | --- | --- | --- |
 | 190 | Current data model | ➖ | | replaced by 191 |
-| 191 | Target data model | 🟡 | | built incrementally with each feature |
+| 191 | Target data model | ✅ | [191](docs/specs/191-data-model.md) | questions and lab steps are documents, enrollments are grants |

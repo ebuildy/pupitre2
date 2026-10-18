@@ -44,3 +44,4 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | [165](165-admin-courses.md) | Admin: courses, categories and enrollments | Basic version |
 | [169](169-course-authoring.md) | Course authoring: definition, module editor, markdown import / export | Implemented |
 | [179](179-platform-settings.md) | Platform settings | Implemented (SSO keys with their features) |
+| [191](191-data-model.md) | Data model: entities, tables and lifecycle rules | Implemented |
