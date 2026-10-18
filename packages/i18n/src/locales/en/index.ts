@@ -491,7 +491,6 @@ export const app = {
       skills: '🎯 Skills',
       groups: '👥 Groups',
     },
-    accountTitle: 'My account',
     username: 'Username',
     usernameLocked: 'Username changes have been disabled by the administrator.',
     name: 'Display name',
@@ -516,7 +515,6 @@ export const app = {
       choose: 'Choose {{icon}}',
     },
     security: {
-      title: 'Security',
       hint: 'Use a strong password of at least {{count}} characters.',
       change: 'Change password',
       current: 'Current password',

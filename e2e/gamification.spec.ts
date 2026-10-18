@@ -26,7 +26,7 @@ test.describe('badges (specs 106–109)', () => {
     // Badges are a tab of the profile page; the old address leads there.
     await page.goto('/profile?tab=badges')
     await expect(page).toHaveURL(/\/profile\?tab=badges$/)
-    await expect(page.getByRole('tab', { name: '🏅 Badges' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('button', { name: '🏅 Badges' })).toHaveAttribute('aria-expanded', 'true')
     const locked = page.getByRole('list', { name: 'À débloquer' })
     await expect(locked.getByText(`Badge ${token}`)).toBeVisible()
 
@@ -128,7 +128,7 @@ test.describe('skills (specs 042, 110–114)', () => {
 
     // "En cours" before completion, then a level.
     await page.goto('/profile')
-    await page.getByRole('tab', { name: '🎯 Compétences' }).click()
+    await page.getByRole('button', { name: '🎯 Compétences' }).click()
     await expect(page).toHaveURL(/\/profile\?tab=skills$/)
     await expect(page.getByTestId(`skill-${skill}`)).toContainText('En cours')
     await page.request.post(`/api/courses/${beginner.slug}/modules/b/complete`)

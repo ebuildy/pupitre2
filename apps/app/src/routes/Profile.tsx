@@ -2,10 +2,11 @@ import { authClient, PasswordChecklist, usePublicSettings, useSession } from '@p
 import { useTranslation } from '@pupitre/i18n'
 import { isImageUrl, type MeResponse, passwordChecks, type ProfileUpdateInput } from '@pupitre/shared'
 import { ApiRequestError, ErrorState, LoadingState, PageHeader, toast, unwrap, UserAvatar } from '@pupitre/ui'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@pupitre/ui/components/ui/accordion'
 import { Alert, AlertDescription } from '@pupitre/ui/components/ui/alert'
 import { Badge } from '@pupitre/ui/components/ui/badge'
 import { Button } from '@pupitre/ui/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@pupitre/ui/components/ui/card'
+import { Card, CardContent } from '@pupitre/ui/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -16,11 +17,10 @@ import {
 } from '@pupitre/ui/components/ui/dialog'
 import { Input } from '@pupitre/ui/components/ui/input'
 import { Label } from '@pupitre/ui/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pupitre/ui/components/ui/tabs'
 import { Textarea } from '@pupitre/ui/components/ui/textarea'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { InfoIcon } from 'lucide-react'
-import { type FormEvent, useEffect, useRef, useState } from 'react'
+import { type FormEvent, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { api } from '../lib/api.ts'
 import { MyBadges } from './MyBadges.tsx'
@@ -48,22 +48,13 @@ export function Profile() {
   const { t } = useTranslation(['app', 'common'])
   const [params, setParams] = useSearchParams()
   const requested = params.get('tab')
-  const tab = TABS.find((x) => x === requested) ?? 'account'
+  // No parameter: "Compte"; an empty one: every section closed.
+  const tab = requested === '' ? '' : (TABS.find((x) => x === requested) ?? 'account')
   const { data: me, isPending, isError, error } = useQuery({
     queryKey: ['me'],
     queryFn: () => unwrap(api.api.me.$get()),
   })
   const [avatarOpen, setAvatarOpen] = useState(false)
-  // On phones the sections are a scrolling row: keep the selected one in view.
-  const sectionList = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const list = sectionList.current
-    const active = list?.querySelector<HTMLElement>('[data-state="active"]')
-    if (active && list && list.scrollWidth > list.clientWidth) {
-      list.scrollTo({ left: active.offsetLeft - (list.clientWidth - active.offsetWidth) / 2, behavior: 'smooth' })
-    }
-  }, [tab, isPending])
-
   if (isPending) return <LoadingState label={t('profile.loading')} />
   if (isError) return <ErrorState message={error.message} />
 
@@ -76,84 +67,64 @@ export function Profile() {
     { value: 'groups', label: t('profile.tabs.groups') },
     { value: 'security', label: t('profile.tabs.security') },
   ] as const
-  const sectionTitle = (label: string) => <h2 className="text-xl font-semibold">{label}</h2>
+
+  // Opening a section after a long one closes can leave its title above the screen: bring it back.
+  function open(value: string) {
+    setParams(value === 'account' ? {} : { tab: value }, { replace: true })
+    if (!value) return
+    window.setTimeout(() => {
+      const trigger = document.getElementById(`profile-section-${value}`)
+      if (trigger && trigger.getBoundingClientRect().top < 120) trigger.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 220)
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={t('profile.title')} />
 
-      {/* Sidebar (overview + sections) and the selected section. The section is in the URL (`?tab=paths`). */}
-      <Tabs
-        orientation="vertical"
-        value={tab}
-        onValueChange={(value) => setParams(value === 'account' ? {} : { tab: value }, { replace: true })}
-        className="flex-col gap-6 lg:flex-row lg:items-start"
-      >
-        <aside className="flex w-full shrink-0 flex-col gap-4 lg:sticky lg:top-32 lg:w-72" aria-label={t('profile.title')}>
-          <Card className="py-5">
-            <CardContent className="flex items-center gap-4 lg:flex-col lg:text-center">
-              <div className="flex flex-col items-center gap-1">
-                <UserAvatar image={me.image} name={displayName} className="size-16 text-2xl lg:size-24 lg:text-4xl" />
-                <Button variant="ghost" size="sm" onClick={() => setAvatarOpen(true)} aria-label={t('profile.avatar.menuLabel')}>
-                  {t('profile.avatar.edit')}
-                </Button>
-              </div>
-              <div className="flex min-w-0 flex-1 flex-col gap-1 lg:items-center">
-                <h2 className="max-w-full truncate text-xl font-bold" data-testid="profile-username">
-                  {displayName}
-                </h2>
-                {me.role !== 'student' && (
-                  <Badge variant={me.role === 'admin' ? 'destructive' : 'info'} className="self-start lg:self-center">
-                    {t(`common:roles.${me.role}`)}
-                  </Badge>
-                )}
-                <p className="max-w-full truncate text-sm text-muted-foreground">{me.email}</p>
-                <Link to={`/users/${me.id}`} className="text-sm font-medium text-primary hover:underline">
-                  {t('profile.viewPublic')}
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+      <Card className="py-5">
+        <CardContent className="flex flex-wrap items-center gap-5">
+          <div className="flex flex-col items-center gap-1">
+            <UserAvatar image={me.image} name={displayName} className="size-20 text-3xl" />
+            <Button variant="ghost" size="sm" onClick={() => setAvatarOpen(true)} aria-label={t('profile.avatar.menuLabel')}>
+              {t('profile.avatar.edit')}
+            </Button>
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-2xl font-bold" data-testid="profile-username">
+                {displayName}
+              </h2>
+              {me.role !== 'student' && (
+                <Badge variant={me.role === 'admin' ? 'destructive' : 'info'}>{t(`common:roles.${me.role}`)}</Badge>
+              )}
+            </div>
+            <p className="truncate text-muted-foreground">{me.email}</p>
+            <Link to={`/users/${me.id}`} className="text-sm font-medium text-primary hover:underline">
+              {t('profile.viewPublic')}
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
 
-          {/* A row of pills on small screens, a vertical menu beside the content on large ones. */}
-          <TabsList ref={sectionList} className="relative h-auto w-full justify-start gap-1 overflow-x-auto bg-transparent p-0 max-lg:flex-row! lg:items-stretch">
-            {sections.map((s) => (
-              <TabsTrigger
-                key={s.value}
-                value={s.value}
-                className="h-auto flex-none justify-start rounded-md px-3 py-2 max-lg:w-auto! text-muted-foreground hover:bg-muted data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=active]:shadow-none lg:w-full dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-secondary"
-              >
-                {s.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </aside>
-
-        <div className="min-w-0 flex-1">
-          <TabsContent value="account">
-            <AccountCard me={me} />
-          </TabsContent>
-          <TabsContent value="paths" className="flex flex-col gap-4">
-            {sectionTitle(t('profile.tabs.paths'))}
-            <MyPaths />
-          </TabsContent>
-          <TabsContent value="badges" className="flex flex-col gap-4">
-            {sectionTitle(t('profile.tabs.badges'))}
-            <MyBadges />
-          </TabsContent>
-          <TabsContent value="skills" className="flex flex-col gap-4">
-            {sectionTitle(t('profile.tabs.skills'))}
-            <MySkills />
-          </TabsContent>
-          <TabsContent value="groups" className="flex flex-col gap-4">
-            {sectionTitle(t('profile.tabs.groups'))}
-            <MyGroups />
-          </TabsContent>
-          <TabsContent value="security">
-            <SecurityCard hasPassword={me.hasPassword} />
-          </TabsContent>
-        </div>
-      </Tabs>
+      {/* One section open at a time, kept in the URL (`?tab=paths`; none: "Compte"; `?tab=` closes them all). */}
+      <Accordion type="single" collapsible value={tab} onValueChange={open} className="flex flex-col gap-3">
+        {sections.map((s) => (
+          <AccordionItem key={s.value} value={s.value} className="rounded-xl border bg-card px-5 shadow-xs last:border-b">
+            <AccordionTrigger id={`profile-section-${s.value}`} className="scroll-mt-32 items-center text-base font-semibold hover:no-underline">
+              {s.label}
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-5">
+              {s.value === 'account' && <AccountCard me={me} />}
+              {s.value === 'paths' && <MyPaths />}
+              {s.value === 'badges' && <MyBadges />}
+              {s.value === 'skills' && <MySkills />}
+              {s.value === 'groups' && <MyGroups />}
+              {s.value === 'security' && <SecurityCard hasPassword={me.hasPassword} />}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
 
       <AvatarDialog me={me} open={avatarOpen} onOpenChange={setAvatarOpen} />
     </div>
@@ -282,16 +253,14 @@ function AccountCard({ me }: { me: MeResponse }) {
   ]
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{t('profile.accountTitle')}</CardTitle>
-        {!editing && (
-          <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-            {t('common:edit')}
-          </Button>
-        )}
-      </CardHeader>
-      <CardContent>
+    // Inside its accordion section: the section is the frame and the title.
+    <div className="relative">
+      {!editing && (
+        <Button variant="outline" size="sm" className="absolute top-0 right-0" onClick={() => setEditing(true)}>
+          {t('common:edit')}
+        </Button>
+      )}
+      <div>
         {editing ? (
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             {error && (
@@ -341,8 +310,8 @@ function AccountCard({ me }: { me: MeResponse }) {
             ))}
           </dl>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 
@@ -379,72 +348,67 @@ function SecurityCard({ hasPassword }: { hasPassword: boolean }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('profile.security.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {!hasPassword ? (
-          <Alert>
-            <InfoIcon />
-            <AlertDescription>{t('profile.security.sso')}</AlertDescription>
-          </Alert>
-        ) : !open ? (
-          <div className="flex flex-col items-start gap-3">
-            <p className="text-sm text-muted-foreground">
-              {t('profile.security.hint', { count: settings?.password_min_length ?? 8 })}
-            </p>
-            <Button variant="outline" onClick={() => setOpen(true)}>
-              {t('profile.security.change')}
+    <div className="flex flex-col gap-4">
+      {!hasPassword ? (
+        <Alert>
+          <InfoIcon />
+          <AlertDescription>{t('profile.security.sso')}</AlertDescription>
+        </Alert>
+      ) : !open ? (
+        <div className="flex flex-col items-start gap-3">
+          <p className="text-sm text-muted-foreground">
+            {t('profile.security.hint', { count: settings?.password_min_length ?? 8 })}
+          </p>
+          <Button variant="outline" onClick={() => setOpen(true)}>
+            {t('profile.security.change')}
+          </Button>
+        </div>
+      ) : (
+        <form onSubmit={onSubmit} className="flex max-w-md flex-col gap-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="password-current">{t('profile.security.current')}</Label>
+            <Input id="password-current" name="current" type="password" autoComplete="current-password" required />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="password-new">{t('profile.security.new')}</Label>
+            <Input
+              id="password-new"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            {settings && <PasswordChecklist password={password} policy={settings} />}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="password-confirm">{t('profile.security.confirm')}</Label>
+            <Input
+              id="password-confirm"
+              type="password"
+              autoComplete="new-password"
+              value={confirm}
+              aria-invalid={mismatch || undefined}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+            />
+            {mismatch && <p className="text-sm text-destructive">{t('profile.security.mismatch')}</p>}
+          </div>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={pending}>
+              {pending ? t('profile.security.submitting') : t('profile.security.submit')}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              {t('common:cancel')}
             </Button>
           </div>
-        ) : (
-          <form onSubmit={onSubmit} className="flex max-w-md flex-col gap-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password-current">{t('profile.security.current')}</Label>
-              <Input id="password-current" name="current" type="password" autoComplete="current-password" required />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password-new">{t('profile.security.new')}</Label>
-              <Input
-                id="password-new"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              {settings && <PasswordChecklist password={password} policy={settings} />}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password-confirm">{t('profile.security.confirm')}</Label>
-              <Input
-                id="password-confirm"
-                type="password"
-                autoComplete="new-password"
-                value={confirm}
-                aria-invalid={mismatch || undefined}
-                onChange={(e) => setConfirm(e.target.value)}
-                required
-              />
-              {mismatch && <p className="text-sm text-destructive">{t('profile.security.mismatch')}</p>}
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit" disabled={pending}>
-                {pending ? t('profile.security.submitting') : t('profile.security.submit')}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                {t('common:cancel')}
-              </Button>
-            </div>
-          </form>
-        )}
-      </CardContent>
-    </Card>
+        </form>
+      )}
+    </div>
   )
 }

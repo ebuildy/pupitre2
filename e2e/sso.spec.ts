@@ -39,7 +39,7 @@ test.describe('SSO sign-in (specs 027–032, 134)', () => {
 
     // SSO-only accounts have no password to change.
     await page.goto('/profile')
-    await page.getByRole('tab', { name: '🔒 Sécurité' }).click()
+    await page.getByRole('button', { name: '🔒 Sécurité' }).click()
     await expect(page.getByText("Votre compte est géré par votre fournisseur d'identité.", { exact: false })).toBeVisible()
   })
 

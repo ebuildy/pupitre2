@@ -154,7 +154,7 @@ test.describe('group course enrollment (specs 135, 136)', () => {
     // A section of the profile, not a top-bar link.
     await expect(page.getByRole('banner').getByRole('link', { name: 'Mes groupes' })).toHaveCount(0)
     await page.goto('/profile')
-    await page.getByRole('tab', { name: '👥 Groupes' }).click()
+    await page.getByRole('button', { name: '👥 Groupes' }).click()
     await expect(page).toHaveURL(/\/profile\?tab=groups$/)
     const card = page.getByTestId(`my-group-${group.name}`)
     await expect(card.getByRole('link', { name: course.title })).toBeVisible()

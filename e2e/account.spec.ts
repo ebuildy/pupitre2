@@ -120,7 +120,14 @@ test.describe('profile (specs 035, 036)', () => {
     const user = await createUser()
     await signIn(page, user)
     await page.goto('/profile')
-    await page.getByRole('tab', { name: '🔒 Sécurité' }).click()
+    // Profile sections are an accordion: "Compte" is open first; opening another closes it (spec 035).
+    const account = page.getByRole('button', { name: '👤 Compte' })
+    const security = page.getByRole('button', { name: '🔒 Sécurité' })
+    await expect(account).toHaveAttribute('aria-expanded', 'true')
+    await security.click()
+    await expect(security).toHaveAttribute('aria-expanded', 'true')
+    await expect(account).toHaveAttribute('aria-expanded', 'false')
+    await expect(page).toHaveURL(/\/profile\?tab=security$/)
     await page.getByRole('button', { name: 'Changer le mot de passe' }).click()
 
     await page.getByLabel('Mot de passe actuel').fill('wrong-password')

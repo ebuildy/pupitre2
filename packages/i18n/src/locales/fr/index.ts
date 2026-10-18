@@ -509,7 +509,6 @@ export const app = {
       skills: '🎯 Compétences',
       groups: '👥 Groupes',
     },
-    accountTitle: 'Mon compte',
     username: "Nom d'utilisateur",
     usernameLocked: "Le changement de nom d'utilisateur est désactivé par l'administrateur.",
     name: 'Nom affiché',
@@ -534,7 +533,6 @@ export const app = {
       choose: 'Choisir {{icon}}',
     },
     security: {
-      title: 'Sécurité',
       hint: "Utilisez un mot de passe fort d'au moins {{count}} caractères.",
       change: 'Changer le mot de passe',
       current: 'Mot de passe actuel',

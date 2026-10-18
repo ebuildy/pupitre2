@@ -87,7 +87,7 @@ test.describe('path access and progress (specs 122–125)', () => {
     // Paths are a tab of the profile page, not a top-bar link.
     await expect(page.getByRole('banner').getByRole('link', { name: /Mes parcours|Mes badges|Mes compétences/ })).toHaveCount(0)
     await page.goto('/profile')
-    await page.getByRole('tab', { name: '🗺️ Parcours' }).click()
+    await page.getByRole('button', { name: '🗺️ Parcours' }).click()
     const card = page.getByTestId(`my-path-p-${token}`)
     await expect(card).toContainText('0/2')
     await card.click()

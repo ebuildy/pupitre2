@@ -10,20 +10,20 @@ Covers the original 035 (edit profile), 036 (change password) and 037 (public us
 
 ## UI — `/profile` ("Mon profil", reached from the avatar in the top bar)
 
-- Layout: a sidebar and the selected section. On large screens the sidebar sticks on the left: an overview card
-  (avatar with "✏️ Modifier", username, role badge for managers and admins, e-mail, "Voir mon profil public") and the
-  section menu. On small screens the card comes first, then the sections as a row of pills that scrolls, the selected
-  one kept in view. Sections are tabs (`role="tab"`, vertical); the selected one is in the URL (`/profile?tab=paths`,
-  none for "Compte"): "👤 Compte", "🗺️ Parcours", "🏅 Badges", "🎯 Compétences", "👥 Groupes", "🔒 Sécurité".
+- Layout: an overview card (avatar with "✏️ Modifier", username, role badge for managers and admins, e-mail, "Voir mon
+  profil public"), then the sections as an accordion, one open at a time (it animates open and closed): "👤 Compte",
+  "🗺️ Parcours", "🏅 Badges", "🎯 Compétences", "👥 Groupes", "🔒 Sécurité". The open section is in the URL
+  (`/profile?tab=paths`; none: "Compte"; `?tab=` with no value: all closed). A section's content loads when it opens.
+  Opening a section whose title ends up above the screen scrolls back to it.
 - "Parcours", "Badges", "Compétences" and "Groupes" are the former "Mes parcours" ([120](120-learning-paths.md)),
   "Mes badges" ([106](106-badges.md)), "Mes compétences" ([110](110-skills.md)) and "Mes groupes" ([130](130-groups.md))
   pages; they have no top-bar link. `/my-paths`, `/my-badges`, `/my-skills` and `/my-groups` redirect to their section.
 - Avatar dialog "Modifier la photo de profil": "URL externe" + "OK" (must start with `http://` or `https://`),
   "Retirer la photo". Toast "Photo de profil mise à jour". "Emoji de badge": the icons of earned badges ([106](106-badges.md)).
-- Tab "👤 Compte": card "Mon compte" in read mode (Nom d'utilisateur, Nom affiché, Email, Bio); "Modifier" switches to a
+- "👤 Compte": read mode (Nom d'utilisateur, Nom affiché, Email, Bio); "Modifier" switches to a
   form (username — disabled with an explanation when `profile_allow_username_change` is off —, display name, bio
   "Dites-nous quelque chose sur vous…"), "Enregistrer" / "Annuler", toast "Profil mis à jour". The top bar follows.
-- Tab "🔒 Sécurité": "Utilisez un mot de passe fort d'au moins N caractères." and "Changer le mot de passe", which reveals
+- "🔒 Sécurité": "Utilisez un mot de passe fort d'au moins N caractères." and "Changer le mot de passe", which reveals
   "Mot de passe actuel", "Nouveau mot de passe" (with the policy checklist), "Confirmer le mot de passe", "Mettre à jour" /
   "Annuler". Errors "Mot de passe actuel incorrect", mismatch; toast "Mot de passe mis à jour". Accounts without a local
   password see a note that their identity provider manages it.
@@ -59,7 +59,7 @@ Leaderboard rows link to it.
   (`hasPassword`).
 - The public profile also shows XP and completed courses.
 - Paths, badges, skills and groups are sections of the profile (the original had separate pages in the top bar), and the
-  profile has a sidebar.
+  profile's sections are an accordion instead of tabs.
 
 ## Source
 
