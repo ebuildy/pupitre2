@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
-import { ADMIN_PASSWORD, ADMIN_PORT, API_PORT, APP_PORT, BASE_URL, GITLAB_PORT, IDP_PORT, LDAP_HTTP_PORT, LDAP_PORT } from './e2e/env.ts'
+import { ADMIN_PASSWORD, ADMIN_PORT, API_PORT, APP_PORT, BASE_URL, GITLAB_PORT, IDP_PORT, LDAP_HTTP_PORT, LDAP_PORT, OPA_PORT } from './e2e/env.ts'
 
 export default defineConfig({
   testDir: './e2e',
@@ -49,6 +49,13 @@ export default defineConfig({
       env: { PORT: String(GITLAB_PORT) },
     },
     {
+      name: 'opa',
+      command: 'node e2e/fake-opa.mjs',
+      url: `http://localhost:${OPA_PORT}/health`,
+      reuseExistingServer: !process.env.CI,
+      env: { PORT: String(OPA_PORT) },
+    },
+    {
       name: 'api',
       command: 'rm -rf data/e2e.db* data/e2e-uploads && pnpm start',
       cwd: './apps/api',
@@ -62,6 +69,9 @@ export default defineConfig({
         GIT_CACHE_DIR: './data/e2e-git-cache',
         PATTERNS_FILE: '../../e2e/patterns.yaml',
         GITLAB_URL: `http://localhost:${GITLAB_PORT}`,
+        // Spec 091: the `cli` policy engine runs this stand-in; it asks e2e/fake-opa.mjs for the verdict.
+        OPA_BIN: '../../e2e/fake-opa-cli.mjs',
+        FAKE_OPA_URL: `http://localhost:${OPA_PORT}`,
         // Specs 027–029: a runtime OIDC provider from OIDC_* and two deploy-time ones, all served by e2e/fake-idp.mjs.
         OIDC_ENABLED: 'true',
         OIDC_NAME: 'Fake IdP',

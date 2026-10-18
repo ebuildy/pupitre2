@@ -1,6 +1,14 @@
 @import '@pupitre/ui/globals.css';
 @plugin '@tailwindcss/typography';
 
+body {
+  background-color: #F7F9FC; /* couleur affichée pendant le chargement */
+  background-image: url("/images/pupitre-background.svg");
+  background-size: contain;
+  background-position: center;
+  min-height: 100vh;
+}
+
 /* Rendered course content (sanitized HTML from the API, spec 058), on top of the typography plugin. */
 .content :where(h1, h2, h3) {
   scroll-margin-top: 8rem;

@@ -31,7 +31,8 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | [061](061-markdown-patterns.md) | Markdown patterns (rendering, administration, seeding) | Implemented |
 | [062](062-media.md) | Video and image modules, uploads, replication, thumbnails | Implemented |
 | [064](064-git-content.md) | Git-sourced content, module index files, git cache | Implemented |
-| [090](090-labs.md) | Labs: GitLab step checks, local checks, history, tracking, export | Implemented (no OPA policies) |
+| [090](090-labs.md) | Labs: GitLab step checks, local checks, history, tracking, export | Implemented |
+| [091](091-lab-policy-checks.md) | Lab checks by OPA / Rego policy (OPA server or opa binary) | Implemented |
 | [103](103-xp.md) | XP, levels, course completion, XP gate and leaderboard | Implemented (completion marked by admins) |
 | [106](106-badges.md) | Badges, "Mes badges", badge and admin leaderboards | Implemented |
 | [110](110-skills.md) | Skills, levels, skill page, "Mes compétences", skill filter | Implemented |

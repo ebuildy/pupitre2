@@ -57,7 +57,7 @@ export function Layout() {
     )
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
           <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
@@ -145,7 +145,7 @@ export function Layout() {
           ))}
         </nav>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main className="mx-auto max-w-6xl px-4 py-8 bg-background">
         <Outlet />
       </main>
     </div>

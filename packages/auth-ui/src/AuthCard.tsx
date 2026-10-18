@@ -6,7 +6,7 @@ import logo from './pioupitre.png'
 /** Frame of the sign-in and registration pages: logo, language and theme, then the form. */
 export function AuthCard({ subtitle, children }: { subtitle?: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex min-h-screen items-start justify-center bg-gradient-to-b from-secondary to-background px-4 py-10 sm:items-center">
+    <div className="flex min-h-screen items-start justify-center from-secondary to-background px-4 py-10 sm:items-center">
       <Card className="w-full max-w-[430px] gap-5 px-2 py-7 shadow-xl sm:px-4 sm:py-9">
         <CardContent className="flex flex-col gap-5">
           <div className="flex items-center justify-center gap-3">

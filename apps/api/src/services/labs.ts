@@ -21,24 +21,42 @@ function substituteParams(params: Record<string, unknown>, username: string) {
 
 const CONVENTIONAL = /^(feat|fix|chore|docs|style|refactor|test|perf|ci|build|revert)(\([^)]+\))?!?: .+/
 
-class GitLab {
+export class GitLab {
   constructor(
     private readonly base: string,
     private readonly token: string | undefined,
   ) {}
 
-  async get<T>(path: string): Promise<T | null> {
-    const res = await httpFetch(`${this.base.replace(/\/+$/, '')}/api/v4${path}`, {
+  private request(path: string) {
+    return httpFetch(`${this.base.replace(/\/+$/, '')}/api/v4${path}`, {
       headers: this.token ? { 'PRIVATE-TOKEN': this.token } : {},
     })
+  }
+
+  async get<T>(path: string): Promise<T | null> {
+    const res = await this.request(path)
     if (res.status === 404) return null
     if (!res.ok) throw new Error(`GitLab ${res.status}`)
     return (await res.json()) as T
   }
+
+  /** A raw file, or null when it does not exist. */
+  async text(path: string): Promise<string | null> {
+    const res = await this.request(path)
+    if (res.status === 404) return null
+    if (!res.ok) throw new Error(`GitLab ${res.status}`)
+    return res.text()
+  }
 }
 
-type Project = { id: number; default_branch: string }
-type MergeRequest = { iid: number; title: string; source_branch: string; author?: { username: string }; head_pipeline?: { status: string } | null }
+/** The configured GitLab instance (setting, else GITLAB_URL), or null. */
+export function gitlabClient() {
+  const base = getSettings().gitlab_url || env.GITLAB_URL
+  return base ? new GitLab(base, env.GITLAB_TOKEN) : null
+}
+
+export type Project = { id: number; name?: string; path_with_namespace?: string; default_branch: string }
+export type MergeRequest = { iid: number; title: string; source_branch: string; author?: { username: string }; head_pipeline?: { status: string } | null }
 
 function matches(pattern: string | undefined, value: string) {
   if (!pattern) return true
@@ -51,11 +69,10 @@ function matches(pattern: string | undefined, value: string) {
 
 /** Runs one GitLab check. Violation messages are learner-facing (French, as in the original). */
 export async function gitlabCheck(checkType: string, params: Record<string, unknown>, username: string): Promise<LabCheckResult> {
-  const base = getSettings().gitlab_url || env.GITLAB_URL
-  if (!base) return { allow: false, violations: ['Instance GitLab non configurée'] }
+  const gl = gitlabClient()
+  if (!gl) return { allow: false, violations: ['Instance GitLab non configurée'] }
   const project = typeof params.project === 'string' ? params.project : ''
   if (!project) return { allow: false, violations: ['Paramètre « project » manquant'] }
-  const gl = new GitLab(base, env.GITLAB_TOKEN)
   const p = await gl.get<Project>(`/projects/${encodeURIComponent(project)}`)
   if (!p) return { allow: false, violations: [`Projet introuvable : ${project}`] }
   const pattern = typeof params.pattern === 'string' ? params.pattern : undefined

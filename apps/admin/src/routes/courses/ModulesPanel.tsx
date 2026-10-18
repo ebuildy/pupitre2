@@ -1,5 +1,5 @@
 import { useTranslation } from '@pupitre/i18n'
-import { type AdminModule, GITLAB_CHECK_TYPES, LAB_PROVIDERS, type LabProvider, type LabStep, type ModuleInput } from '@pupitre/shared'
+import { type AdminModule, GITLAB_CHECK_TYPES, LAB_PROVIDERS, POLICY_CHECK_TYPE, type LabProvider, type LabStep, type ModuleInput } from '@pupitre/shared'
 import { ErrorState, LoadingState, toast, unwrap } from '@pupitre/ui'
 import { Alert, AlertDescription } from '@pupitre/ui/components/ui/alert'
 import {
@@ -470,6 +470,7 @@ function ModuleDialog({
                 {GITLAB_CHECK_TYPES.map((c) => (
                   <option key={c} value={c} />
                 ))}
+                <option value={POLICY_CHECK_TYPE} />
               </datalist>
               <Button
                 type="button"

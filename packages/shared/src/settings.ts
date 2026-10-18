@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { POLICY_ENGINES } from './labs.ts'
 
 /**
  * Spec 179: platform settings editable by admins. Each key has a type and a default; the database only stores the
@@ -19,6 +20,9 @@ export const SETTINGS = {
   sso_local_login_enabled: { type: 'boolean', default: true, public: true },
   /** Spec 092: GitLab instance of the lab checks (empty: the GITLAB_URL environment variable). */
   gitlab_url: { type: 'text', default: '', public: false },
+  /** Spec 091: `none`, `server` (an OPA server at `opa_url`) or `cli` (the `opa` binary, OPA_BIN). */
+  lab_policy_engine: { type: 'text', default: 'none', public: false },
+  opa_url: { type: 'text', default: '', public: false },
   /** Spec 028: one OIDC provider configured from this page. */
   oidc_enabled: { type: 'boolean', default: false, public: true },
   /** Login button label ("Continuer avec …"). */
@@ -87,6 +91,8 @@ export const settingsUpdateSchema = z
     profile_allow_username_change: z.boolean(),
     sso_local_login_enabled: z.boolean(),
     gitlab_url: z.string().trim().max(500),
+    lab_policy_engine: z.enum(POLICY_ENGINES),
+    opa_url: z.string().trim().max(500),
     oidc_enabled: z.boolean(),
     oidc_name: z.string().trim().max(100),
     oidc_provider_url: z.string().trim().max(500),

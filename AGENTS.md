@@ -180,6 +180,8 @@ Playwright is the only test runner. Every feature ships with e2e tests covering 
   with `POST http://localhost:3103/__fake/projects {path, branches, mergeRequests, commits, files}`.
 - SSO: `await fakeIdpUser(hint, {sub, email, name, groups})` then `await ssoLogin(page, 'oidc' | 'corp' | 'github', hint)`
   (e2e/fake-idp.mjs); LDAP tests use e2e/fake-ldap.mjs and live in the global-settings project (LDAP is a setting).
+- Lab policies (spec 091): e2e/fake-opa.mjs (port 3106) stands in for the OPA server and e2e/fake-opa-cli.mjs for the
+  `opa` binary; set the verdict with `POST http://localhost:3106/__fake/answers {project, result}`.
 - Use web-first assertions (`await expect(locator).toBeVisible()`, `toHaveURL`); no fixed waits.
 - `toHaveURL` for admin app roots: `/\/admin\/?$/` (the router may drop the trailing slash).
 - Direct database access from tests (`node:sqlite`) must open the file with a busy `timeout`.

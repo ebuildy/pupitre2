@@ -11,6 +11,16 @@ export const GITLAB_CHECK_TYPES = [
   'gitlab_conventional_commit_on_branch',
 ] as const
 
+/**
+ * Spec 091: a step checked by an OPA / Rego policy against the learner's GitLab project. Parameters: `project`,
+ * `files` (read on the default branch) and `policy` (a .rego file next to the module's content, in its repository).
+ */
+export const POLICY_CHECK_TYPE = 'opa_policy'
+
+/** Spec 091: how policies are evaluated (setting `lab_policy_engine`). */
+export const POLICY_ENGINES = ['none', 'server', 'cli'] as const
+export type PolicyEngineKind = (typeof POLICY_ENGINES)[number]
+
 /** `gitlab`: checked by the API against GitLab; `local`: checked on the learner's machine by the desktop app (093). */
 export const LAB_PROVIDERS = ['gitlab', 'local'] as const
 export type LabProvider = (typeof LAB_PROVIDERS)[number]

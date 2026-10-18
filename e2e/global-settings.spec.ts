@@ -1,6 +1,18 @@
 import { defaultSettings } from '@pupitre/shared'
-import { ADMIN_PASSWORD, LDAP_HTTP_PORT, LDAP_PORT } from './env.ts'
+import { ADMIN_PASSWORD, GITLAB_PORT, LDAP_HTTP_PORT, LDAP_PORT, OPA_PORT } from './env.ts'
 import { apiClient, expect, fakeIdpUser, login, signIn, ssoLogin, test, uid } from './fixtures.ts'
+
+const opa = `http://localhost:${OPA_PORT}`
+const labRepo = 'https://git.example.com/pupitre/pupitre-git.git'
+
+async function fake(url: string, data: unknown) {
+  const res = await fetch(url, { method: 'POST', body: JSON.stringify(data) })
+  if (!res.ok) throw new Error(`${url}: ${res.status}`)
+}
+/** Spec 091: the verdict of e2e/fake-opa.mjs for a project, and what it was asked to evaluate. */
+const opaAnswer = (project: string, result: { allow: boolean; violations: string[] }) => fake(`${opa}/__fake/answers`, { project, result })
+type OpaCall = { engine: 'server' | 'cli'; policy: string; input: Record<string, any> }
+const opaCalls = async (project: string): Promise<OpaCall[]> => (await (await fetch(`${opa}/__fake/calls?project=${encodeURIComponent(project)}`)).json()) as OpaCall[]
 
 // Runs in the `global-settings` project: alone, after every other test, one test at a time (see playwright.config.ts).
 
@@ -195,5 +207,110 @@ test.describe('platform settings (specs 021, 022, 024, 035, 179)', () => {
     expect(disabled.ok()).toBeTruthy()
     const res = await page.request.post('/api/sso/ldap/login', { data: { identifier: `jdoe${id}`, password: 'ldap-pass' } })
     expect(res.status()).toBe(400)
+  })
+
+  test('lab policy checks with an OPA server, from the check.yaml of the lab (spec 091)', async ({ page, createCourse, createUser, setModules }) => {
+    await signIn(page, { email: 'admin', password: ADMIN_PASSWORD })
+    await page.goto('/admin/settings')
+    await page.getByLabel('Moteur de politiques').selectOption({ label: 'Serveur OPA (API REST)' })
+    await page.getByLabel('URL du serveur OPA').fill(opa)
+    await page.getByRole('button', { name: 'Enregistrer' }).first().click()
+    await expect(page.getByText('Paramètres enregistrés')).toBeVisible()
+
+    const course = await createCourse()
+    await setModules(course.id, [
+      { slug: 'mr', name: 'Lab MR', type: 'lab', lab: { provider: 'gitlab' }, content: { kind: 'source', repo: labRepo, ref: 'main', path: 'labs/merge-request/lab.md' } },
+    ])
+    const learner = await createUser()
+    const project = `e-learning/${learner.username}`
+    await fake(`http://localhost:${GITLAB_PORT}/__fake/projects`, {
+      path: project,
+      branches: ['feature/lab'],
+      mergeRequests: [
+        { title: 'Lab', source_branch: 'feature/lab', commits: ['feat: lab'], pipeline: 'failed' },
+        { title: 'Old', source_branch: 'old', state: 'merged' },
+      ],
+      fileContents: { main: { 'lab.py': 'def main():\n    pass\n' } },
+    })
+    await opaAnswer(project, { allow: false, violations: ['Le pipeline de la merge request doit réussir'] })
+
+    await page.context().clearCookies()
+    await signIn(page, learner)
+    await page.request.post(`/api/enrollments/${course.slug}`)
+    await page.goto(`/courses/${course.slug}/lessons/mr`)
+    const step = page.getByTestId('lab-step-0')
+    await expect(step).toContainText('Vérification du lab')
+    await step.getByRole('button', { name: 'Vérifier cette étape' }).click()
+    await expect(step).toContainText('Le pipeline de la merge request doit réussir')
+
+    // The policy comes from the lab's repository, under its own package; the input is the learner's GitLab project.
+    const call = (await opaCalls(project))[0]!
+    expect(call.engine).toBe('server')
+    expect(call.policy).toMatch(/^package pupitre\.labs\.p[0-9a-f]+$/m)
+    expect(call.policy).toContain('violations contains "Le pipeline de la merge request doit réussir"')
+    expect(call.input).toEqual({
+      project: { id: expect.any(String), name: learner.username, pathWithNamespace: project, defaultBranch: 'main' },
+      mergedMrCount: 1,
+      openMrs: [{ iid: 1, title: 'Lab', sourceBranch: 'feature/lab', pipelineStatus: 'failed', commits: [{ message: 'feat: lab' }] }],
+      files: { 'lab.py': 'def main():\n    pass\n' },
+    })
+
+    await opaAnswer(project, { allow: true, violations: [] })
+    await step.getByRole('button', { name: 'Vérifier cette étape' }).click()
+    await expect(page).toHaveURL(new RegExp(`/courses/${course.slug}$`))
+    await expect(page.getByTestId('module-mr')).toContainText('✓ Vu')
+  })
+
+  test('lab policy checks with the opa binary; engine and policy errors (spec 091)', async ({ adminRequest, createCourse, createUser, setModules }) => {
+    const settings = (data: Record<string, unknown>) => adminRequest.put('/api/admin/settings', { data })
+    expect((await settings({ lab_policy_engine: 'cli' })).ok()).toBeTruthy()
+    const course = await createCourse()
+    const params = { project: 'e-learning/{{username}}', files: ['lab.py'], policy: 'check.rego' }
+    await setModules(course.id, [
+      {
+        slug: 'mr',
+        name: 'Lab MR',
+        type: 'lab',
+        lab: {
+          provider: 'gitlab',
+          steps: [
+            { title: 'Politique', checkType: 'opa_policy', checkParams: params },
+            { title: 'Hors du dépôt', checkType: 'opa_policy', checkParams: { ...params, policy: '../../../etc/passwd' } },
+          ],
+        },
+        content: { kind: 'source', repo: labRepo, ref: 'main', path: 'labs/merge-request/lab.md' },
+      },
+    ])
+    const user = await createUser()
+    const project = `e-learning/${user.username}`
+    await fake(`http://localhost:${GITLAB_PORT}/__fake/projects`, { path: project, fileContents: { main: { 'lab.py': 'def main(): ...' } } })
+    await opaAnswer(project, { allow: false, violations: ['Ouvrez une merge request vers la branche par défaut'] })
+    const learner = await apiClient()
+    await learner.post('/api/auth/sign-in/email', { data: { email: user.email, password: user.password } })
+    await learner.post(`/api/enrollments/${course.slug}`)
+    const check = (i: number) => learner.post(`/api/courses/${course.slug}/modules/mr/steps/${i}/check`)
+
+    // The binary gets the policy as written (package checker.lab) and capabilities without network builtins.
+    expect(await (await check(0)).json()).toMatchObject({ allow: false, violations: ['Ouvrez une merge request vers la branche par défaut'] })
+    const call = (await opaCalls(project))[0]!
+    expect(call.engine).toBe('cli')
+    expect(call.policy).toMatch(/^package checker\.lab$/m)
+    expect(call.input.files).toEqual({ 'lab.py': 'def main(): ...' })
+
+    const outside = await check(1)
+    expect(outside.status()).toBe(502)
+    expect((await outside.json()).error).toBe('Invalid policy path')
+
+    await settings({ lab_policy_engine: 'server', opa_url: 'http://localhost:9' })
+    const unreachable = await check(0)
+    expect(unreachable.status()).toBe(502)
+    expect((await unreachable.json()).error).toMatch(/^OPA server unreachable/)
+
+    await settings({ lab_policy_engine: 'none' })
+    expect(await (await check(0)).json()).toMatchObject({ allow: false, violations: ['Moteur de politiques non configuré'] })
+    // Engine problems are not recorded as the learner's attempts.
+    const { checks } = await (await adminRequest.get(`/api/admin/lab-checks?course=${course.id}`)).json()
+    expect(checks).toHaveLength(2)
+    await learner.dispose()
   })
 })

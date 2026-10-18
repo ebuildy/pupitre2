@@ -1,10 +1,11 @@
 import { useTranslation } from '@pupitre/i18n'
-import type { SettingKey, Settings as SettingValues, SettingsUpdateInput } from '@pupitre/shared'
+import { POLICY_ENGINES, type PolicyEngineKind, type SettingKey, type Settings as SettingValues, type SettingsUpdateInput } from '@pupitre/shared'
 import { ErrorState, LoadingState, PageHeader, toast, unwrap } from '@pupitre/ui'
 import { Button } from '@pupitre/ui/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@pupitre/ui/components/ui/card'
 import { Input } from '@pupitre/ui/components/ui/input'
 import { Label } from '@pupitre/ui/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@pupitre/ui/components/ui/native-select'
 import { Switch } from '@pupitre/ui/components/ui/switch'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useEffect, useState } from 'react'
@@ -150,6 +151,23 @@ export function Settings() {
         <SettingRow id="gitlab_url" label={t('settings.gitlabUrl')} help={t('settings.gitlabUrlHelp')} lastChange={data.changes.gitlab_url?.updatedAt} stacked>
           <Input id="gitlab_url" value={draft.gitlab_url} placeholder="https://gitlab.example.com" onChange={(e) => set('gitlab_url', e.target.value)} />
         </SettingRow>
+      </Section>
+
+      <Section title={t('settings.sections.policy')}>
+        <SettingRow id="lab_policy_engine" label={t('settings.policyEngine')} help={t('settings.policyEngineHelp')} lastChange={data.changes.lab_policy_engine?.updatedAt} stacked>
+          <NativeSelect id="lab_policy_engine" value={draft.lab_policy_engine} onChange={(e) => set('lab_policy_engine', e.target.value as PolicyEngineKind)}>
+            {POLICY_ENGINES.map((k) => (
+              <NativeSelectOption key={k} value={k}>
+                {t(`settings.policyEngines.${k}`)}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        </SettingRow>
+        {draft.lab_policy_engine === 'server' && (
+          <SettingRow id="opa_url" label={t('settings.opaUrl')} help={t('settings.opaUrlHelp')} lastChange={data.changes.opa_url?.updatedAt} stacked>
+            <Input id="opa_url" value={draft.opa_url} placeholder="http://opa:8181" onChange={(e) => set('opa_url', e.target.value)} />
+          </SettingRow>
+        )}
       </Section>
 
       <Section title={t('settings.sections.oidc')}>

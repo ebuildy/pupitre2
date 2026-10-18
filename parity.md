@@ -108,7 +108,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | # | Feature | Status | Rewrite spec | Notes |
 | --- | --- | --- | --- | --- |
 | 090 | Lab module | ✅ | [090](docs/specs/090-labs.md) |  |
-| 091 | Lab policy check (OPA on GitLab) | ⬜ |  | OPA / Rego policies need a policy engine; GitLab step checks cover the GitLab cases |
+| 091 | Lab policy check (OPA on GitLab) | ✅ | [091](docs/specs/091-lab-policy-checks.md) | engine chosen in settings: OPA server or `opa` binary |
 | 092 | Lab step checks (GitLab) | ✅ | [090](docs/specs/090-labs.md) |  |
 | 093 | Local checks (desktop app) | ✅ | [090](docs/specs/090-labs.md) |  |
 | 094 | Lab check history | ✅ | [090](docs/specs/090-labs.md) |  |

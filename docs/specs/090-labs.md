@@ -7,7 +7,7 @@
 | Related | [053](053-course-content-and-quizzes.md), [160](160-admin-dashboard-and-reports.md), [169](169-course-authoring.md) |
 
 Covers the original 090 (lab module), 092 (GitLab step checks), 093 (local checks), 094 (history), 095 (admin tracking)
-and 183 (lab checks export). Not covered: 091 (OPA / Rego policy checks) and 096 (the desktop app itself).
+and 183 (lab checks export). Policy checks (091): see [091](091-lab-policy-checks.md). Not covered: 096 (the desktop app itself).
 
 ## Lab module
 
@@ -51,7 +51,7 @@ dans Pupitre." with "Ouvrir dans Pupitre →" (`pupitre://courses/<slug>/modules
 
 ## Differences from the original
 
-- No OPA / Rego policy checks (`check.yaml` + policy) and no separate checker service: GitLab step checks run in the API.
+- No separate checker service: GitLab step checks run in the API; policy checks call an OPA server or binary (spec 091).
 - Steps of every provider are recorded in the history; completion is automatic once all steps pass.
 - Lab settings are structured fields of the module (editable in the module editor), not free definition keys.
 

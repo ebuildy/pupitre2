@@ -19,7 +19,7 @@ createServer(async (req, res) => {
     for await (const chunk of req) raw += chunk
     const p = JSON.parse(raw)
     const existing = byPath.get(p.path)
-    const project = { id: existing?.id ?? nextId++, defaultBranch: 'main', branches: [], mergeRequests: [], commits: {}, files: {}, ...p }
+    const project = { id: existing?.id ?? nextId++, defaultBranch: 'main', branches: [], mergeRequests: [], commits: {}, files: {}, fileContents: {}, ...p }
     byPath.set(p.path, project)
     byId.set(String(project.id), project)
     return send(res, 200, { id: project.id })
@@ -33,7 +33,9 @@ createServer(async (req, res) => {
   if (!project) return send(res, 404, { message: '404 Project Not Found' })
   const rest = parts.slice(1).map(decodeURIComponent)
 
-  if (rest.length === 0) return send(res, 200, { id: project.id, default_branch: project.defaultBranch })
+  if (rest.length === 0) {
+    return send(res, 200, { id: project.id, name: project.path.split('/').at(-1), path_with_namespace: project.path, default_branch: project.defaultBranch })
+  }
   if (rest[0] === 'repository' && rest[1] === 'branches') {
     return send(res, 200, [project.defaultBranch, ...project.branches].map((name) => ({ name })))
   }
@@ -43,11 +45,19 @@ createServer(async (req, res) => {
   }
   if (rest[0] === 'repository' && rest[1] === 'files') {
     const ref = url.searchParams.get('ref') ?? project.defaultBranch
+    // Raw content (spec 091 policy input): `fileContents: { <branch>: { <path>: <text> } }`.
+    if (rest[3] === 'raw') {
+      const text = project.fileContents[ref]?.[rest[2]]
+      if (text === undefined) return send(res, 404, { message: '404 File Not Found' })
+      res.writeHead(200, { 'Content-Type': 'text/plain' })
+      return res.end(text)
+    }
     return (project.files[ref] ?? []).includes(rest[2]) ? send(res, 200, { file_path: rest[2] }) : send(res, 404, { message: '404 File Not Found' })
   }
   if (rest[0] === 'merge_requests') {
-    const mrs = project.mergeRequests.map((m, i) => ({ iid: i + 1, ...m }))
-    if (rest.length === 1) return send(res, 200, mrs.map(({ commits, pipeline, ...m }) => m))
+    const mrs = project.mergeRequests.map((m, i) => ({ iid: i + 1, state: 'opened', ...m }))
+    const state = url.searchParams.get('state')
+    if (rest.length === 1) return send(res, 200, mrs.filter((m) => !state || m.state === state).map(({ commits, pipeline, ...m }) => m))
     const mr = mrs.find((m) => String(m.iid) === rest[1])
     if (!mr) return send(res, 404, { message: 'not found' })
     if (rest[2] === 'commits') return send(res, 200, (mr.commits ?? []).map((title) => ({ title })))

@@ -1,0 +1,5 @@
+# Spec 091: this lab is checked by the policy below against the learner's GitLab project.
+provider: gitlab
+project: "e-learning/{{ .Username }}"
+files: ["lab.py"]
+policy: "check.rego"

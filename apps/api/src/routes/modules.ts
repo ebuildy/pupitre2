@@ -3,7 +3,9 @@ import {
   type CourseModulesResponse,
   type ModuleCompleteResult,
   type ModuleDetail,
+  type LabConfig,
   type LabStepCheckResponse,
+  POLICY_CHECK_TYPE,
   type QuizResult,
   quizSubmitSchema,
   type Role,
@@ -19,6 +21,7 @@ import { canSelfEnroll, canView, type Course, findCourseBySlug, grant, grantsFor
 import { mediaUrlFor } from '../services/media.ts'
 import { gitlabCheck, labView, markStepPlaceholders, placeSteps, recordCheck, resolvedStep } from '../services/labs.ts'
 import { patternsFor } from '../services/patterns.ts'
+import { effectiveLab, PolicyEngineError, policyCheck } from '../services/policy.ts'
 import { prerequisiteViews } from '../services/prerequisites.ts'
 import { totalXp } from '../services/xp.ts'
 import {
@@ -63,8 +66,8 @@ function labUsername(user: { username?: string | null; email: string }) {
   return user.username ?? user.email.split('@')[0]!
 }
 
-function labStep(m: Module, raw: string) {
-  const config = m.type === 'lab' ? m.lab : null
+async function labStep(m: Module, raw: string) {
+  const config = await effectiveLab(m)
   if (!config) throw new HTTPException(400, { message: 'Module is not a lab' })
   const index = Number(raw)
   const step = Number.isInteger(index) ? config.steps[index] : undefined
@@ -77,13 +80,14 @@ async function recordStep(
   user: { id: string; email: string; username?: string | null },
   course: Course,
   m: Module,
+  config: LabConfig,
   index: number,
   title: string,
   result: { allow: boolean; violations: string[] },
   verified: boolean,
 ): Promise<LabStepCheckResponse> {
   recordCheck({ userId: user.id, userEmail: user.email, moduleId: m.id, stepIndex: index, stepTitle: title, result, verified })
-  const view = labView(m.lab!, m.id, user.id, labUsername(user))
+  const view = labView(config, m.id, user.id, labUsername(user))
   const completed = view.steps.every((s) => s.passed)
   let courseCompleted = false
   if (completed) {
@@ -132,9 +136,11 @@ export const moduleRoutes = new Hono<AppEnv>()
       media = { url: await mediaUrlFor(m.mediaUrl, m.mediaReplicate) }
     } else if (m.type === 'quiz') {
       quiz = quizView(await loadQuiz(m), attemptStates(user.id, m.id))
-    } else {
+    }
+    const labConfig = await effectiveLab(m)
+    if (!m.mediaUrl && m.type !== 'quiz') {
       try {
-        const steps = m.type === 'lab' ? (m.lab?.steps.length ?? 0) : 0
+        const steps = labConfig?.steps.length ?? 0
         const rendered = renderMarkdown(steps ? markStepPlaceholders(await moduleBody(m)) : await moduleBody(m), patternsFor(course.id))
         lesson = { ...rendered, html: steps ? placeSteps(rendered.html, steps) : rendered.html, unavailable: false }
       } catch (err) {
@@ -142,7 +148,7 @@ export const moduleRoutes = new Hono<AppEnv>()
         lesson = { html: '', toc: [], unavailable: true, styles: '' }
       }
     }
-    const lab = m.type === 'lab' && m.lab ? labView(m.lab, m.id, user.id, labUsername(user)) : null
+    const lab = labConfig ? labView(labConfig, m.id, user.id, labUsername(user)) : null
 
     const following = states[index + 1]
     const inlineQuiz =
@@ -169,7 +175,7 @@ export const moduleRoutes = new Hono<AppEnv>()
     const { state } = findModule(states, c.req.param('moduleSlug'))
     if (state.module.type === 'quiz') throw new HTTPException(400, { message: 'Quiz modules are completed by passing them' })
     // Spec 090: a lab with steps is completed by validating its steps.
-    if (state.module.type === 'lab' && state.module.lab?.steps.length) {
+    if (state.module.type === 'lab' && (await effectiveLab(state.module))?.steps.length) {
       throw new HTTPException(400, { message: 'Validate the lab steps to complete it' })
     }
     markViewed(user.id, course, state.module)
@@ -179,25 +185,33 @@ export const moduleRoutes = new Hono<AppEnv>()
   .post('/:moduleSlug/steps/:index/check', async (c) => {
     const { user, course, states } = await access(c.get('user')!, c.req.param('slug'))
     const { state } = findModule(states, c.req.param('moduleSlug'))
-    const { config, step, index } = labStep(state.module, c.req.param('index'))
+    const { config, step, index } = await labStep(state.module, c.req.param('index'))
     if (config.provider !== 'gitlab') throw new HTTPException(400, { message: 'Module does not have GitLab step checks' })
     const resolved = resolvedStep(step, labUsername(user))
     let result
     try {
-      result = await gitlabCheck(resolved.checkType, resolved.checkParams, labUsername(user))
+      result =
+        resolved.checkType === POLICY_CHECK_TYPE
+          ? await policyCheck(state.module, resolved.checkParams)
+          : await gitlabCheck(resolved.checkType, resolved.checkParams, labUsername(user))
     } catch (err) {
+      // Spec 091: an engine or policy problem is the platform's, not the learner's; nothing is recorded.
+      if (err instanceof PolicyEngineError || err instanceof ContentUnavailableError) {
+        console.error('lab policy check failed', err)
+        throw new HTTPException(502, { message: err instanceof PolicyEngineError ? err.message : 'Lab policy could not be read' })
+      }
       console.error('lab check failed', err)
       throw new HTTPException(502, { message: 'GitLab could not be reached' })
     }
-    return c.json<LabStepCheckResponse>(await recordStep(user, course, state.module, index, step.title, result, true))
+    return c.json<LabStepCheckResponse>(await recordStep(user, course, state.module, config, index, step.title, result, true))
   })
   // Spec 093: a local step checked by the desktop app on the learner's machine (client-reported, not verified).
   .post('/:moduleSlug/steps/:index/record', validate('json', z.object({ allow: z.boolean(), violations: z.array(z.string().max(500)).max(50).default([]) })), async (c) => {
     const { user, course, states } = await access(c.get('user')!, c.req.param('slug'))
     const { state } = findModule(states, c.req.param('moduleSlug'))
-    const { config, step, index } = labStep(state.module, c.req.param('index'))
+    const { config, step, index } = await labStep(state.module, c.req.param('index'))
     if (config.provider !== 'local') throw new HTTPException(400, { message: 'Module does not have local checks' })
-    return c.json<LabStepCheckResponse>(await recordStep(user, course, state.module, index, step.title, c.req.valid('json'), false))
+    return c.json<LabStepCheckResponse>(await recordStep(user, course, state.module, config, index, step.title, c.req.valid('json'), false))
   })
   .post('/:moduleSlug/submit', validate('json', quizSubmitSchema), async (c) => {
     const { user, course, states } = await access(c.get('user')!, c.req.param('slug'))

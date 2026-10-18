@@ -52,6 +52,8 @@ const schema = z.object({
   /** Spec 092: GitLab of the lab step checks (the `gitlab_url` setting wins) and its API token. */
   GITLAB_URL: z.string().optional(),
   GITLAB_TOKEN: z.string().optional(),
+  /** Spec 091: the `opa` binary used by the `cli` policy engine (deploy-time only: admins cannot run programs). */
+  OPA_BIN: z.string().default('opa'),
   /** Spec 027: OAuth / OIDC providers declared at deploy time (YAML `providers: [{id, name, type, clientId, …}]`). */
   SSO_PROVIDERS_FILE: z.string().optional(),
   /** Spec 029: OIDC settings upserted at startup from OIDC_* variables (deployment config wins). */
