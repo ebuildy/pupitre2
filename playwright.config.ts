@@ -72,6 +72,7 @@ export default defineConfig({
         BETTER_AUTH_URL: BASE_URL,
         CORS_ORIGINS: BASE_URL,
         LOG_REQUESTS: 'false',
+        QUERY_COUNT_HEADER: 'true',
         ADMIN_PASSWORD,
       },
     },

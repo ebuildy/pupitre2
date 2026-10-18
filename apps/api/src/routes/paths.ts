@@ -5,7 +5,7 @@ import { HTTPException } from 'hono/http-exception'
 import { db } from '../db/index.ts'
 import { learningPath, pathEnrollment } from '../db/schema/index.ts'
 import { type AppEnv, requireAuth } from '../middleware/session.ts'
-import { type LearningPath, pathItems, pathProgress } from '../services/paths.ts'
+import { completedItems, type LearningPath, pathItems, pathProgress } from '../services/paths.ts'
 import { courseExtras } from '../services/skills.ts'
 
 /** Spec 121: course paths show the union of their courses' skills; skill paths their own skills. */
@@ -60,9 +60,10 @@ export const myPathRoutes = new Hono<AppEnv>().use(requireAuth).get('/', (c) => 
     .all()
   const paths = toPublic(enrollments.map((e) => e.path))
   const items = pathItems(enrollments.map((e) => e.path.id))
+  const done = completedItems([me.id], [...items.values()].flat()).get(me.id)!
   return c.json<{ paths: MyPath[] }>({
     paths: enrollments.map((e, i) => {
-      const progress = pathProgress(me.id, e.path.kind, items.get(e.path.id) ?? [])
+      const progress = pathProgress(done, items.get(e.path.id) ?? [])
       return {
         ...paths[i]!,
         enrolledAt: e.enrolledAt.toISOString(),

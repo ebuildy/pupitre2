@@ -9,6 +9,7 @@ import { HTTPException } from 'hono/http-exception'
 import { db } from '../db/index.ts'
 import { mediaAsset } from '../db/schema/index.ts'
 import { env } from '../env.ts'
+import { httpFetch } from '../lib/http.ts'
 
 export const uploadsDir = resolve(env.UPLOADS_DIR)
 mkdirSync(uploadsDir, { recursive: true })
@@ -44,7 +45,7 @@ async function download(url: string) {
   const existing = db.select().from(mediaAsset).where(eq(mediaAsset.originalUrl, url)).get()
   if (existing && existsSync(join(uploadsDir, existing.filename))) return `/uploads/${existing.filename}`
 
-  const res = await fetch(url, { signal: AbortSignal.timeout(5 * 60_000) })
+  const res = await httpFetch(url, { timeoutMs: 5 * 60_000 })
   if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
   const contentType = (res.headers.get('content-type') ?? '').split(';')[0]!.trim()
   const ext = extname(new URL(url).pathname).slice(0, 8) || EXTENSIONS[contentType] || ''

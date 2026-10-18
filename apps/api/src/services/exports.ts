@@ -255,18 +255,32 @@ function csvCell(value: unknown) {
   return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
-/** Spec 182: UTF-8 BOM, `;` separator, header row; every download is recorded (spec 191 "ExportRecord"). */
+const EXPORT_CHUNK = 1000
+
+/**
+ * Spec 182: UTF-8 BOM, `;` separator, header row; every download is recorded (spec 191 "ExportRecord").
+ * Spec 014: the CSV is streamed, one chunk of rows read at a time (an open better-sqlite3 iterator would block the
+ * connection for other requests between chunks).
+ */
 export function exportCsv(input: ExportRequest, scope: string[] | null, actor: { id: string; email: string }) {
   const q = build(input, scope)
   const headers = input.headers?.length === input.fields.length ? input.headers : input.fields
-  const lines = [headers.map(csvCell).join(';')]
-  let count = 0
-  for (const r of db.all<Record<string, unknown>>(q.rows)) {
-    lines.push(toRow(r, input.fields.length).map(csvCell).join(';'))
-    count++
-  }
+  const total = db.get<{ n: number }>(q.count)?.n ?? 0
   db.insert(exportRecord)
-    .values({ userId: actor.id, userEmail: actor.email, category: input.category, fields: input.fields, filters: input.filters ?? {}, rowCount: count })
+    .values({ userId: actor.id, userEmail: actor.email, category: input.category, fields: input.fields, filters: input.filters ?? {}, rowCount: total })
     .run()
-  return { csv: `﻿${lines.join('\r\n')}\r\n`, filename: `${input.category}-export-${new Date().toISOString().slice(0, 10)}.csv` }
+  const encoder = new TextEncoder()
+  let offset = 0
+  const csv = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(`\ufeff${headers.map(csvCell).join(';')}\r\n`))
+    },
+    pull(controller) {
+      const rows = db.all<Record<string, unknown>>(sql`${q.rows} LIMIT ${EXPORT_CHUNK} OFFSET ${offset}`)
+      offset += rows.length
+      if (rows.length) controller.enqueue(encoder.encode(rows.map((r) => `${toRow(r, input.fields.length).map(csvCell).join(';')}\r\n`).join('')))
+      if (rows.length < EXPORT_CHUNK) controller.close()
+    },
+  })
+  return { csv, filename: `${input.category}-export-${new Date().toISOString().slice(0, 10)}.csv` }
 }

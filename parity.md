@@ -22,7 +22,7 @@ Status: ✅ done · 🟡 partial · ⬜ to do · ➖ not applicable to this arch
 | 011 | Navigation shell | ✅ | [010](docs/specs/010-theme.md) | |
 | 012 | Toast notifications | ✅ | [012](docs/specs/012-toast-notifications.md) | sonner |
 | 013 | Batch lookup endpoints | ➖ | | needed only between services |
-| 014 | Performance invariants | 🟡 |  | batched queries per request, no per-item I/O in lists; no query-count tests yet |
+| 014 | Performance invariants | ✅ | [014](docs/specs/014-performance-invariants.md) | query counts tested via `X-Query-Count`; counts aggregated, not denormalised |
 | 015 | Dev seed data | ✅ | [015](docs/specs/015-dev-seed-data.md) | |
 | 016 | Admin bootstrap | ✅ | [016](docs/specs/016-admin-bootstrap.md) | |
 | 017 | Database and schema management | ✅ | | Drizzle migrations at startup (AGENTS.md) |

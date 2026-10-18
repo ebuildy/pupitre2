@@ -9,7 +9,7 @@ import { secureHeaders } from 'hono/secure-headers'
 import { ZodError } from 'zod'
 import { auth } from './auth.ts'
 import { env } from './env.ts'
-import { sqlite } from './db/index.ts'
+import { queryCounter, sqlite } from './db/index.ts'
 import { metricsMiddleware, renderMetrics } from './lib/metrics.ts'
 import { uploadsDir } from './services/media.ts'
 import { serveStatic } from '@hono/node-server/serve-static'
@@ -29,6 +29,15 @@ import { settingsRoutes, userRoutes } from './routes/users.ts'
 const app = new Hono<AppEnv>()
 
 app.use(requestId())
+if (env.QUERY_COUNT_HEADER) {
+  app.use((c, next) => {
+    const store = { count: 0 }
+    return queryCounter.run(store, async () => {
+      await next()
+      c.res.headers.set('X-Query-Count', String(store.count))
+    })
+  })
+}
 if (env.LOG_REQUESTS) app.use(logger())
 app.use(secureHeaders())
 

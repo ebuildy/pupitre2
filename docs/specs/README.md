@@ -12,6 +12,7 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | [009](009-rate-limiting.md) | Rate limiting | Implemented |
 | [010](010-theme.md) | Theme, light / dark mode and UI components | Implemented |
 | [012](012-toast-notifications.md) | Toast notifications | Implemented |
+| [014](014-performance-invariants.md) | Performance invariants (query counts, timeouts, streaming, bounded caches) | Implemented |
 | [015](015-dev-seed-data.md) | Mock data (fixtures) | Implemented |
 | [016](016-admin-bootstrap.md) | Admin account bootstrap | Implemented |
 | [018](018-localization.md) | Localization (French default, English) | Implemented |

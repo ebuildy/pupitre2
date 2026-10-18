@@ -10,6 +10,7 @@ import { account, groupMembership, idpGroupMapping, user, userGroup } from '../d
 import { env } from '../env.ts'
 import { addMember, joinDefaultGroup, removeMember } from './groups.ts'
 import { getSettings } from './settings.ts'
+import { httpFetch } from '../lib/http.ts'
 
 /** A sign-in provider: an OIDC issuer (GitLab, Google, Keycloak…) or GitHub (OAuth2 + its API). */
 export type SsoProvider = {
@@ -148,7 +149,7 @@ async function discover(p: SsoProvider): Promise<Discovery> {
   const url = p.discoveryUrl.includes('/.well-known/') ? p.discoveryUrl : `${p.discoveryUrl.replace(/\/+$/, '')}/.well-known/openid-configuration`
   const cached = discoveries.get(url)
   if (cached && Date.now() - cached.at < 5 * 60_000) return cached.doc
-  const res = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+  const res = await httpFetch(url, { timeoutMs: 10_000 })
   if (!res.ok) throw new SsoError('failed', `OIDC discovery failed: HTTP ${res.status}`)
   const doc = (await res.json()) as Discovery
   discoveries.set(url, { at: Date.now(), doc })
@@ -209,11 +210,10 @@ export async function readTransaction(token: string | undefined, state: string |
 // ─── Code exchange and identity ────────────────────────────────────────────────
 
 async function postForm(url: string, body: Record<string, string>) {
-  const res = await fetch(url, {
+  const res = await httpFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
     body: new URLSearchParams(body),
-    signal: AbortSignal.timeout(15_000),
   })
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
   if (!res.ok || data.error) throw new SsoError('failed', `token exchange failed: ${String(data.error ?? res.status)}`)
@@ -237,8 +237,8 @@ export async function fetchIdentity(p: SsoProvider, code: string, tx: { nonce: s
     })
     const headers = { Authorization: `Bearer ${String(tokens.access_token)}`, Accept: 'application/vnd.github+json' }
     const api = p.githubApiUrl.replace(/\/+$/, '')
-    const profile = (await (await fetch(`${api}/user`, { headers })).json()) as Record<string, unknown>
-    const emails = (await (await fetch(`${api}/user/emails`, { headers })).json()) as { email: string; primary: boolean; verified: boolean }[]
+    const profile = (await (await httpFetch(`${api}/user`, { headers })).json()) as Record<string, unknown>
+    const emails = (await (await httpFetch(`${api}/user/emails`, { headers })).json()) as { email: string; primary: boolean; verified: boolean }[]
     const email = emails.find((e) => e.primary && e.verified)?.email ?? emails.find((e) => e.verified)?.email
     if (!email) throw new SsoError('no_email', 'No verified email on the GitHub account')
     return {
@@ -279,7 +279,7 @@ export async function fetchIdentity(p: SsoProvider, code: string, tx: { nonce: s
   if (claims.nonce !== tx.nonce) throw new SsoError('failed', 'nonce mismatch')
   // UserInfo claims win over the ID token's (spec 028).
   if (doc.userinfo_endpoint && tokens.access_token) {
-    const res = await fetch(doc.userinfo_endpoint, { headers: { Authorization: `Bearer ${String(tokens.access_token)}` } })
+    const res = await httpFetch(doc.userinfo_endpoint, { headers: { Authorization: `Bearer ${String(tokens.access_token)}` } })
     if (res.ok) claims = { ...claims, ...((await res.json()) as Record<string, unknown>) }
   }
   const email = typeof claims.email === 'string' ? claims.email : ''

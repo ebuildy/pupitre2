@@ -7,7 +7,7 @@ import type {
   PathProgressItem,
   PathUpdateInput,
 } from '@pupitre/shared'
-import { and, asc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import { db } from '../db/index.ts'
 import {
@@ -241,45 +241,55 @@ export function unenrollFromPath(pathId: string, userId: string) {
 }
 
 /** Spec 112: a skill is completed when every assessable (quiz) module teaching it is passed; none = never. */
-function completedSkills(userId: string, skillIds: string[]) {
-  if (skillIds.length === 0) return new Set<string>()
-  const rows = db
-    .select({
-      skillId: moduleSkill.skillId,
-      total: sql<number>`count(*)`,
-      passed: sql<number>`sum(${moduleProgress.passedAt} IS NOT NULL)`,
-    })
-    .from(moduleSkill)
-    .innerJoin(courseModule, and(eq(courseModule.id, moduleSkill.moduleId), eq(courseModule.hidden, false)))
-    .innerJoin(course, and(eq(course.id, courseModule.courseId), eq(course.status, 'published')))
-    .leftJoin(moduleProgress, and(eq(moduleProgress.moduleId, courseModule.id), eq(moduleProgress.userId, userId)))
-    .where(and(inArray(moduleSkill.skillId, skillIds), inArray(courseModule.type, ['quiz', 'lab'])))
-    .groupBy(moduleSkill.skillId)
-    .all()
-  return new Set(rows.filter((r) => r.total > 0 && Number(r.passed) >= r.total).map((r) => r.skillId))
+/**
+ * Spec 014: the completed courses and skills of several learners in two queries, whatever the number of paths
+ * and learners. A skill is completed when every quiz or lab teaching it (published courses) is passed.
+ */
+export function completedItems(userIds: string[], items: PathItem[]) {
+  const out = new Map<string, Set<string>>(userIds.map((id) => [id, new Set()]))
+  const courseIds = [...new Set(items.filter((i) => i.kind === 'course').map((i) => i.id))]
+  const skillIds = [...new Set(items.filter((i) => i.kind === 'skill').map((i) => i.id))]
+  if (userIds.length === 0) return out
+  if (courseIds.length) {
+    const rows = db
+      .select({ userId: courseCompletion.userId, courseId: courseCompletion.courseId })
+      .from(courseCompletion)
+      .where(and(inArray(courseCompletion.userId, userIds), inArray(courseCompletion.courseId, courseIds)))
+      .all()
+    for (const r of rows) out.get(r.userId)?.add(r.courseId!)
+  }
+  if (skillIds.length) {
+    const teaching = and(inArray(moduleSkill.skillId, skillIds), inArray(courseModule.type, ['quiz', 'lab']))
+    const totals = new Map(
+      db
+        .select({ skillId: moduleSkill.skillId, total: sql<number>`count(*)` })
+        .from(moduleSkill)
+        .innerJoin(courseModule, and(eq(courseModule.id, moduleSkill.moduleId), eq(courseModule.hidden, false)))
+        .innerJoin(course, and(eq(course.id, courseModule.courseId), eq(course.status, 'published')))
+        .where(teaching)
+        .groupBy(moduleSkill.skillId)
+        .all()
+        .map((r) => [r.skillId, r.total]),
+    )
+    const passed = db
+      .select({ userId: moduleProgress.userId, skillId: moduleSkill.skillId, passed: sql<number>`count(*)` })
+      .from(moduleSkill)
+      .innerJoin(courseModule, and(eq(courseModule.id, moduleSkill.moduleId), eq(courseModule.hidden, false)))
+      .innerJoin(course, and(eq(course.id, courseModule.courseId), eq(course.status, 'published')))
+      .innerJoin(moduleProgress, eq(moduleProgress.moduleId, courseModule.id))
+      .where(and(teaching, inArray(moduleProgress.userId, userIds), isNotNull(moduleProgress.passedAt)))
+      .groupBy(moduleProgress.userId, moduleSkill.skillId)
+      .all()
+    for (const r of passed) {
+      const total = totals.get(r.skillId) ?? 0
+      if (total > 0 && r.passed >= total) out.get(r.userId)?.add(r.skillId)
+    }
+  }
+  return out
 }
 
 /** Spec 124: completed / available (first, or previous completed) / locked, for one learner. */
-export function pathProgress(userId: string, kind: 'course' | 'skill', items: PathItem[]): PathProgressItem[] {
-  let done: Set<string>
-  if (kind === 'course') {
-    const ids = items.map((i) => i.id)
-    done = new Set(
-      ids.length
-        ? db
-            .select({ id: courseCompletion.courseId })
-            .from(courseCompletion)
-            .where(and(eq(courseCompletion.userId, userId), inArray(courseCompletion.courseId, ids)))
-            .all()
-            .map((r) => r.id!)
-        : [],
-    )
-  } else {
-    done = completedSkills(
-      userId,
-      items.map((i) => i.id),
-    )
-  }
+export function pathProgress(done: Set<string>, items: PathItem[]): PathProgressItem[] {
   let previousDone = true
   return items.map((i) => {
     const status: PathItemStatus = done.has(i.id) ? 'completed' : previousDone ? 'available' : 'locked'
@@ -305,8 +315,12 @@ export function pathEnrollmentRows(path: LearningPath, onlyUsers?: Set<string>):
     .orderBy(asc(user.name))
     .all()
     .filter((r) => !onlyUsers || onlyUsers.has(r.userId))
+  const done = completedItems(
+    rows.map((r) => r.userId),
+    items,
+  )
   return rows.map((r) => {
-    const progress = pathProgress(r.userId, path.kind, items)
+    const progress = pathProgress(done.get(r.userId)!, items)
     return {
       ...r,
       enrolledAt: r.enrolledAt.toISOString(),

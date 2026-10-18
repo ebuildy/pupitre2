@@ -26,7 +26,12 @@ const attempts = new Map<string, number[]>()
 function rateLimited(ip: string) {
   if (env.AUTH_RATE_LIMIT_REQUESTS === 0) return false
   const now = Date.now()
-  const recent = (attempts.get(ip) ?? []).filter((t) => now - t < env.AUTH_RATE_LIMIT_WINDOW_SECONDS * 1000)
+  const window = env.AUTH_RATE_LIMIT_WINDOW_SECONDS * 1000
+  // Spec 014: bounded, keys come from the client. Drop expired entries when it grows.
+  if (attempts.size > 10_000) {
+    for (const [key, times] of attempts) if (now - times[times.length - 1]! >= window) attempts.delete(key)
+  }
+  const recent = (attempts.get(ip) ?? []).filter((t) => now - t < window)
   recent.push(now)
   attempts.set(ip, recent)
   return recent.length > env.AUTH_RATE_LIMIT_REQUESTS

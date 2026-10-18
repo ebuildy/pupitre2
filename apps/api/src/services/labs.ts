@@ -4,6 +4,7 @@ import { db } from '../db/index.ts'
 import { labCheck } from '../db/schema/index.ts'
 import { env } from '../env.ts'
 import { getSettings } from './settings.ts'
+import { httpFetch } from '../lib/http.ts'
 
 // ─── Templating ────────────────────────────────────────────────────────────────
 
@@ -27,9 +28,8 @@ class GitLab {
   ) {}
 
   async get<T>(path: string): Promise<T | null> {
-    const res = await fetch(`${this.base.replace(/\/+$/, '')}/api/v4${path}`, {
+    const res = await httpFetch(`${this.base.replace(/\/+$/, '')}/api/v4${path}`, {
       headers: this.token ? { 'PRIVATE-TOKEN': this.token } : {},
-      signal: AbortSignal.timeout(15_000),
     })
     if (res.status === 404) return null
     if (!res.ok) throw new Error(`GitLab ${res.status}`)
