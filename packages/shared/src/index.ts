@@ -29,10 +29,32 @@ export type MeResponse = {
   hasPassword: boolean
 }
 
+const PLACEHOLDER_ORIGIN = 'http://pupitre.invalid'
+/** WHATWG `URL`, present in browsers and Node; this package is compiled without DOM or Node types. */
+const WhatwgUrl = (globalThis as unknown as { URL: new (url: string, base: string) => { origin: string; pathname: string; search: string; hash: string } }).URL
+
+/**
+ * A `redirect` parameter as a path of this site, or null (spec 025). Browsers drop tabs and newlines from URLs and read
+ * `\` as `/`, so `/\t/evil.com` would become `//evil.com`: control characters and backslashes are refused outright, then
+ * the value must resolve to the same origin. Returns the normalised `pathname + search + hash`.
+ */
+export function safeRedirectPath(value: string | null | undefined): string | null {
+  if (!value || value.length > 2048 || !value.startsWith('/')) return null
+  if (/[\u0000-\u001f\u007f\\]/.test(value)) return null
+  let url
+  try {
+    url = new WhatwgUrl(value, PLACEHOLDER_ORIGIN)
+  } catch {
+    return null
+  }
+  // Dot segments can rebuild a scheme-relative path: `/..//evil.com` normalises to `//evil.com`.
+  if (url.origin !== PLACEHOLDER_ORIGIN || url.pathname.startsWith('//')) return null
+  return url.pathname + url.search + url.hash
+}
+
 /** Where to go after login (spec 025): a local `redirect` path, else the role's home. */
 export function landingPath(role: Role | undefined, redirect: string | null | undefined): string {
-  if (redirect && /^\/(?![/\\])/.test(redirect)) return redirect
-  return role === 'admin' ? '/admin' : '/courses'
+  return safeRedirectPath(redirect) ?? (role === 'admin' ? '/admin' : '/courses')
 }
 
 export * from './courses.ts'

@@ -79,7 +79,8 @@ test.describe('redirects and guards (specs 001, 025)', () => {
 
   test('an external redirect target is ignored', async ({ page, createUser }) => {
     const user = await createUser()
-    for (const target of ['//evil.example', '/\\evil.example', 'https://evil.example']) {
+    // Browsers drop tabs and newlines and read "\\" as "/"; dot segments can rebuild "//" (security audit F2).
+    for (const target of ['//evil.example', '/\\evil.example', 'https://evil.example', '/\t/evil.example', '/\n/evil.example', '/..//evil.example']) {
       await page.context().clearCookies()
       await page.goto(`/login?redirect=${encodeURIComponent(target)}`)
       await login(page, user.email, user.password)

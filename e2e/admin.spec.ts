@@ -2,6 +2,20 @@ import { ADMIN_PASSWORD } from './env.ts'
 import { expect, login, test } from './fixtures.ts'
 
 test.describe('admin app (/admin/)', () => {
+  test('the admin login ignores a redirect that would leave the site (security audit F2)', async ({ page }) => {
+    // A signed-in admin is sent on at once: the target must stay on this origin.
+    await page.goto('/admin/login')
+    await login(page, 'admin', ADMIN_PASSWORD)
+    await expect(page).toHaveURL(/\/admin\/?$/)
+    for (const target of ['/\t/evil.example', '/\n/evil.example', '/..//evil.example', '//evil.example']) {
+      await page.goto(`/admin/login?redirect=${encodeURIComponent(target)}`)
+      await expect(page).toHaveURL(/^http:\/\/localhost:\d+\/admin\/?$/)
+    }
+    // A local path is still honoured, with its query.
+    await page.goto(`/admin/login?redirect=${encodeURIComponent('/admin/users?role=manager')}`)
+    await expect(page).toHaveURL(/\/admin\/users\?role=manager$/)
+  })
+
   test('a signed-out visitor goes to the admin login page, then back to the admin app', async ({ page }) => {
     await page.goto('/admin/')
     await expect(page).toHaveURL(/\/admin\/login\?redirect=%2Fadmin%2F$/)

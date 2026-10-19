@@ -1,4 +1,4 @@
-import { landingPath } from '@pupitre/shared'
+import { landingPath, safeRedirectPath } from '@pupitre/shared'
 import { Hono } from 'hono'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { env } from '../env.ts'
@@ -65,7 +65,7 @@ export const ssoRoutes = new Hono<AppEnv>()
       const provider = findProvider(c.req.param('provider'))
       const redirect = c.req.query('redirect')
       const { url, transaction } = await authorizationRequest(provider, {
-        redirect: redirect && /^\/(?![/\\])/.test(redirect) ? redirect : null,
+        redirect: safeRedirectPath(redirect),
         loginHint: c.req.query('login_hint') || undefined,
       })
       setCookie(c, TX_COOKIE, transaction, { httpOnly: true, secure, sameSite: 'Lax', path: '/api/sso', maxAge: 600 })

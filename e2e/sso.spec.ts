@@ -102,6 +102,16 @@ test.describe('SSO sign-in (specs 027–032, 134)', () => {
     await expect(page.getByRole('alert')).toHaveText('Ce compte est désactivé.')
   })
 
+  test('an SSO sign-in ignores a redirect that would leave the site (security audit F2)', async ({ page }) => {
+    const { hint, user } = person()
+    await fakeIdpUser(hint, user)
+    await ssoLogin(page, 'oidc', hint, '/\t/evil.example')
+    await expect(page).toHaveURL(/^http:\/\/localhost:\d+\/courses$/)
+    await page.context().clearCookies()
+    await ssoLogin(page, 'oidc', hint, '/my-courses?tab=done')
+    await expect(page).toHaveURL(/\/my-courses\?tab=done$/)
+  })
+
   test('a local sign-in still works next to SSO', async ({ page, createUser }) => {
     const user = await createUser()
     await signIn(page, user)
