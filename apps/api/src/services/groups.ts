@@ -8,6 +8,7 @@ import {
 } from '@pupitre/shared'
 import { and, asc, count, eq, inArray, sql } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
+import { sameName } from '../lib/sql.ts'
 import { db } from '../db/index.ts'
 import { course, enrollmentGrant, groupCourseEnrollment, groupMembership, user, userGroup } from '../db/schema/index.ts'
 import { GRANT_TARGET } from './courses.ts'
@@ -82,7 +83,7 @@ function nameTaken(name: string, exceptId?: string) {
   const found = db
     .select({ id: userGroup.id })
     .from(userGroup)
-    .where(eq(sql`lower(${userGroup.name})`, name.toLowerCase()))
+    .where(sameName(userGroup.name, name))
     .get()
   return !!found && found.id !== exceptId
 }

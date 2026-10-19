@@ -27,11 +27,23 @@ pnpm dev                                # http://localhost:3000 (admin: /admin/)
 
 `pnpm dev` loads mock data (spec 015): log in as `etudiant` / `Student@1234`, `manager` / `Manager@1234` or `admin` / `Admin@1234`; in dev, the buttons under the login form sign in as these accounts in one click. Course content: lessons and quizzes are read through a content loader; for now a fake one serves `apps/api/content-samples/<repo>/<path>` (spec 053). API config is read from env vars (and `apps/api/.env`, see `.env.example`). Migrations run at API startup, then the `admin` account (`admin@pupitre.local`) is ensured: password from `ADMIN_PASSWORD` / `ADMIN_PASSWORD_FILE`, else `Admin@1234` on first start only.
 
+### SSO demo (Keycloak)
+
+```sh
+pnpm dev:sso     # Keycloak in Docker (http://localhost:8180, console admin / admin), then pnpm dev with OIDC on it
+pnpm sso:down    # stop Keycloak
+```
+
+The login page gets a "Continuer avec Keycloak" button; sign in on Keycloak as `etudiant` / `Student@1234`,
+`manager` / `Manager@1234` or `admin` / `Admin@1234` (student, manager, admin in pupitre). It uses its own database
+(`apps/api/data/sso-demo.db`). See [docs/specs/027](docs/specs/027-sso.md#sso-demo-keycloak).
+
 ## Scripts
 
 | Command | |
 | --- | --- |
 | `pnpm dev` | API (tsx watch) + app + admin (Vite) in parallel |
+| `pnpm dev:sso` / `pnpm sso:down` | SSO demo: Keycloak (Docker) + `pnpm dev` signing in through it / stop Keycloak |
 | `pnpm typecheck` | `tsc` across every package and the e2e tests |
 | `pnpm build` | Production build of both frontends |
 | `pnpm test:e2e` | Playwright (ports 3100 app / 3101 api / 3102 admin, fresh `apps/api/data/e2e.db`) |

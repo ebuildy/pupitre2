@@ -56,6 +56,25 @@ test.describe('SSO sign-in (specs 027–032, 134)', () => {
     expect(scope.groups.map((g: { name: string }) => g.name)).toContain(groupName)
   })
 
+  test('groups and mappings with accented names match at every sign-in', async ({ page, adminRequest, createGroup }) => {
+    // SQLite's lower() leaves `É` alone: an existing "Équipe …" group must still be found, not created again.
+    const groupName = `Équipe Été ${uid()}`
+    const group = await createGroup({ name: groupName })
+    expect((await adminRequest.post('/api/admin/idp-mappings', { data: { groupName, platformRole: 'manager' } })).ok()).toBeTruthy()
+    // Saving the same name again updates the mapping instead of failing on the unique name.
+    expect((await adminRequest.post('/api/admin/idp-mappings', { data: { groupName, platformRole: 'manager', membershipRole: 'manager' } })).ok()).toBeTruthy()
+    const { hint, user } = person([groupName])
+    await fakeIdpUser(hint, user)
+    for (let i = 0; i < 2; i++) {
+      await page.context().clearCookies()
+      await ssoLogin(page, 'oidc', hint)
+      await expect(page).toHaveURL(/\/courses$/)
+    }
+    expect((await (await page.request.get('/api/me')).json()).role).toBe('manager')
+    const scope = await (await page.request.get('/api/manager/scope')).json()
+    expect(scope.groups.map((g: { id: string }) => g.id)).toContain(group.id)
+  })
+
   test('deploy-time providers: another OIDC issuer and GitHub (spec 027)', async ({ page, browser }) => {
     const corp = person()
     await fakeIdpUser(corp.hint, corp.user)

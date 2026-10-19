@@ -181,6 +181,14 @@ export const KNOWN_USERS = [
   { username: 'inactif', name: 'Ines Inactive', email: 'inactif@pupitre.local', role: 'student', password: 'Student@1234', isActive: false },
 ] as const
 
+/**
+ * Spec 134: roles for the groups of the Keycloak demo realm (`docker/keycloak/realm-pupitre.json`, `pnpm dev:sso`).
+ */
+export const IDP_MAPPINGS = [
+  { groupName: 'pupitre-managers', platformRole: 'manager' },
+  { groupName: 'pupitre-admins', platformRole: 'admin' },
+] as const
+
 /** Spec 130: a small organisation. `manager` (known account) manages "Ingénierie"; generated managers the others. */
 export const GROUPS: { name: string; description: string; parent?: string }[] = [
   { name: 'Ingénierie', description: 'Toutes les équipes techniques' },

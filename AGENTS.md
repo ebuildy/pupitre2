@@ -43,6 +43,7 @@ Everything is served on one origin (spec 004): the learner app's Vite server pro
 ```sh
 pnpm install
 pnpm dev            # http://localhost:3000 (admin at /admin/), API :3001, admin Vite :3002
+pnpm dev:sso        # same, signing in through a Keycloak in Docker (docker/keycloak, :8180); pnpm sso:down stops it
 pnpm typecheck      # every package + e2e
 pnpm build          # both frontends
 pnpm test:e2e       # Playwright, starts its own servers (see below)
@@ -86,6 +87,8 @@ pnpm auth:generate  # regenerate the better-auth schema after changing auth conf
   (`addMember`, `removeMember`, `enrollGroup`, `unenrollGroup`); never insert or delete `group` grants elsewhere.
 - Correlated subqueries in a one-table select: write the outer column qualified (`"user"."id"`), Drizzle drops the
   table name there.
+- Case-insensitive name lookups in SQL: `sameName(column, value)` (`src/lib/sql.ts`), never `lower(col) = value.toLowerCase()`
+  (SQLite's `lower()` folds ASCII only).
 - Anything a learner earns goes through `awardXp()` / `completeCourse()` (`services/xp.ts`): at most once per thing
   earned, history kept when the course is deleted (spec 103).
 - Guards: `requireAuth`, `requireRole('admin' | 'manager', …)` from `src/middleware/session.ts`. `c.var.user` is
@@ -180,6 +183,9 @@ Playwright is the only test runner. Every feature ships with e2e tests covering 
   with `POST http://localhost:3103/__fake/projects {path, branches, mergeRequests, commits, files}`.
 - SSO: `await fakeIdpUser(hint, {sub, email, name, groups})` then `await ssoLogin(page, 'oidc' | 'corp' | 'github', hint)`
   (e2e/fake-idp.mjs); LDAP tests use e2e/fake-ldap.mjs and live in the global-settings project (LDAP is a setting).
+- Keycloak demo (spec 027): opt-in tests against the real Keycloak of `docker/keycloak`, skipped unless `KEYCLOAK_URL` is set
+  (`KEYCLOAK_URL=http://localhost:8180 pnpm test:e2e --project global-settings --no-deps -g Keycloak`). A change to the
+  realm or the OIDC flow must keep them passing.
 - Lab policies (spec 091): e2e/fake-opa.mjs (port 3106) stands in for the OPA server and e2e/fake-opa-cli.mjs for the
   `opa` binary; set the verdict with `POST http://localhost:3106/__fake/answers {project, result}`.
 - Use web-first assertions (`await expect(locator).toBeVisible()`, `toHaveURL`); no fixed waits.

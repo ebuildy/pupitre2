@@ -1,10 +1,11 @@
 import { MEMBERSHIP_ROLES, ROLES } from '@pupitre/shared'
-import { asc, eq, sql } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { db } from '../../db/index.ts'
 import { idpGroupMapping } from '../../db/schema/index.ts'
+import { sameName } from '../../lib/sql.ts'
 import { validate } from '../../lib/validate.ts'
 import type { AppEnv } from '../../middleware/session.ts'
 import { audit } from '../../services/audit.ts'
@@ -24,7 +25,7 @@ export const adminIdpMappingRoutes = new Hono<AppEnv>()
   .post('/', validate('json', mappingSchema), (c) => {
     const input = c.req.valid('json')
     const values = { groupName: input.groupName, platformRole: input.platformRole ?? null, membershipRole: input.membershipRole ?? null }
-    const existing = db.select({ id: idpGroupMapping.id }).from(idpGroupMapping).where(eq(sql`lower(${idpGroupMapping.groupName})`, input.groupName.toLowerCase())).get()
+    const existing = db.select({ id: idpGroupMapping.id }).from(idpGroupMapping).where(sameName(idpGroupMapping.groupName, input.groupName)).get()
     if (existing) db.update(idpGroupMapping).set(values).where(eq(idpGroupMapping.id, existing.id)).run()
     else db.insert(idpGroupMapping).values(values).run()
     audit(c.get('user'), 'idp.mapping.save', { type: 'idp-mapping', label: input.groupName }, values)

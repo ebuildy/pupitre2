@@ -1,5 +1,5 @@
 import { defaultSettings } from '@pupitre/shared'
-import { ADMIN_PASSWORD, GITLAB_PORT, LDAP_HTTP_PORT, LDAP_PORT, OPA_PORT } from './env.ts'
+import { ADMIN_PASSWORD, GITLAB_PORT, IDP_PORT, LDAP_HTTP_PORT, LDAP_PORT, OPA_PORT } from './env.ts'
 import { apiClient, expect, fakeIdpUser, login, signIn, ssoLogin, test, uid } from './fixtures.ts'
 
 const opa = `http://localhost:${OPA_PORT}`
@@ -312,5 +312,78 @@ test.describe('platform settings (specs 021, 022, 024, 035, 179)', () => {
     const { checks } = await (await adminRequest.get(`/api/admin/lab-checks?course=${course.id}`)).json()
     expect(checks).toHaveLength(2)
     await learner.dispose()
+  })
+})
+
+/**
+ * The SSO demo against a real Keycloak (docker/keycloak, `pnpm dev:sso`). Opt-in: start it with
+ * `docker compose -f docker/keycloak/compose.yaml up -d --wait`, then
+ * `KEYCLOAK_URL=http://localhost:8180 pnpm test:e2e --project global-settings --no-deps -g Keycloak`.
+ */
+const keycloak = process.env.KEYCLOAK_URL
+const KEYCLOAK_MAPPINGS = [
+  { groupName: 'pupitre-managers', platformRole: 'manager' },
+  { groupName: 'pupitre-admins', platformRole: 'admin' },
+]
+
+test.describe('Keycloak SSO demo (specs 027, 134)', () => {
+  test.skip(!keycloak, 'needs the Keycloak of docker/keycloak and KEYCLOAK_URL')
+
+  test.beforeEach(async ({ adminRequest }) => {
+    // The realm has no `groups` scope: its client mapper puts the groups in every token.
+    const settings = {
+      oidc_name: 'Keycloak',
+      oidc_provider_url: `${keycloak}/realms/pupitre`,
+      oidc_client_id: 'pupitre',
+      oidc_client_secret: 'pupitre-demo-secret',
+      oidc_scopes: 'openid email profile',
+    }
+    expect((await adminRequest.put('/api/admin/settings', { data: settings })).ok()).toBeTruthy()
+    for (const mapping of KEYCLOAK_MAPPINGS) expect((await adminRequest.post('/api/admin/idp-mappings', { data: mapping })).ok()).toBeTruthy()
+  })
+
+  test.afterEach(async ({ adminRequest }) => {
+    // Back to the e2e run's provider (playwright.config.ts, OIDC_*).
+    const fakeIdp = {
+      oidc_name: 'Fake IdP',
+      oidc_provider_url: `http://localhost:${IDP_PORT}/.well-known/openid-configuration`,
+      oidc_client_id: 'pupitre',
+      oidc_client_secret: 'e2e-secret',
+      oidc_scopes: defaultSettings().oidc_scopes,
+    }
+    expect((await adminRequest.put('/api/admin/settings', { data: fakeIdp })).ok()).toBeTruthy()
+    const { mappings } = (await (await adminRequest.get('/api/admin/idp-mappings')).json()) as { mappings: { id: string; groupName: string }[] }
+    for (const m of mappings.filter((m) => KEYCLOAK_MAPPINGS.some((k) => k.groupName === m.groupName))) {
+      await adminRequest.delete(`/api/admin/idp-mappings/${m.id}`)
+    }
+  })
+
+  const accounts = [
+    { username: 'etudiant', password: 'Student@1234', name: 'Élise Keycloak', role: 'student', landing: /\/courses$/ },
+    { username: 'manager', password: 'Manager@1234', name: 'Marc Keycloak', role: 'manager', landing: /\/courses$/ },
+    { username: 'admin', password: 'Admin@1234', name: 'Ada Keycloak', role: 'admin', landing: /\/admin\/?$/ },
+  ]
+  for (const account of accounts) {
+    test(`the demo account ${account.username} signs in through Keycloak as ${account.role}`, async ({ page }) => {
+      await page.goto('/login')
+      await page.getByRole('link', { name: 'Continuer avec Keycloak' }).click()
+      // Keycloak's own login page.
+      await page.locator('#username').fill(account.username)
+      await page.locator('#password').fill(account.password)
+      await page.locator('#kc-login').click()
+      await expect(page).toHaveURL(account.landing)
+      const me = await (await page.request.get('/api/me')).json()
+      expect(me).toMatchObject({ role: account.role, name: account.name, email: `${account.username}@keycloak.pupitre.local` })
+    })
+  }
+
+  test('a wrong Keycloak password does not sign in', async ({ page }) => {
+    await page.goto('/login')
+    await page.getByRole('link', { name: 'Continuer avec Keycloak' }).click()
+    await page.locator('#username').fill('etudiant')
+    await page.locator('#password').fill('wrong-password')
+    await page.locator('#kc-login').click()
+    await expect(page.getByText('Invalid username or password.')).toBeVisible()
+    expect(page.url()).toContain('/realms/pupitre/')
   })
 })

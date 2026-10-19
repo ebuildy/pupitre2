@@ -1,7 +1,7 @@
 import { createHmac, randomBytes, createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { type Role, USERNAME_MAX } from '@pupitre/shared'
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, or, sql } from 'drizzle-orm'
 import { createRemoteJWKSet, decodeProtectedHeader, jwtVerify, SignJWT } from 'jose'
 import { parse as parseYaml } from 'yaml'
 import { auth } from '../auth.ts'
@@ -11,6 +11,7 @@ import { env } from '../env.ts'
 import { addMember, joinDefaultGroup, removeMember } from './groups.ts'
 import { getSettings } from './settings.ts'
 import { httpFetch } from '../lib/http.ts'
+import { sameName } from '../lib/sql.ts'
 
 /** A sign-in provider: an OIDC issuer (GitLab, Google, Keycloak…) or GitHub (OAuth2 + its API). */
 export type SsoProvider = {
@@ -375,11 +376,11 @@ function syncGroups(p: SsoProvider, userId: string, groups: string[]) {
   for (const m of current) if (!wanted.has(m.name.toLowerCase())) removeMember(m.groupId, userId)
 
   const mappings = names.length
-    ? db.select().from(idpGroupMapping).where(inArray(sql`lower(${idpGroupMapping.groupName})`, names.map((n) => n.toLowerCase()))).all()
+    ? db.select().from(idpGroupMapping).where(or(...names.map((n) => sameName(idpGroupMapping.groupName, n)))).all()
     : []
   const mappingOf = (name: string) => mappings.find((m) => m.groupName.toLowerCase() === name.toLowerCase())
   for (const name of names) {
-    let group = db.select().from(userGroup).where(eq(sql`lower(${userGroup.name})`, name.toLowerCase())).get()
+    let group = db.select().from(userGroup).where(sameName(userGroup.name, name)).get()
     if (!group) group = db.insert(userGroup).values({ name, origin: p.id }).returning().get()!
     if (group.isDefault) continue
     const existing = db

@@ -7,6 +7,8 @@
   },
   "scripts": {
     "dev": "pnpm --parallel --filter @pupitre/api --filter @pupitre/app --filter @pupitre/admin dev",
+    "dev:sso": "sh docker/keycloak/dev-sso.sh",
+    "sso:down": "docker compose -f docker/keycloak/compose.yaml down",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck && tsc -p e2e",
     "db:generate": "pnpm --filter @pupitre/api db:generate",

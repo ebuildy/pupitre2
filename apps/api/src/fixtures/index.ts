@@ -13,6 +13,7 @@ import {
   courseCompletion,
   courseModule,
   enrollmentGrant,
+  idpGroupMapping,
   moduleProgress,
   user,
   userGroup,
@@ -31,6 +32,7 @@ import {
   CURATED_MODULES,
   type CourseFixture,
   GROUPS,
+  IDP_MAPPINGS,
   PATHS,
   SESSIONS,
   KNOWN_USERS,
@@ -260,6 +262,9 @@ export async function seedFixtures({ students = 25, managers = 3 } = {}) {
     const k8s = courses.find((c) => c.slug.includes('kubernetes') && c.status === 'published') ?? courses.find((c) => c.status === 'published')
     if (k8s && admin) enrollGroup(groupIds.get('Équipe Plateforme')!, k8s.id, admin.id)
   }
+
+  // SSO demo (spec 134): the Keycloak realm's groups give their roles; never overwrites an admin's change.
+  db.insert(idpGroupMapping).values([...IDP_MAPPINGS]).onConflictDoNothing({ target: idpGroupMapping.groupName }).run()
 
   // 4c. Paths (spec 120): created once (matched by slug); `etudiant` and a few students follow them.
   for (const p of PATHS) {

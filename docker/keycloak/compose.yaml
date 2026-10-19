@@ -1,0 +1,21 @@
+# SSO demo (spec 027): a Keycloak with the `pupitre` realm and the demo accounts. `pnpm dev:sso` starts it.
+name: pupitre-sso-demo
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.3
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: 'true'
+    ports:
+      - '${KEYCLOAK_PORT:-8180}:8080'
+    volumes:
+      - ./realm-pupitre.json:/opt/keycloak/data/import/realm-pupitre.json:ro
+    healthcheck:
+      # The image has no curl: ask the management port with bash.
+      test: ['CMD-SHELL', 'exec 3<>/dev/tcp/localhost/9000 && printf "GET /health/ready HTTP/1.0\r\n\r\n" >&3 && grep -q UP <&3']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s

@@ -68,6 +68,9 @@ exactly as with a manual login.
 
 `GROUPS` in `fixtures/data.ts`: "Ingénierie" (managed by `manager`) with "Équipe Plateforme" (where `etudiant` is, enrolled in a Kubernetes course) and "Équipe Produit", and "Support"; generated managers manage the leaf groups, generated students are spread over them. Created once, matched by name.
 
+`IDP_MAPPINGS`: the groups of the Keycloak demo realm give their platform role (`pupitre-managers` → manager,
+`pupitre-admins` → admin, spec 134); added when missing, an existing mapping of the same name is kept.
+
 ## Differences from the original
 
 - One command and one variable (`SEED_DEV_DATA`) instead of `SEED_DEV_COURSES` (course-service) and `SEED_MOCK_DATA` (user-service).
