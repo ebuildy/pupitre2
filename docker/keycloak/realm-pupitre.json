@@ -26,7 +26,7 @@
       "clientAuthenticatorType": "client-secret",
       "secret": "pupitre-demo-secret",
       "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
+      "directAccessGrantsEnabled": true,
       "implicitFlowEnabled": false,
       "redirectUris": [
         "http://localhost:3000/api/sso/oidc/callback",

@@ -1,6 +1,6 @@
 import { defaultSettings } from '@pupitre/shared'
 import { ADMIN_PASSWORD, GITLAB_PORT, IDP_PORT, LDAP_HTTP_PORT, LDAP_PORT, OPA_PORT } from './env.ts'
-import { apiClient, expect, fakeIdpUser, login, signIn, ssoLogin, test, uid } from './fixtures.ts'
+import { apiClient, expect, fakeIdpUser, login, randomIp, signIn, ssoLogin, test, uid } from './fixtures.ts'
 
 const opa = `http://localhost:${OPA_PORT}`
 const labRepo = 'https://git.example.com/pupitre/pupitre-git.git'
@@ -38,7 +38,7 @@ test.describe('platform settings (specs 021, 022, 024, 035, 179)', () => {
     const visitor = await page.context().browser()!.newPage()
     await visitor.goto('/login')
     await expect(visitor.getByRole('button', { name: 'Se connecter', exact: true })).toBeVisible()
-    await expect(visitor.getByRole('link', { name: 'Créer un compte' })).toHaveCount(0)
+    await expect(visitor.getByRole('button', { name: 'Créer un compte avec un e-mail' })).toHaveCount(0)
     await visitor.goto('/register')
     await expect(visitor.getByText('Inscriptions fermées')).toBeVisible()
     await expect(visitor.getByLabel("Nom d'utilisateur")).toHaveCount(0)
@@ -61,11 +61,11 @@ test.describe('platform settings (specs 021, 022, 024, 035, 179)', () => {
     await page.getByLabel('Email').fill(`${name}@other.test`)
     await page.getByLabel('Mot de passe', { exact: true }).fill('Password123!')
     await page.getByLabel('Confirmer le mot de passe').fill('Password123!')
-    await page.getByRole('button', { name: 'Créer un compte' }).click()
+    await page.getByRole('button', { name: 'Créer un compte', exact: true }).click()
     await expect(page.getByRole('alert')).toHaveText("L'inscription est réservée à certains domaines d'e-mail.")
 
     await page.getByLabel('Email').fill(`${name}@ALLOWED.test`)
-    await page.getByRole('button', { name: 'Créer un compte' }).click()
+    await page.getByRole('button', { name: 'Créer un compte', exact: true }).click()
     await expect(page).toHaveURL(/\/courses$/)
   })
 
@@ -128,8 +128,11 @@ test.describe('platform settings (specs 021, 022, 024, 035, 179)', () => {
 
     await page.goto('/login')
     await expect(page.getByText('La connexion par mot de passe est désactivée.', { exact: false })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Créer un compte' })).toHaveCount(0)
-    await page.getByText('Connexion administrateur').click()
+    await expect(page.getByRole('button', { name: 'Créer un compte avec un e-mail' })).toHaveCount(0)
+    // SSO is the only way in for everyone else: its section is open, the e-mail one is folded.
+    await expect(page.getByTestId('sso-providers')).toBeVisible()
+    await expect(page.getByLabel('Identifiant ou e-mail')).toHaveCount(0)
+    await page.getByRole('button', { name: 'Connexion administrateur' }).click()
     await login(page, user.email, user.password)
     await expect(page.getByText('La connexion par mot de passe est désactivée', { exact: true })).toBeVisible()
 
@@ -187,8 +190,8 @@ test.describe('platform settings (specs 021, 022, 024, 035, 179)', () => {
       body: JSON.stringify({ uid: `jdoe${id}`, mail: `jdoe-${id}@example.test`, cn: `Jane Doe ${id}`, password: 'ldap-pass', groups: [group] }),
     })
     await page.goto('/login')
-    await page.getByRole('tab', { name: 'LDAP' }).click()
-    const form = page.getByRole('form', { name: 'LDAP' })
+    await page.getByRole('button', { name: 'Connexion SSO' }).click()
+    const form = page.getByRole('form', { name: 'Annuaire LDAP' })
     await form.getByLabel('identifiant LDAP').fill(`jdoe${id}`)
     await form.getByLabel('Mot de passe').fill('wrong')
     await form.getByRole('button', { name: 'Se connecter' }).click()
@@ -366,6 +369,7 @@ test.describe('Keycloak SSO demo (specs 027, 134)', () => {
   for (const account of accounts) {
     test(`the demo account ${account.username} signs in through Keycloak as ${account.role}`, async ({ page }) => {
       await page.goto('/login')
+      await page.getByRole('button', { name: 'Connexion SSO' }).click()
       await page.getByRole('link', { name: 'Continuer avec Keycloak' }).click()
       // Keycloak's own login page.
       await page.locator('#username').fill(account.username)
@@ -377,8 +381,21 @@ test.describe('Keycloak SSO demo (specs 027, 134)', () => {
     })
   }
 
+  test('the Keycloak demo buttons sign each account in, in one click', async ({ browser }) => {
+    for (const account of accounts) {
+      const page = await browser.newPage({ extraHTTPHeaders: { 'x-forwarded-for': randomIp() } })
+      await page.goto('/login')
+      await page.getByRole('button', { name: 'Connexion SSO' }).click()
+      await page.getByRole('region', { name: 'Comptes de démonstration Keycloak' }).getByRole('button', { name: `Se connecter en tant que ${account.name}` }).click()
+      await expect(page).toHaveURL(account.landing)
+      expect(await (await page.request.get('/api/me')).json()).toMatchObject({ role: account.role, name: account.name })
+      await page.close()
+    }
+  })
+
   test('a wrong Keycloak password does not sign in', async ({ page }) => {
     await page.goto('/login')
+    await page.getByRole('button', { name: 'Connexion SSO' }).click()
     await page.getByRole('link', { name: 'Continuer avec Keycloak' }).click()
     await page.locator('#username').fill('etudiant')
     await page.locator('#password').fill('wrong-password')

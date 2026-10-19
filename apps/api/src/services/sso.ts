@@ -261,6 +261,32 @@ export async function fetchIdentity(p: SsoProvider, code: string, tx: { nonce: s
     client_secret: p.clientSecret,
     code_verifier: tx.verifier,
   })
+  return identityFromTokens(p, doc, tokens, tx.nonce)
+}
+
+/** Whether the login page may sign the SSO demo accounts in with this provider (dev only, spec 027). */
+export const demoLoginEnabled = (p: SsoProvider) => env.SSO_DEMO_PASSWORD_GRANT && p.kind === 'oidc'
+
+/**
+ * Spec 027, SSO demo (development only): the resource owner password grant, so the demo buttons sign in through the
+ * identity provider in one click. The ID token is verified like in the code flow, without a nonce (none is sent).
+ */
+export async function passwordGrantIdentity(p: SsoProvider, username: string, password: string): Promise<SsoIdentity> {
+  if (!demoLoginEnabled(p)) throw new SsoError('unknown_provider')
+  const doc = await discover(p)
+  const tokens = await postForm(doc.token_endpoint, {
+    grant_type: 'password',
+    username,
+    password,
+    scope: p.scopes,
+    client_id: p.clientId,
+    client_secret: p.clientSecret,
+  })
+  return identityFromTokens(p, doc, tokens, null)
+}
+
+/** Verifies the ID token (JWKS, or HS256 with the client secret) and merges the UserInfo claims. */
+async function identityFromTokens(p: SsoProvider, doc: Discovery, tokens: Record<string, unknown>, nonce: string | null): Promise<SsoIdentity> {
   const idToken = String(tokens.id_token ?? '')
   if (!idToken) throw new SsoError('failed', 'No ID token')
   const { alg } = decodeProtectedHeader(idToken)
@@ -277,7 +303,7 @@ export async function fetchIdentity(p: SsoProvider, code: string, tx: { nonce: s
   } catch (err) {
     throw new SsoError('failed', `invalid ID token: ${(err as Error).message}`)
   }
-  if (claims.nonce !== tx.nonce) throw new SsoError('failed', 'nonce mismatch')
+  if (nonce !== null && claims.nonce !== nonce) throw new SsoError('failed', 'nonce mismatch')
   // UserInfo claims win over the ID token's (spec 028).
   if (doc.userinfo_endpoint && tokens.access_token) {
     const res = await httpFetch(doc.userinfo_endpoint, { headers: { Authorization: `Bearer ${String(tokens.access_token)}` } })

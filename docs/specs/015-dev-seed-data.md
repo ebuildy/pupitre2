@@ -44,10 +44,13 @@ Generated students use `Student@1234`, generated managers `Manager@1234`.
 
 ## Demo login buttons
 
-In dev only, the learner login page (`/login`) shows a "Comptes de démonstration" section under the form, with one
+In dev only, the learner login page (`/login`) shows a "Comptes de démonstration" section under the accordion, with one
 button per account: Élise Étudiante (`etudiant`), Marc Manager (`manager`) and `admin`. Each button shows the
-account's name and role. Clicking it fills the form and submits it, so sign-in, errors and the landing redirect work
-exactly as with a manual login.
+account's name and role. Clicking it signs in with the same code as the e-mail form (whichever section is open), so
+sign-in, errors and the landing redirect work exactly as with a manual login.
+
+The SSO section adds "Comptes de démonstration Keycloak" (Élise, Marc and Ada Keycloak): the same accounts in the
+Keycloak demo realm, signed in through Keycloak in one click (spec 027, `ssoDemoAccounts`).
 
 - The list lives in `apps/app/src/lib/demo-accounts.ts`, behind `import.meta.env.DEV`. `vite build` removes it, so
   production bundles contain neither the buttons nor the passwords.

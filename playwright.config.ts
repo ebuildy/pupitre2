@@ -79,6 +79,8 @@ export default defineConfig({
         OIDC_CLIENT_ID: 'pupitre',
         OIDC_CLIENT_SECRET: 'e2e-secret',
         SSO_PROVIDERS_FILE: '../../e2e/sso-providers.yaml',
+        // Spec 027, SSO demo: the one-click sign-in of the SSO section (password grant of e2e/fake-idp.mjs).
+        SSO_DEMO_PASSWORD_GRANT: 'true',
         BETTER_AUTH_URL: BASE_URL,
         CORS_ORIGINS: BASE_URL,
         LOG_REQUESTS: 'false',

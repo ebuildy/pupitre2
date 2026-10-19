@@ -18,3 +18,15 @@ export const demoAccounts: readonly DemoAccount[] | undefined = import.meta.env.
       },
     ]
   : undefined
+
+/**
+ * The same accounts in the Keycloak demo realm (`docker/keycloak`, spec 027), shown in the SSO section when the API
+ * allows the one-click sign-in (`SSO_DEMO_PASSWORD_GRANT`, set by `apps/api/dev.env`). Dev server only, like above.
+ */
+export const ssoDemoAccounts: readonly DemoAccount[] | undefined = import.meta.env.DEV
+  ? [
+      { name: 'Élise Keycloak', role: 'student', identifier: 'etudiant', password: 'Student@1234' },
+      { name: 'Marc Keycloak', role: 'manager', identifier: 'manager', password: 'Manager@1234' },
+      { name: 'Ada Keycloak', role: 'admin', identifier: 'admin', password: 'Admin@1234' },
+    ]
+  : undefined

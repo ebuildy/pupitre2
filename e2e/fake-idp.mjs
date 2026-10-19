@@ -1,5 +1,6 @@
 // A tiny OpenID Connect provider (and GitHub OAuth stand-in) for the SSO tests (specs 027–033). Tests register who
-// signs in with POST /__fake/users {hint, sub, email, name, groups, error?}; the API sends `login_hint=<hint>`.
+// signs in with POST /__fake/users {hint, sub, email, name, groups, error?, password?}; the API sends `login_hint=<hint>`.
+// The password grant (SSO demo buttons) takes the hint as username and checks `password`.
 import { createHash, createHmac, randomBytes } from 'node:crypto'
 import { createServer } from 'node:http'
 
@@ -65,8 +66,15 @@ createServer(async (req, res) => {
   }
   if (req.method === 'POST' && (path === '/token' || path === '/login/oauth/access_token')) {
     const form = new URLSearchParams(await body(req))
-    const grant = codes.get(form.get('code'))
-    codes.delete(form.get('code'))
+    let grant
+    if (form.get('grant_type') === 'password') {
+      const user = users.get(form.get('username') ?? '')
+      if (!user?.password || user.password !== form.get('password')) return send(res, 401, { error: 'invalid_grant' })
+      grant = { user, nonce: undefined, clientId: form.get('client_id') }
+    } else {
+      grant = codes.get(form.get('code'))
+      codes.delete(form.get('code'))
+    }
     if (!grant || clients[grant.clientId] !== form.get('client_secret')) return send(res, 400, { error: 'invalid_grant' })
     if (grant.challenge) {
       const expected = createHash('sha256').update(form.get('code_verifier') ?? '').digest('base64url')

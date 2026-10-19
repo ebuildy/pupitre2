@@ -4,9 +4,10 @@ test.describe('registration (specs 020–022)', () => {
   test('a visitor creates an account from the login page and is signed in', async ({ page }) => {
     const name = `new_${uid()}`
     await page.goto('/login')
-    await page.getByRole('link', { name: 'Créer un compte' }).click()
-    await expect(page).toHaveURL(/\/register$/)
+    await page.getByRole('button', { name: 'Créer un compte avec un e-mail' }).click()
     await expect(page.getByText('Créez votre compte pour commencer')).toBeVisible()
+    // The sign-in section folds (one section open at a time).
+    await expect(page.getByLabel('Identifiant ou e-mail')).toHaveCount(0)
 
     await page.getByLabel("Nom d'utilisateur").fill(name)
     await page.getByLabel('Email').fill(`${name}@example.test`)
@@ -22,7 +23,7 @@ test.describe('registration (specs 020–022)', () => {
     await page.getByLabel('Confirmer le mot de passe').fill('Password123!')
     await expect(page.getByText('Les mots de passe ne correspondent pas')).toBeHidden()
 
-    await page.getByRole('button', { name: 'Créer un compte' }).click()
+    await page.getByRole('button', { name: 'Créer un compte', exact: true }).click()
     await expect(page).toHaveURL(/\/courses$/)
     await expect(page.getByTestId('current-user')).toHaveText(name)
     const me = await (await page.request.get('/api/me')).json()
@@ -36,12 +37,12 @@ test.describe('registration (specs 020–022)', () => {
     await page.getByLabel('Email').fill(existing.email)
     await page.getByLabel('Mot de passe', { exact: true }).fill('Password123!')
     await page.getByLabel('Confirmer le mot de passe').fill('Password123!')
-    await page.getByRole('button', { name: 'Créer un compte' }).click()
+    await page.getByRole('button', { name: 'Créer un compte', exact: true }).click()
     await expect(page.getByRole('alert')).toHaveText("Email ou nom d'utilisateur déjà utilisé")
 
     await page.getByLabel("Nom d'utilisateur").fill(existing.username)
     await page.getByLabel('Email').fill(`other-${uid()}@example.test`)
-    await page.getByRole('button', { name: 'Créer un compte' }).click()
+    await page.getByRole('button', { name: 'Créer un compte', exact: true }).click()
     await expect(page.getByRole('alert')).toHaveText("Email ou nom d'utilisateur déjà utilisé")
   })
 

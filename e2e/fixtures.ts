@@ -160,7 +160,7 @@ export async function login(page: Page, identifier: string, password: string) {
 
 // ─── SSO (e2e/fake-idp.mjs) ───────────────────────────────────────────────────
 
-type FakeUser = { sub: string; email: string; name: string; groups?: string[]; picture?: string; bio?: string; error?: string }
+type FakeUser = { sub: string; email: string; name: string; groups?: string[]; picture?: string; bio?: string; error?: string; password?: string }
 
 /** Registers who signs in at the fake IdP (e2e/fake-idp.mjs) for this hint. */
 export async function fakeIdpUser(hint: string, user: FakeUser) {

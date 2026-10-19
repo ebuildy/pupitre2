@@ -7,7 +7,7 @@ import { ManagerMembers } from './routes/manager/ManagerMembers.tsx'
 import { ManagerPaths } from './routes/manager/ManagerPaths.tsx'
 import { MyPathDetail } from './routes/MyPaths.tsx'
 import { SkillPage } from './routes/SkillPage.tsx'
-import { demoAccounts } from './lib/demo-accounts.ts'
+import { demoAccounts, ssoDemoAccounts } from './lib/demo-accounts.ts'
 import { Agenda } from './routes/Agenda.tsx'
 import { Attendance } from './routes/Attendance.tsx'
 import { Catalogue } from './routes/Catalogue.tsx'
@@ -23,7 +23,7 @@ import { PublicProfile } from './routes/PublicProfile.tsx'
 
 // `/admin/*` is the admin app (apps/admin), served on the same origin.
 export const router = createBrowserRouter([
-  { path: 'login', element: <LoginPage demoAccounts={demoAccounts} /> },
+  { path: 'login', element: <LoginPage demoAccounts={demoAccounts} ssoDemoAccounts={ssoDemoAccounts} /> },
   { path: 'register', element: <RegisterPage /> },
   {
     element: <Layout />,

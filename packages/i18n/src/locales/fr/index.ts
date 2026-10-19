@@ -213,16 +213,16 @@ export const auth = {
     passwordPlaceholder: 'mot de passe',
     submit: 'Se connecter',
     submitting: 'Connexion…',
-    noAccount: 'Pas encore de compte ?',
-    register: 'Créer un compte',
     localDisabled: 'La connexion par mot de passe est désactivée. Connectez-vous avec votre fournisseur d’identité.',
     adminLogin: 'Connexion administrateur',
     sso: 'Continuer avec {{name}}',
     or: 'ou',
-    tabs: {
-      local: 'Identifiant',
-      ldap: 'LDAP',
+    sections: {
+      sso: 'Connexion SSO',
+      email: 'Se connecter avec un e-mail',
+      register: 'Créer un compte avec un e-mail',
     },
+    ldapTitle: 'Annuaire LDAP',
     ldapIdentifier: 'identifiant LDAP',
     ldapInvalid: 'Identifiants LDAP invalides',
     errors: {
@@ -244,6 +244,8 @@ export const auth = {
     demo: {
       title: 'Comptes de démonstration',
       signInAs: 'Se connecter en tant que {{name}}',
+      ssoTitle: 'Comptes de démonstration {{name}}',
+      ssoUnreachable: '{{name}} ne répond pas. Lancez-le avec « pnpm dev:sso ».',
     },
   },
   // Specs 020–022
@@ -259,8 +261,6 @@ export const auth = {
     closedTitle: 'Inscriptions fermées',
     closedBody: "Les nouvelles inscriptions sont désactivées par l'administrateur.",
     backToLogin: 'Retour à la connexion',
-    haveAccount: 'Déjà un compte ?',
-    signIn: 'Se connecter',
     errors: {
       emptyFields: 'Veuillez remplir tous les champs',
       usernameTooShort: "Le nom d'utilisateur doit contenir au moins {{count}} caractères",

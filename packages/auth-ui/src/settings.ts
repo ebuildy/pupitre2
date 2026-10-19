@@ -23,7 +23,8 @@ export function usePublicSettings() {
   return settings
 }
 
-export type SsoProviderInfo = { id: string; name: string; kind: 'oidc' | 'github' }
+/** `demoLogin`: the API signs the SSO demo accounts in with this provider in one click (dev only, spec 027). */
+export type SsoProviderInfo = { id: string; name: string; kind: 'oidc' | 'github'; demoLogin?: boolean }
 let providersCache: Promise<SsoProviderInfo[]> | null = null
 
 /** Specs 027, 028: the SSO providers shown on the login page. */

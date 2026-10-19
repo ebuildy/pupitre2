@@ -9,7 +9,7 @@
 Covers the original 020 (local registration), 021 (registration policy), 022 (password policy) and 024 (local login
 toggle).
 
-## UI — `/register` (learner app, shared `RegisterPage` from `@pupitre/auth-ui`)
+## UI — registration section of the login page; `/register` (learner app, `RegisterPage` from `@pupitre/auth-ui`)
 
 - Subtitle "Créez votre compte pour commencer". Fields "Nom d'utilisateur", "Email", "Mot de passe", "Confirmer le mot
   de passe". Under the password, a live checklist built from the public settings ("Au moins N caractères", "Au moins une
@@ -20,8 +20,9 @@ toggle).
   username too short / invalid characters, policy not met, "Trop de tentatives…" (429).
 - Registration closed: card "🔒 Inscriptions fermées — Les nouvelles inscriptions sont désactivées par
   l'administrateur." and "Retour à la connexion".
-- Signed in → redirected to `/courses`. Footer "Déjà un compte ? Se connecter".
-- The login page (both apps) shows "Pas encore de compte ? Créer un compte" while registration is open.
+- Signed in → redirected to `/courses` (or the login page's `redirect`).
+- The form is the "Créer un compte avec un e-mail" section of the login page (both apps, spec 023), shown while
+  registration is open; `/register` is that page with the section open.
 
 ## API
 
@@ -45,7 +46,7 @@ The password policy also applies to `POST /api/auth/change-password` ([035](035-
 
 `sso_local_login_enabled = false`: `POST /api/auth/sign-in/email|username` answers 403
 `Local login is disabled. Please sign in with SSO.` **except for admins**, and the login page shows "La connexion par
-mot de passe est désactivée…" with the form folded under "Connexion administrateur". The registration link is hidden.
+mot de passe est désactivée…" with the e-mail section titled "Connexion administrateur" (SSO open at first). The registration section is hidden.
 
 ## Acceptance criteria
 
@@ -61,6 +62,6 @@ mot de passe est désactivée…" with the form folded under "Connexion administ
 
 ## Source
 
-`apps/api/src/auth.ts` (`policyGuard`), `packages/shared/src/settings.ts`, `packages/auth-ui/src/RegisterPage.tsx`,
+`apps/api/src/auth.ts` (`policyGuard`), `packages/shared/src/settings.ts`, `packages/auth-ui/src/RegisterPage.tsx`, `packages/auth-ui/src/RegisterForm.tsx`,
 `packages/auth-ui/src/LoginPage.tsx`, `packages/auth-ui/src/PasswordChecklist.tsx`, `e2e/account.spec.ts`,
 `e2e/global-settings.spec.ts`.

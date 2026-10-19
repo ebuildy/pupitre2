@@ -43,7 +43,7 @@ Everything is served on one origin (spec 004): the learner app's Vite server pro
 ```sh
 pnpm install
 pnpm dev            # http://localhost:3000 (admin at /admin/), API :3001, admin Vite :3002
-pnpm dev:sso        # same, signing in through a Keycloak in Docker (docker/keycloak, :8180); pnpm sso:down stops it
+pnpm dev:sso        # starts the Keycloak demo (docker/keycloak, :8180), then pnpm dev; pnpm sso:down stops it
 pnpm typecheck      # every package + e2e
 pnpm build          # both frontends
 pnpm test:e2e       # Playwright, starts its own servers (see below)
@@ -58,6 +58,8 @@ pnpm auth:generate  # regenerate the better-auth schema after changing auth conf
 - New native dependency with a build script: allow it in `pnpm-workspace.yaml` (`allowBuilds`).
 - The shell is zsh: quote globs and arguments like `'@pupitre/shared@workspace:*'`, and do not rely on
   word-splitting of unquoted variables (`$H`).
+- `pnpm dev` reads `apps/api/dev.env` (dev defaults: OIDC on the Keycloak demo, `SSO_DEMO_PASSWORD_GRANT`) before
+  `.env`; never put production settings there.
 - Do not leave dev servers running; do not `pkill` broad patterns (the user may have their own Vite running).
 
 ## API (apps/api)
@@ -181,8 +183,8 @@ Playwright is the only test runner. Every feature ships with e2e tests covering 
 - Accessible names match by substring: use `exact: true` for short names (`{ name: 'Enregistrer', exact: true }`).
 - Labs: GitLab step checks hit `e2e/fake-gitlab.mjs` (port 3103, started by Playwright); describe the learner's project
   with `POST http://localhost:3103/__fake/projects {path, branches, mergeRequests, commits, files}`.
-- SSO: `await fakeIdpUser(hint, {sub, email, name, groups})` then `await ssoLogin(page, 'oidc' | 'corp' | 'github', hint)`
-  (e2e/fake-idp.mjs); LDAP tests use e2e/fake-ldap.mjs and live in the global-settings project (LDAP is a setting).
+- SSO: `await fakeIdpUser(hint, {sub, email, name, groups, password?})` then `await ssoLogin(page, 'oidc' | 'corp' | 'github', hint)`
+  (e2e/fake-idp.mjs; with `password`, the hint is also a username for the password grant of the SSO demo buttons); LDAP tests use e2e/fake-ldap.mjs and live in the global-settings project (LDAP is a setting).
 - Keycloak demo (spec 027): opt-in tests against the real Keycloak of `docker/keycloak`, skipped unless `KEYCLOAK_URL` is set
   (`KEYCLOAK_URL=http://localhost:8180 pnpm test:e2e --project global-settings --no-deps -g Keycloak`). A change to the
   realm or the OIDC flow must keep them passing.

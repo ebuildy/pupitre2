@@ -30,20 +30,21 @@ pnpm dev                                # http://localhost:3000 (admin: /admin/)
 ### SSO demo (Keycloak)
 
 ```sh
-pnpm dev:sso     # Keycloak in Docker (http://localhost:8180, console admin / admin), then pnpm dev with OIDC on it
+pnpm dev:sso     # Keycloak in Docker (http://localhost:8180, console admin / admin), then pnpm dev
 pnpm sso:down    # stop Keycloak
 ```
 
-The login page gets a "Continuer avec Keycloak" button; sign in on Keycloak as `etudiant` / `Student@1234`,
-`manager` / `Manager@1234` or `admin` / `Admin@1234` (student, manager, admin in pupitre). It uses its own database
-(`apps/api/data/sso-demo.db`). See [docs/specs/027](docs/specs/027-sso.md#sso-demo-keycloak).
+`pnpm dev` always signs in through that Keycloak (defaults in `apps/api/dev.env`; your `apps/api/.env` wins): the login
+page's "Connexion SSO" section has "Continuer avec Keycloak" and three one-click buttons, Élise, Marc and Ada Keycloak
+(`etudiant` / `Student@1234`, `manager` / `Manager@1234`, `admin` / `Admin@1234` in the realm; student, manager and admin in
+pupitre). See [docs/specs/027](docs/specs/027-sso.md#sso-demo-keycloak).
 
 ## Scripts
 
 | Command | |
 | --- | --- |
 | `pnpm dev` | API (tsx watch) + app + admin (Vite) in parallel |
-| `pnpm dev:sso` / `pnpm sso:down` | SSO demo: Keycloak (Docker) + `pnpm dev` signing in through it / stop Keycloak |
+| `pnpm dev:sso` / `pnpm sso:down` | SSO demo: Keycloak (Docker), then `pnpm dev` / stop Keycloak |
 | `pnpm typecheck` | `tsc` across every package and the e2e tests |
 | `pnpm build` | Production build of both frontends |
 | `pnpm test:e2e` | Playwright (ports 3100 app / 3101 api / 3102 admin, fresh `apps/api/data/e2e.db`) |

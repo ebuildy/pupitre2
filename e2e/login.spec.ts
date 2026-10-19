@@ -66,6 +66,52 @@ test.describe('login (spec 023)', () => {
   })
 })
 
+test.describe('login page sections (spec 023)', () => {
+  test('SSO, e-mail sign-in and registration are accordion sections, one open at a time', async ({ page }) => {
+    await page.goto('/login')
+    const sso = page.getByRole('button', { name: 'Connexion SSO' })
+    const email = page.getByRole('button', { name: 'Se connecter avec un e-mail' })
+    const register = page.getByRole('button', { name: 'Créer un compte avec un e-mail' })
+    // E-mail sign-in is open by default; the trigger lists the providers.
+    await expect(email).toHaveAttribute('aria-expanded', 'true')
+    await expect(sso).toHaveAttribute('aria-expanded', 'false')
+    await expect(sso).toContainText('Fake IdP · Corp · GitHub')
+    await expect(page.getByLabel('Identifiant ou e-mail')).toBeVisible()
+    await expect(page.getByTestId('sso-providers')).toHaveCount(0)
+
+    await sso.click()
+    await expect(page.getByRole('link', { name: 'Continuer avec Fake IdP' })).toBeVisible()
+    await expect(page.getByLabel('Identifiant ou e-mail')).toHaveCount(0)
+
+    await register.click()
+    await expect(page.getByLabel("Nom d'utilisateur")).toBeVisible()
+    await expect(page.getByTestId('sso-providers')).toHaveCount(0)
+
+    // Closing the open section leaves them all folded.
+    await register.click()
+    await expect(page.getByLabel("Nom d'utilisateur")).toHaveCount(0)
+    for (const trigger of [sso, email, register]) await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  test('/register opens the registration section; an SSO error opens the SSO one', async ({ page }) => {
+    await page.goto('/register')
+    await expect(page.getByRole('button', { name: 'Créer un compte avec un e-mail' })).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByText('Créez votre compte pour commencer')).toBeVisible()
+
+    await page.goto('/login?sso_error=access_denied')
+    await expect(page.getByRole('alert')).toHaveText('Accès refusé — vous avez annulé la connexion.')
+    await expect(page.getByRole('button', { name: 'Connexion SSO' })).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByTestId('sso-providers')).toBeVisible()
+  })
+
+  test('a demo account signs in whichever section is open (spec 015)', async ({ page }) => {
+    await page.goto('/login')
+    await page.getByRole('button', { name: 'Connexion SSO' }).click()
+    await page.getByRole('button', { name: 'Se connecter en tant que admin' }).click()
+    await expect(page).toHaveURL(/\/admin\/?$/)
+  })
+})
+
 test.describe('redirects and guards (specs 001, 025)', () => {
   test('a protected page sends a visitor to login, then back after login', async ({ page, createUser }) => {
     const user = await createUser()

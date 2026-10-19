@@ -8,6 +8,7 @@ function person(groups: string[] = []) {
 test.describe('SSO sign-in (specs 027–032, 134)', () => {
   test('the login page offers the configured providers', async ({ page }) => {
     await page.goto('/login?redirect=%2Fmy-xp')
+    await page.getByRole('button', { name: 'Connexion SSO' }).click()
     const sso = page.getByTestId('sso-providers')
     await expect(sso.getByRole('link', { name: 'Continuer avec Fake IdP' })).toHaveAttribute('href', '/api/sso/oidc/authorize?redirect=%2Fmy-xp')
     await expect(sso.getByRole('link', { name: 'Continuer avec Corp' })).toBeVisible()
@@ -73,6 +74,27 @@ test.describe('SSO sign-in (specs 027–032, 134)', () => {
     expect((await (await page.request.get('/api/me')).json()).role).toBe('manager')
     const scope = await (await page.request.get('/api/manager/scope')).json()
     expect(scope.groups.map((g: { id: string }) => g.id)).toContain(group.id)
+  })
+
+  test('the SSO demo buttons sign in through the provider in one click (dev only)', async ({ page }) => {
+    // The demo accounts of apps/app/src/lib/demo-accounts.ts; the fake IdP checks the password grant.
+    await fakeIdpUser('etudiant', { sub: 'demo-etudiant', email: 'etudiant-demo@example.test', name: 'Élise Keycloak', password: 'Student@1234' })
+    await page.goto('/login')
+    await page.getByRole('button', { name: 'Connexion SSO' }).click()
+    const demo = page.getByRole('region', { name: 'Comptes de démonstration Fake IdP' })
+    await expect(demo.getByRole('button')).toHaveCount(3)
+
+    // Unknown at the identity provider: refused.
+    await demo.getByRole('button', { name: 'Se connecter en tant que Marc Keycloak' }).click()
+    await expect(page.getByRole('alert')).toHaveText('Identifiant ou mot de passe incorrect')
+
+    await demo.getByRole('button', { name: 'Se connecter en tant que Élise Keycloak' }).click()
+    await expect(page).toHaveURL(/\/courses$/)
+    expect(await (await page.request.get('/api/me')).json()).toMatchObject({ email: 'etudiant-demo@example.test', hasPassword: false })
+
+    // Only OIDC providers: GitHub has no password grant.
+    const github = await page.request.post('/api/sso/github/demo-login', { data: { username: 'etudiant', password: 'Student@1234' } })
+    expect(github.status()).toBe(404)
   })
 
   test('deploy-time providers: another OIDC issuer and GitHub (spec 027)', async ({ page, browser }) => {

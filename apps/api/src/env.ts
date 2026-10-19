@@ -69,6 +69,11 @@ const schema = z.object({
   OIDC_GROUP_ADMINS: z.string().optional(),
   OIDC_REDIRECT_BASE: z.string().optional(),
   OIDC_BROWSER_BASE_URL: z.string().optional(),
+  /**
+   * Spec 027, SSO demo, development only: the login page's SSO demo buttons sign in with the OIDC providers' password
+   * grant (`POST /api/sso/:provider/demo-login`). Refused in production.
+   */
+  SSO_DEMO_PASSWORD_GRANT: z.stringbool().default(false),
   /** Spec 015: load the mock data (`src/fixtures`) at startup. Development only. */
   SEED_DEV_DATA: z.stringbool().default(false),
 })
@@ -77,4 +82,7 @@ export const env = schema.parse(process.env)
 
 if (env.NODE_ENV === 'production' && env.BETTER_AUTH_SECRET.startsWith('dev-secret')) {
   throw new Error('BETTER_AUTH_SECRET must be set in production')
+}
+if (env.NODE_ENV === 'production' && env.SSO_DEMO_PASSWORD_GRANT) {
+  throw new Error('SSO_DEMO_PASSWORD_GRANT is for development only')
 }

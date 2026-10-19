@@ -10,8 +10,10 @@ import type { AppEnv } from '../middleware/session.ts'
 import {
   authorizationRequest,
   completeSsoLogin,
+  demoLoginEnabled,
   fetchIdentity,
   findProvider,
+  passwordGrantIdentity,
   readTransaction,
   SsoError,
   ssoProviders,
@@ -59,7 +61,33 @@ export const ssoRoutes = new Hono<AppEnv>()
       throw new HTTPException(500, { message: 'LDAP server call failed' })
     }
   })
-  .get('/providers', (c) => c.json({ providers: ssoProviders().map(({ id, name, kind }) => ({ id, name, kind })) }))
+  .get('/providers', (c) =>
+    c.json({ providers: ssoProviders().map((p) => ({ id: p.id, name: p.name, kind: p.kind, demoLogin: demoLoginEnabled(p) })) }),
+  )
+  // Spec 027, SSO demo (development only, `SSO_DEMO_PASSWORD_GRANT`): the demo accounts' one-click sign-in.
+  .post('/:provider/demo-login', validate('json', z.object({ username: z.string().trim().min(1), password: z.string().min(1) })), async (c) => {
+    if (!env.SSO_DEMO_PASSWORD_GRANT) throw new HTTPException(404, { message: 'Not found' })
+    const ip = (c.req.header(env.CLIENT_IP_HEADER) ?? '').split(',')[0]!.trim() || 'unknown'
+    if (rateLimited(ip)) throw new HTTPException(429, { message: 'Too many requests' })
+    const { username, password } = c.req.valid('json')
+    let identity
+    try {
+      identity = await passwordGrantIdentity(findProvider(c.req.param('provider')), username, password)
+    } catch (err) {
+      if (err instanceof SsoError && err.code === 'unknown_provider') throw new HTTPException(404, { message: 'Unknown provider' })
+      if (err instanceof SsoError) throw new HTTPException(401, { message: 'Invalid email or password' })
+      console.error('sso demo login failed', err)
+      throw new HTTPException(502, { message: 'Identity provider unreachable' })
+    }
+    try {
+      const { role, cookie } = await completeSsoLogin(findProvider(c.req.param('provider')), identity)
+      setCookie(c, cookie.name, cookie.value, { httpOnly: true, secure: cookie.attributes.secure ?? secure, sameSite: 'Lax', path: '/', maxAge: cookie.attributes.maxAge })
+      return c.json({ role })
+    } catch (err) {
+      if (err instanceof SsoError) throw new HTTPException(err.code === 'conflict' ? 409 : err.code === 'inactive' ? 403 : 401, { message: err.message })
+      throw err
+    }
+  })
   .get('/:provider/authorize', async (c) => {
     try {
       const provider = findProvider(c.req.param('provider'))

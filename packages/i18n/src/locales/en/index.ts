@@ -209,16 +209,16 @@ export const auth = {
     passwordPlaceholder: 'password',
     submit: 'Sign in',
     submitting: 'Signing in…',
-    noAccount: 'No account yet?',
-    register: 'Create an account',
     localDisabled: 'Password sign-in is disabled. Sign in with your identity provider.',
     adminLogin: 'Administrator sign-in',
     sso: 'Continue with {{name}}',
     or: 'or',
-    tabs: {
-      local: 'Username',
-      ldap: 'LDAP',
+    sections: {
+      sso: 'Single sign-on (SSO)',
+      email: 'Sign in with e-mail',
+      register: 'Create an account with e-mail',
     },
+    ldapTitle: 'LDAP directory',
     ldapIdentifier: 'LDAP username',
     ldapInvalid: 'Invalid LDAP credentials',
     errors: {
@@ -240,6 +240,8 @@ export const auth = {
     demo: {
       title: 'Demo accounts',
       signInAs: 'Sign in as {{name}}',
+      ssoTitle: '{{name}} demo accounts',
+      ssoUnreachable: '{{name}} is not responding. Start it with “pnpm dev:sso”.',
     },
   },
   register: {
@@ -254,8 +256,6 @@ export const auth = {
     closedTitle: 'Registration closed',
     closedBody: 'New registrations have been disabled by the administrator.',
     backToLogin: 'Back to sign-in',
-    haveAccount: 'Already have an account?',
-    signIn: 'Sign in',
     errors: {
       emptyFields: 'Please fill in all fields',
       usernameTooShort: 'Username must be at least {{count}} characters',
