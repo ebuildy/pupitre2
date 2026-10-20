@@ -16,8 +16,10 @@ test.describe('Spec 005: OpenAPI document', () => {
 
     expect(doc.openapi).toBe('3.1.0')
     expect(Object.keys(doc.paths)).toEqual(
-      expect.arrayContaining(['/health', '/api/me', '/api/courses/{slug}/modules/{moduleSlug}', '/api/admin/courses/{id}']),
+      expect.arrayContaining(['/api/me', '/api/courses/{slug}/modules/{moduleSlug}', '/api/admin/courses/{id}']),
     )
+    // Probes live on their own port (spec 006), outside the web API.
+    expect(Object.keys(doc.paths).filter((p) => !p.startsWith('/api/'))).toEqual([])
     expect(doc.components.schemas).toHaveProperty('ApiError')
     expect(doc.components.schemas).toHaveProperty('CourseDetail')
     expect(doc.components.securitySchemes).toHaveProperty('session')

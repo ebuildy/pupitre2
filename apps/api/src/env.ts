@@ -4,6 +4,9 @@ import { z } from 'zod'
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3001),
+  /** Spec 006: health, readiness and metrics, on their own port (never routed to the web). */
+  PROBES_PORT: z.coerce.number().int().positive().default(9464),
+  PROBES_HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.string().default('./data/pupitre.db'),
   /** Public origin the browser talks to (the web app, which proxies /api). */
   BETTER_AUTH_URL: z.url().default('http://localhost:3000'),

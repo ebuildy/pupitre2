@@ -22,7 +22,7 @@
 - **Status codes in use**: 200, 201 (creation), 302 (SSO redirects), 400, 401 (signed out), 403 (role, scope,
   enrollment, prerequisites, XP gate), 404, 409 (duplicate slug or name, full session, group with subgroups or
   members), 413, 415, 425 (quiz cooldown, with `cooldowns`), 429 (rate limit), 500, 502 (GitLab, OPA or identity provider
-  failure), 503 (readiness).
+  failure).
 
 ## OpenAPI document
 
@@ -42,7 +42,8 @@ clients.
 - Error responses use the `ApiError` component. Admin routes document 401 and 403.
 - Authentication: the `session` security scheme, better-auth's `better-auth.session_token` cookie, required by default;
   routes open to signed-out visitors (catalogue, course page, skills, paths, leaderboards, public profile, public
-  settings, sessions agenda, SSO, probes) declare no security.
+  settings, sessions agenda, SSO) declare no security. Probes and metrics are not part of the web API
+  ([006](006-health-and-metrics.md)).
 - Response schemas live in `@pupitre/shared` next to the request schemas; the wire types the frontends import
   (`CourseDetail`, `ModuleDetail`…) are `z.infer` of them, and each named schema is a component of the document
   (`.meta({ id })`).

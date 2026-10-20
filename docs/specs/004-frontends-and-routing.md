@@ -12,14 +12,14 @@ everywhere and links between frontends are plain paths.
 
 | Path | Owner | Dev server |
 | --- | --- | --- |
-| `/api/*`, `/health` | API (`apps/api`) | `:3001` |
+| `/api/*`, `/uploads/*` | API (`apps/api`) | `:3001` |
 | `/admin`, `/admin/*` | admin app (`apps/admin`, Vite `base: '/admin/'`, router `basename: '/admin'`) | `:3002` |
 | everything else | learner app (`apps/app`) | `:3000` |
 
 In development the learner app's Vite server (`:3000`) is the entry point: it proxies `/api` and
-`/health` to the API, and `/admin` (including the HMR websocket) to the admin app; `/admin` is
+`/uploads` to the API, and `/admin` (including the HMR websocket) to the admin app; `/admin` is
 rewritten to `/admin/`. Production serving (reverse proxy or static hosting) must reproduce the
-same table.
+same table. The API's probes and metrics are on another port, never routed to the web ([006](006-health-and-metrics.md)).
 
 ## API prefixes
 

@@ -2,9 +2,10 @@
 import { z } from 'zod'
 import { ROLES, type Role } from './common.ts'
 
-/** `GET /health` response (spec 006). */
-export const healthResponseSchema = z.object({ status: z.literal('ok') }).meta({ id: 'Health' })
-export type HealthResponse = z.infer<typeof healthResponseSchema>
+/** `GET /health` response, on the probes port (spec 006). */
+export type HealthResponse = {
+  status: 'ok'
+}
 
 /** `GET /api/me` response (spec 034). */
 export const meResponseSchema = z

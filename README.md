@@ -15,7 +15,7 @@ Rewrite of [pupitre](../../pupitre). Original functional specs: `../../pupitre/d
 | `packages/shared` | Wire types / schemas / helpers shared by every package |
 | `e2e` | Playwright tests (they start both servers themselves) |
 
-The browser only talks to one origin (spec 004): the learner app's Vite server proxies `/api/*` and `/health` to the API and `/admin/*` to the admin app's Vite server, so both frontends share the session cookie. See [docs/specs/004](docs/specs/004-frontends-and-routing.md).
+The browser only talks to one origin (spec 004): the learner app's Vite server proxies `/api/*` and `/uploads/*` to the API and `/admin/*` to the admin app's Vite server, so both frontends share the session cookie. See [docs/specs/004](docs/specs/004-frontends-and-routing.md).
 
 ## Getting started
 

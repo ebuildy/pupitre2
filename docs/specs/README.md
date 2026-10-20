@@ -9,7 +9,7 @@ Specs of the rewrite, as implemented. Numbering follows the original pupitre spe
 | [001](001-roles-and-permissions.md) | Roles, account status and guards | Implemented |
 | [004](004-frontends-and-routing.md) | Frontends, routing and admin API prefix | Implemented |
 | [005](005-http-conventions.md) | HTTP conventions (errors, validation, limits, CORS) and OpenAPI document | Implemented |
-| [006](006-health-and-metrics.md) | Health, readiness and Prometheus metrics | Implemented |
+| [006](006-health-and-metrics.md) | Health, readiness and Prometheus metrics, on their own port | Implemented |
 | [009](009-rate-limiting.md) | Rate limiting | Implemented |
 | [010](010-theme.md) | Theme, light / dark mode and UI components | Implemented |
 | [012](012-toast-notifications.md) | Toast notifications | Implemented |

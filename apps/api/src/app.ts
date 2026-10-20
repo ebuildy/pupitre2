@@ -1,17 +1,17 @@
 import { swaggerUI } from '@hono/swagger-ui'
-import { type ApiError, healthResponseSchema } from '@pupitre/shared'
+import type { ApiError } from '@pupitre/shared'
 import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { logger } from 'hono/logger'
 import { requestId } from 'hono/request-id'
 import { secureHeaders } from 'hono/secure-headers'
-import { z, ZodError } from 'zod'
+import { ZodError } from 'zod'
 import { auth } from './auth.ts'
 import { env } from './env.ts'
-import { queryCounter, sqlite } from './db/index.ts'
-import { metricsMiddleware, renderMetrics } from './lib/metrics.ts'
-import { createRoute, createRouter, json, PUBLIC, issueMessage } from './lib/openapi.ts'
+import { queryCounter } from './db/index.ts'
+import { metricsMiddleware } from './lib/metrics.ts'
+import { createRouter, issueMessage } from './lib/openapi.ts'
 import { openApiDocument } from './openapi.ts'
 import { uploadsDir } from './services/media.ts'
 import { serveStatic } from '@hono/node-server/serve-static'
@@ -44,45 +44,6 @@ if (env.LOG_REQUESTS) app.use(logger())
 app.use(secureHeaders())
 
 app.use(metricsMiddleware)
-
-const probe = { tags: ['Probes'], security: PUBLIC }
-
-// Spec 006: the liveness probe never touches the database; readiness checks it; metrics for Prometheus.
-app.openapi(
-  createRoute({ method: 'get', path: '/health', ...probe, summary: 'Liveness', responses: { 200: json(healthResponseSchema) } }),
-  (c) => c.json({ status: 'ok' as const }, 200),
-)
-app.openapi(
-  createRoute({
-    method: 'get',
-    path: '/ready',
-    ...probe,
-    summary: 'Readiness',
-    description: 'Checks the database.',
-    responses: {
-      200: json(z.object({ status: z.literal('ok') })),
-      503: json(z.object({ status: z.literal('unavailable') }), 'The database cannot be read'),
-    },
-  }),
-  (c) => {
-    try {
-      sqlite.prepare('SELECT 1').get()
-      return c.json({ status: 'ok' as const }, 200)
-    } catch {
-      return c.json({ status: 'unavailable' as const }, 503)
-    }
-  },
-)
-app.openapi(
-  createRoute({
-    method: 'get',
-    path: '/metrics',
-    ...probe,
-    summary: 'Prometheus metrics',
-    responses: { 200: { description: 'Text exposition format', content: { 'text/plain': { schema: z.string() } } } },
-  }),
-  (c) => c.text(renderMetrics(), 200, { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8' }),
-)
 
 // Spec 062: uploaded and replicated media, public. Names are generated: anything else is refused.
 app.use('/uploads/:filename', async (c, next) => {

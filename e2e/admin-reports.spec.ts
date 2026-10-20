@@ -1,4 +1,4 @@
-import { ADMIN_PASSWORD } from './env.ts'
+import { ADMIN_PASSWORD, API_PORT, PROBES_PORT } from './env.ts'
 import { apiClient, expect, signIn, test, uid } from './fixtures.ts'
 
 const admin = { email: 'admin', password: ADMIN_PASSWORD }
@@ -70,13 +70,31 @@ test.describe('CSV exports (spec 182)', () => {
 })
 
 test.describe('health and metrics (spec 006)', () => {
-  test('probes and Prometheus metrics', async ({ request }) => {
-    expect(await (await request.get('/health')).json()).toEqual({ status: 'ok' })
-    const api = 'http://localhost:3101'
-    expect((await request.get(`${api}/ready`)).ok()).toBeTruthy()
-    const metrics = await (await request.get(`${api}/metrics`)).text()
-    expect(metrics).toContain('# TYPE http_requests_total counter')
-    expect(metrics).toMatch(/pupitre_active_users_total \d+/)
-    expect(metrics).toMatch(/http_requests_total\{method="GET",route="\/health",status="200"\} \d+/)
+  const probes = `http://localhost:${PROBES_PORT}`
+
+  test('probes and Prometheus metrics answer on the probes port', async ({ request }) => {
+    expect(await (await request.get(`${probes}/health`)).json()).toEqual({ status: 'ok' })
+    expect(await (await request.get(`${probes}/ready`)).json()).toEqual({ status: 'ok' })
+    await request.get('/api/settings/public')
+    const metrics = await request.get(`${probes}/metrics`)
+    expect(metrics.headers()['content-type']).toContain('text/plain')
+    const text = await metrics.text()
+    expect(text).toContain('# TYPE http_requests_total counter')
+    expect(text).toMatch(/pupitre_active_users_total \d+/)
+    // Web API traffic is counted by route pattern.
+    expect(text).toMatch(/http_requests_total\{method="GET",route="\/api\/settings\/public",status="200"\} \d+/)
+    expect((await request.get(`${probes}/api/settings/public`)).status()).toBe(404)
+  })
+
+  test('probes are not exposed on the web: neither through the app nor on the API port', async ({ request }) => {
+    for (const path of ['/health', '/ready', '/metrics', '/api/health', '/api/metrics']) {
+      // The API port answers 404; the web app (which may serve its own HTML page) never proxies them.
+      const api = await request.get(`http://localhost:${API_PORT}${path}`)
+      expect(api.status(), path).toBe(404)
+      expect(await api.json()).toEqual({ error: 'Not found' })
+      const web = await (await request.get(path)).text()
+      expect(web, path).not.toContain('http_requests_total')
+      expect(web, path).not.toContain('"status":"ok"')
+    }
   })
 })

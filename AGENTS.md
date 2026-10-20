@@ -21,7 +21,8 @@ TypeScript everywhere (`tsc` 7, strict, `.ts` extensions in relative imports).
 | `docs/specs` | Specs of this rewrite, as implemented |
 
 Everything is served on one origin (spec 004): the learner app's Vite server proxies `/api` and
-`/health` to the API and `/admin` to the admin app. Never call the API on another origin.
+`/uploads` to the API and `/admin` to the admin app. Never call the API on another origin. Probes and metrics
+(`/health`, `/ready`, `/metrics`) are on the API's probes port (`PROBES_PORT`, e2e: 3107), never on the web (spec 006).
 
 ## Workflow
 

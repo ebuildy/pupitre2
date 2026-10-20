@@ -4,6 +4,7 @@ import { ensureAdmin } from './bootstrap/admin.ts'
 import { sqlite } from './db/index.ts'
 import { runMigrations } from './db/migrate.ts'
 import { env } from './env.ts'
+import { probes } from './probes.ts'
 import { ensureDefaultMemberships } from './services/groups.ts'
 import { seedPatterns } from './services/patterns.ts'
 import { updateSettings } from './services/settings.ts'
@@ -27,9 +28,14 @@ if (seeded) console.log(`markdown patterns from ${env.PATTERNS_FILE}: ${seeded}`
 const server = serve({ fetch: app.fetch, port: env.PORT }, (info) => {
   console.log(`api listening on http://localhost:${info.port}`)
 })
+// Spec 006: probes and metrics on their own port, not exposed to the web.
+const probesServer = serve({ fetch: probes.fetch, port: env.PROBES_PORT, hostname: env.PROBES_HOST }, (info) => {
+  console.log(`probes listening on http://${env.PROBES_HOST}:${info.port} (/health, /ready, /metrics)`)
+})
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {
+    probesServer.close()
     server.close(() => {
       sqlite.close()
       process.exit(0)
