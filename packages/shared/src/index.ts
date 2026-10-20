@@ -1,33 +1,28 @@
 // Code shared between the API and the web app: wire types, zod schemas, constants.
-
-/** Every API error is `{ error }` with a user-displayable message (spec 005). */
-export type ApiError = {
-  error: string
-}
+import { z } from 'zod'
+import { ROLES, type Role } from './common.ts'
 
 /** `GET /health` response (spec 006). */
-export type HealthResponse = {
-  status: 'ok'
-}
-
-/** Platform roles (spec 001). Every account has exactly one. */
-export const ROLES = ['student', 'manager', 'admin'] as const
-export type Role = (typeof ROLES)[number]
+export const healthResponseSchema = z.object({ status: z.literal('ok') }).meta({ id: 'Health' })
+export type HealthResponse = z.infer<typeof healthResponseSchema>
 
 /** `GET /api/me` response (spec 034). */
-export type MeResponse = {
-  id: string
-  username: string | null
-  email: string
-  name: string
-  role: Role
-  image: string | null
-  bio: string | null
-  isActive: boolean
-  createdAt: string
-  /** The account has a local password (SSO-only accounts have none; spec 036). */
-  hasPassword: boolean
-}
+export const meResponseSchema = z
+  .object({
+    id: z.string(),
+    username: z.string().nullable(),
+    email: z.string(),
+    name: z.string(),
+    role: z.enum(ROLES),
+    image: z.string().nullable(),
+    bio: z.string().nullable(),
+    isActive: z.boolean(),
+    createdAt: z.string(),
+    /** The account has a local password (SSO-only accounts have none; spec 036). */
+    hasPassword: z.boolean(),
+  })
+  .meta({ id: 'Me' })
+export type MeResponse = z.infer<typeof meResponseSchema>
 
 const PLACEHOLDER_ORIGIN = 'http://pupitre.invalid'
 /** WHATWG `URL`, present in browsers and Node; this package is compiled without DOM or Node types. */
@@ -57,6 +52,7 @@ export function landingPath(role: Role | undefined, redirect: string | null | un
   return safeRedirectPath(redirect) ?? (role === 'admin' ? '/admin' : '/courses')
 }
 
+export * from './common.ts'
 export * from './courses.ts'
 export * from './xp.ts'
 export * from './content.ts'

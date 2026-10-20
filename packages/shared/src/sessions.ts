@@ -24,34 +24,43 @@ export const sessionUpdateSchema = sessionInputSchema.omit({ courseId: true }).p
 export type SessionUpdateInput = z.input<typeof sessionUpdateSchema>
 
 /** A session as listed in the agenda and on the course page. */
-export type SessionView = {
-  id: string
-  course: { id: string; slug: string; title: string }
-  title: string
-  startsAt: string
-  endsAt: string | null
-  location: string | null
-  /** null = unlimited. */
-  capacity: number | null
-  bookedCount: number
-  /** The viewer booked a seat. */
-  booked: boolean
-  past: boolean
-}
+export const sessionViewSchema = z
+  .object({
+    id: z.string(),
+    course: z.object({ id: z.string(), slug: z.string(), title: z.string() }),
+    title: z.string(),
+    startsAt: z.string(),
+    endsAt: z.string().nullable(),
+    location: z.string().nullable(),
+    /** null = unlimited. */
+    capacity: z.number().nullable(),
+    bookedCount: z.number(),
+    /** The viewer booked a seat. */
+    booked: z.boolean(),
+    past: z.boolean(),
+  })
+  .meta({ id: 'Session' })
+export type SessionView = z.infer<typeof sessionViewSchema>
 
 /** `GET /api/sessions` (spec 154). */
-export type SessionListResponse = {
-  sessions: SessionView[]
-  /** The viewer can create, edit and delete sessions and take attendance (admins and managers). */
-  canManage: boolean
-}
+export const sessionListResponseSchema = z
+  .object({
+    sessions: z.array(sessionViewSchema),
+    /** The viewer can create, edit and delete sessions and take attendance (admins and managers). */
+    canManage: z.boolean(),
+  })
+  .meta({ id: 'SessionList' })
+export type SessionListResponse = z.infer<typeof sessionListResponseSchema>
 
 /** Spec 155: presence sheet. */
-export type SessionParticipant = {
-  userId: string
-  username: string | null
-  name: string
-  email: string
-  bookedAt: string
-  attendance: Attendance
-}
+export const sessionParticipantSchema = z
+  .object({
+    userId: z.string(),
+    username: z.string().nullable(),
+    name: z.string(),
+    email: z.string(),
+    bookedAt: z.string(),
+    attendance: z.enum(ATTENDANCES),
+  })
+  .meta({ id: 'SessionParticipant' })
+export type SessionParticipant = z.infer<typeof sessionParticipantSchema>

@@ -50,6 +50,7 @@ pnpm test:e2e       # Playwright, starts its own servers (see below)
 pnpm db:generate    # Drizzle migration from schema changes
 pnpm db:seed        # load mock data into the dev database (pnpm db:reset: start from scratch)
 pnpm auth:generate  # regenerate the better-auth schema after changing auth config/plugins
+pnpm openapi        # write the OpenAPI document to apps/api/openapi.json (Swagger UI at /api/docs/swagger)
 ```
 
 - Adding a dependency to `apps/api` can change how better-auth resolves (optional peers such as `@opentelemetry/api`)
@@ -72,8 +73,15 @@ pnpm auth:generate  # regenerate the better-auth schema after changing auth conf
   drizzle-kit asks interactively about renames (fails without a TTY): split the change (add the new column, then drop the old
   one in a second generate) and put any data migration SQL at the end of the first file. Never edit a migration that
   may already be applied (anything merged into `master`).
-- Validate inputs with `validate('json' | 'query', schema)` from `src/lib/validate.ts` (answers 400 `{ error }`). Shared
-  request schemas and response types live in `@pupitre/shared`; type responses with `c.json<T>(...)`.
+- **Every route is documented** (spec 005, OpenAPI): declare it with `createRoute({ method, path: '/{id}', tags, summary,
+  request: { params: params('id'), query, body: jsonBody(schema) }, responses: { 200: json(schema), ...errors(404) } })`
+  and register it with `.openapi(route, handler)` on a `createRouter()` (helpers in `src/lib/openapi.ts`). Validation
+  answers 400 `{ error }`; read inputs with `c.req.valid(…)`. Handlers return `c.json(body, status)` with an explicit
+  status, and the body is type-checked against the declared response schema. Admin routes add `...errors(...ADMIN)`;
+  routes open to signed-out visitors set `security: PUBLIC`. `.use()` drops the OpenAPI type: wrap the chain in `$()`.
+- Request schemas and response schemas live in `@pupitre/shared` (zod; response types are `z.infer` of them, named
+  components with `.meta({ id })`); one-off response shapes may stay inline in the route. `pnpm openapi` writes the
+  document to `apps/api/openapi.json`; Swagger UI (public) at `/api/docs/swagger`.
 - Business queries go in `src/services/`, routes stay thin.
 - Transactions: better-sqlite3 is synchronous, so `db.transaction(cb)` needs a **synchronous** callback using the
   `.all()` / `.get()` / `.run()` query methods (an `async` callback commits before its awaits run). See `services/xp.ts`.
@@ -95,7 +103,7 @@ pnpm auth:generate  # regenerate the better-auth schema after changing auth conf
   earned, history kept when the course is deleted (spec 103).
 - Guards: `requireAuth`, `requireRole('admin' | 'manager', …)` from `src/middleware/session.ts`. `c.var.user` is
   `null` for signed-out and deactivated users.
-- Learner endpoints: chain onto `routes` in `src/app.ts` (typed client `api` in `apps/app`).
+- Learner endpoints: chain onto `learnerRoutes` in `src/app.ts` (typed client `api` in `apps/app`).
 - **Admin endpoints**: always under `/api/admin/*`, chained onto `adminRoutes` in `src/routes/admin/index.ts`
   (admin-only before routing, typed client `adminApi` in `apps/admin`). Never call learner endpoints from the
   admin app or the reverse; duplicate the endpoint under `/api/admin` if both need it.

@@ -2,19 +2,17 @@ import {
   type CourseSpec,
   courseModulesSchema,
   courseSpecSchema,
-  type MarkdownImportPreview,
-  type MarkdownImportResult,
+  markdownImportPreviewSchema,
+  markdownImportResultSchema,
   markdownImportSchema,
   type ModuleInput,
 } from '@pupitre/shared'
 import { eq } from 'drizzle-orm'
-import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { parseMarkdownCourse } from '../../content/markdown-course.ts'
 import { db } from '../../db/index.ts'
 import { course } from '../../db/schema/index.ts'
-import { validate } from '../../lib/validate.ts'
-import type { AppEnv } from '../../middleware/session.ts'
+import { ADMIN, createRoute, createRouter, errors, json, jsonBody } from '../../lib/openapi.ts'
 import { audit } from '../../services/audit.ts'
 import { readDefinition, writeDefinition } from '../../services/definition.ts'
 import { InvalidQuizError, parseQuiz } from '../../services/learning.ts'
@@ -70,13 +68,40 @@ async function resolveImport(input: ReturnType<typeof markdownImportSchema.parse
   return { slug: doc.slug, spec, modules, existing, existingSlugs, warnings }
 }
 
+const tags = ['Admin: courses']
+const MODES = '`create`: a new course (409 if the slug exists); `replace`: new modules, and new metadata when the document has a frontmatter; `append`: modules added after the existing ones.'
+
+const preview = createRoute({
+  method: 'post',
+  path: '/preview',
+  tags,
+  summary: 'Preview a markdown import',
+  description: `Spec 175: what the import would do, without storing anything. ${MODES}`,
+  request: { body: jsonBody(markdownImportSchema) },
+  responses: { 200: json(markdownImportPreviewSchema), ...errors(400, ...ADMIN, 404, 409) },
+})
+
+const importCourse = createRoute({
+  method: 'post',
+  path: '/',
+  tags,
+  summary: 'Import a course from markdown',
+  description: `Spec 174. ${MODES}`,
+  request: { body: jsonBody(markdownImportSchema) },
+  responses: {
+    200: json(markdownImportResultSchema, 'Imported into an existing course'),
+    201: json(markdownImportResultSchema, 'Course created'),
+    ...errors(400, ...ADMIN, 404, 409),
+  },
+})
+
 /** `/api/admin/courses/import` (spec 174) and `/import/preview` (175). */
-export const adminImportRoutes = new Hono<AppEnv>()
-  .post('/preview', validate('json', markdownImportSchema), async (c) => {
+export const adminImportRoutes = createRouter()
+  .openapi(preview, async (c) => {
     const input = c.req.valid('json')
     const r = await resolveImport(input)
     const { modules: _, ...meta } = r.spec
-    return c.json<MarkdownImportPreview>({
+    return c.json({
       slug: r.slug,
       mode: input.mode,
       course: meta,
@@ -90,15 +115,13 @@ export const adminImportRoutes = new Hono<AppEnv>()
         existing: r.existingSlugs.has(m.slug),
       })),
       warnings: r.warnings,
-    })
+    }, 200)
   })
-  .post('/', validate('json', markdownImportSchema), async (c) => {
+  .openapi(importCourse, async (c) => {
     const input = c.req.valid('json')
     const r = await resolveImport(input)
     const id = await writeDefinition(r.slug, r.spec, r.existing)
     audit(c.get('user'), `course.import.${input.mode}`, { type: 'course', id, label: r.slug })
-    return c.json<MarkdownImportResult>(
-      { slug: r.slug, id, mode: input.mode, moduleCount: r.modules.length, warnings: r.warnings },
-      input.mode === 'create' ? 201 : 200,
-    )
+    const result = { slug: r.slug, id, mode: input.mode, moduleCount: r.modules.length, warnings: r.warnings }
+    return input.mode === 'create' ? c.json(result, 201) : c.json(result, 200)
   })

@@ -53,15 +53,17 @@ pupitre). See [docs/specs/027](docs/specs/027-sso.md#sso-demo-keycloak).
 | `pnpm db:seed` | Load the mock data (fixtures) into the dev database |
 | `pnpm db:reset` | Delete the dev database, then migrate and load the mock data |
 | `pnpm auth:generate` | Regenerate `apps/api/src/db/schema/auth.ts` after changing better-auth plugins/config, then `pnpm db:generate` |
+| `pnpm openapi` | Write the OpenAPI 3.1 document of the API to `apps/api/openapi.json` (`pnpm openapi -- <file>` elsewhere) |
 
 ## Conventions
 
 - Errors are `{ "error": "<message>" }` (spec 005); unknown routes return 404 in that shape.
+- API routes are declared with `@hono/zod-openapi` (`createRoute` + `.openapi()`, helpers in `apps/api/src/lib/openapi.ts`): zod validates the request and documents request and response. Swagger UI at `/api/docs/swagger` (public; JSON: `/api/docs/openapi.json`).
 - `c.var.user` / `c.var.session` are filled on every `/api/*` request (deactivated users count as signed out); guard routes with `requireAuth` or `requireRole('admin')`.
 - Users have a `role` (`student` | `manager` | `admin`) and `isActive`, declared as better-auth `additionalFields` with `input: false`.
 - Pages: wrap in `<RequireAuth roles={[...]}>` (redirects to the current app's `/login?redirect=…`, or shows "Accès refusé").
 - e2e: use the `createUser({ role, isActive })` fixture from `e2e/fixtures.ts`.
-- Learner endpoints: chain routers onto `routes` in `apps/api/src/app.ts` (`AppType`, client `api` in `apps/app/src/lib/api.ts`).
+- Learner endpoints: chain routers onto `learnerRoutes` in `apps/api/src/app.ts` (`AppType`, client `api` in `apps/app/src/lib/api.ts`).
 - Admin endpoints: chain routers onto `adminRoutes` in `apps/api/src/routes/admin/index.ts`. They live under `/api/admin/*`, are admin-only before routing, and are typed separately (`AdminAppType`, client `adminApi` in `apps/admin/src/lib/api.ts`).
 - UI text: never hard-code it. Add the key to `packages/i18n/src/locales/fr/index.ts` (reference) and `en/index.ts`, then `const { t } = useTranslation('<ns>')` from `@pupitre/i18n` (spec 018). Missing translations or unknown keys fail `pnpm typecheck`.
 - Pages use `useGoTo()` from `@pupitre/auth-ui` for origin-absolute paths: client-side within the current app, full page load across apps.

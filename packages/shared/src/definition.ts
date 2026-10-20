@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { COURSE_STATUSES, COURSE_VISIBILITIES, DIFFICULTIES, SLUG_PATTERN } from './courses.ts'
+import { COURSE_STATUSES, COURSE_VISIBILITIES, DIFFICULTIES } from './common.ts'
+import { SLUG_PATTERN } from './courses.ts'
 import { moduleInputSchema } from './content.ts'
 import { badgeSchema } from './gamification.ts'
 
@@ -55,12 +56,28 @@ export const markdownImportSchema = z.object({
 })
 export type MarkdownImportInput = z.input<typeof markdownImportSchema>
 
-export type MarkdownImportPreview = {
-  slug: string
-  mode: ImportMode
-  course: Omit<CourseSpec, 'modules'>
-  modules: { name: string; slug: string; type: string; bytes: number; hidden: boolean; source: string | null; existing: boolean }[]
-  warnings: string[]
-}
+export const markdownImportPreviewSchema = z
+  .object({
+    slug: z.string(),
+    mode: z.enum(IMPORT_MODES),
+    course: courseSpecSchema.omit({ modules: true }),
+    modules: z.array(
+      z.object({
+        name: z.string(),
+        slug: z.string(),
+        type: z.string(),
+        bytes: z.number(),
+        hidden: z.boolean(),
+        source: z.string().nullable(),
+        existing: z.boolean(),
+      }),
+    ),
+    warnings: z.array(z.string()),
+  })
+  .meta({ id: 'MarkdownImportPreview' })
+export type MarkdownImportPreview = z.infer<typeof markdownImportPreviewSchema>
 
-export type MarkdownImportResult = { slug: string; id: string; mode: ImportMode; moduleCount: number; warnings: string[] }
+export const markdownImportResultSchema = z
+  .object({ slug: z.string(), id: z.string(), mode: z.enum(IMPORT_MODES), moduleCount: z.number(), warnings: z.array(z.string()) })
+  .meta({ id: 'MarkdownImportResult' })
+export type MarkdownImportResult = z.infer<typeof markdownImportResultSchema>

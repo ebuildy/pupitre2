@@ -1,4 +1,5 @@
 import { type CourseSpec, courseModulesSchema, courseSpecSchema } from '@pupitre/shared'
+import type { z } from 'zod'
 import { eq } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import { db } from '../db/index.ts'
@@ -10,7 +11,7 @@ type Course = typeof course.$inferSelect
 type SpecModule = NonNullable<CourseSpec['modules']>[number]
 
 /** Spec 169: the course as a portable document (references by slug). */
-export async function readDefinition(c: Course): Promise<{ slug: string; spec: CourseSpec }> {
+export async function readDefinition(c: Course): Promise<{ slug: string; spec: z.output<typeof courseSpecSchema> }> {
   const cat = c.categoryId ? db.select({ slug: category.slug }).from(category).where(eq(category.id, c.categoryId)).get() : null
   const prereqs = adminPrerequisites(c.id)
   const slugs = new Map(

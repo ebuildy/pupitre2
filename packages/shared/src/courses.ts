@@ -1,23 +1,15 @@
 import { z } from 'zod'
-import { type Badge, badgeSchema, type SkillLevel, type SkillRef } from './gamification.ts'
-
-export const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'] as const
-export type Difficulty = (typeof DIFFICULTIES)[number]
-
-/** `public`: listed and open to any signed-in user; `private`: granted access only (spec 191). */
-export const COURSE_VISIBILITIES = ['public', 'private'] as const
-export type CourseVisibility = (typeof COURSE_VISIBILITIES)[number]
-
-/** `draft`: admins only; `published`; `archived`: no new enrollments, unlisted, history kept. */
-export const COURSE_STATUSES = ['draft', 'published', 'archived'] as const
-export type CourseStatus = (typeof COURSE_STATUSES)[number]
-
-/**
- * Why a user has access to a course (spec 191). `group` and `path` grants carry the group / path id (`via`) and are
- * kept in sync with memberships and group/path enrollments.
- */
-export const ENROLLMENT_SOURCES = ['self', 'auto', 'admin', 'manager', 'group', 'path'] as const
-export type EnrollmentSource = (typeof ENROLLMENT_SOURCES)[number]
+import {
+  badgeViewSchema,
+  categoryRefSchema,
+  COURSE_STATUSES,
+  COURSE_VISIBILITIES,
+  DIFFICULTIES,
+  ENROLLMENT_SOURCES,
+  SKILL_LEVELS,
+  skillRefSchema,
+} from './common.ts'
+import { badgeSchema } from './gamification.ts'
 
 /** Spec 185. */
 export const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]*$/
@@ -90,130 +82,159 @@ export const courseUpdateSchema = courseCreateSchema
   .partial()
 export type CourseUpdateInput = z.input<typeof courseUpdateSchema>
 
-export type CategoryRef = { slug: string; title: string }
-
 /** A course's category, with its ancestors from the root (for "DevOps › Docker"). */
-export type CourseCategory = CategoryRef & { ancestors: CategoryRef[] }
+export const courseCategorySchema = categoryRefSchema
+  .extend({ ancestors: z.array(categoryRefSchema) })
+  .meta({ id: 'CourseCategory' })
+export type CourseCategory = z.infer<typeof courseCategorySchema>
+
+const progressSchema = z.object({ done: z.number(), total: z.number() })
 
 /** A course as shown to learners (catalogue card, course page). */
-export type CourseSummary = {
-  slug: string
-  title: string
-  description: string | null
-  category: CourseCategory | null
-  difficulty: Difficulty | null
-  xpRequired: number
-  completionXp: number
-  /** Signed-in user is enrolled. Always `false` for anonymous visitors. */
-  enrolled: boolean
-  /** Signed-in user completed the course. */
-  completed: boolean
-  badge: Badge | null
-  inPerson: boolean
-  thumbnailUrl: string | null
-  /** Spec 110: union of the skills of its visible modules. */
-  skills: SkillRef[]
-  moduleCount: number
-  /** Enrolled users: visible modules done (spec 044). */
-  progress: { done: number; total: number } | null
-}
+export const courseSummarySchema = z
+  .object({
+    slug: z.string(),
+    title: z.string(),
+    description: z.string().nullable(),
+    category: courseCategorySchema.nullable(),
+    difficulty: z.enum(DIFFICULTIES).nullable(),
+    xpRequired: z.number(),
+    completionXp: z.number(),
+    /** Signed-in user is enrolled. Always `false` for anonymous visitors. */
+    enrolled: z.boolean(),
+    /** Signed-in user completed the course. */
+    completed: z.boolean(),
+    badge: badgeViewSchema.nullable(),
+    inPerson: z.boolean(),
+    thumbnailUrl: z.string().nullable(),
+    /** Spec 110: union of the skills of its visible modules. */
+    skills: z.array(skillRefSchema),
+    moduleCount: z.number(),
+    /** Enrolled users: visible modules done (spec 044). */
+    progress: progressSchema.nullable(),
+  })
+  .meta({ id: 'CourseSummary' })
+export type CourseSummary = z.infer<typeof courseSummarySchema>
 
 /** `GET /api/courses` */
-export type CourseListResponse = {
-  courses: CourseSummary[]
-  total: number
-  /**
-   * Top-level categories of the courses matching search + difficulty (before the category filter), for the chips.
-   * `count` includes the courses of subcategories.
-   */
-  categories: (CategoryRef & { count: number })[]
-  /** Spec 042: the `skill` filter, with the viewer's level in it ("Cours adaptés à ton niveau"). */
-  skillFilter: (SkillRef & { level: SkillLevel | null }) | null
-}
+export const courseListResponseSchema = z
+  .object({
+    courses: z.array(courseSummarySchema),
+    total: z.number(),
+    /**
+     * Top-level categories of the courses matching search + difficulty (before the category filter), for the chips.
+     * `count` includes the courses of subcategories.
+     */
+    categories: z.array(categoryRefSchema.extend({ count: z.number() })),
+    /** Spec 042: the `skill` filter, with the viewer's level in it ("Cours adaptés à ton niveau"). */
+    skillFilter: skillRefSchema.extend({ level: z.enum(SKILL_LEVELS).nullable() }).nullable(),
+  })
+  .meta({ id: 'CourseList' })
+export type CourseListResponse = z.infer<typeof courseListResponseSchema>
 
 /** Spec 050, on the course page: each prerequisite and whether the viewer meets it. */
-export type CoursePrerequisiteView = {
-  course: { slug: string; title: string }
-  minScore: number | null
-  modules: { slug: string; name: string }[]
-  met: boolean
-}
+export const coursePrerequisiteViewSchema = z
+  .object({
+    course: z.object({ slug: z.string(), title: z.string() }),
+    minScore: z.number().nullable(),
+    modules: z.array(z.object({ slug: z.string(), name: z.string() })),
+    met: z.boolean(),
+  })
+  .meta({ id: 'CoursePrerequisite' })
+export type CoursePrerequisiteView = z.infer<typeof coursePrerequisiteViewSchema>
 
 /** `GET /api/courses/:slug` */
-export type CourseDetail = CourseSummary & {
-  prerequisites: CoursePrerequisiteView[]
-  /** Every prerequisite met (always true for admins and courses without any). */
-  prerequisitesMet: boolean
-  visibility: CourseVisibility
-  status: CourseStatus
-  enrollment: null | {
-    enrolledAt: string
-    /** The learner can withdraw: every grant is their own. */
-    canUnenroll: boolean
-  }
-  completedAt: string | null
-  /** Signed-in user's total XP (for the enrollment gate), null when signed out. */
-  userXp: number | null
-}
+export const courseDetailSchema = courseSummarySchema
+  .extend({
+    prerequisites: z.array(coursePrerequisiteViewSchema),
+    /** Every prerequisite met (always true for admins and courses without any). */
+    prerequisitesMet: z.boolean(),
+    visibility: z.enum(COURSE_VISIBILITIES),
+    status: z.enum(COURSE_STATUSES),
+    enrollment: z
+      .object({
+        enrolledAt: z.string(),
+        /** The learner can withdraw: every grant is their own. */
+        canUnenroll: z.boolean(),
+      })
+      .nullable(),
+    completedAt: z.string().nullable(),
+    /** Signed-in user's total XP (for the enrollment gate), null when signed out. */
+    userXp: z.number().nullable(),
+  })
+  .meta({ id: 'CourseDetail' })
+export type CourseDetail = z.infer<typeof courseDetailSchema>
 
 /** `GET /api/my/courses` */
-export type MyCoursesResponse = {
-  courses: (CourseSummary & {
-    status: CourseStatus
-    enrolledAt: string
-    completedAt: string | null
-    /** Last module viewed or quiz submitted. */
-    lastActivityAt: string | null
-  })[]
-}
+export const myCoursesResponseSchema = z
+  .object({
+    courses: z.array(
+      courseSummarySchema.extend({
+        status: z.enum(COURSE_STATUSES),
+        enrolledAt: z.string(),
+        completedAt: z.string().nullable(),
+        /** Last module viewed or quiz submitted. */
+        lastActivityAt: z.string().nullable(),
+      }),
+    ),
+  })
+  .meta({ id: 'MyCourses' })
+export type MyCoursesResponse = z.infer<typeof myCoursesResponseSchema>
 
 /** A course as shown to admins. */
-export type AdminCourse = {
-  id: string
-  slug: string
-  title: string
-  description: string | null
-  categoryId: string | null
-  category: CourseCategory | null
-  difficulty: Difficulty | null
-  xpRequired: number
-  completionXp: number
-  visibility: CourseVisibility
-  status: CourseStatus
-  badge: Badge | null
-  inPerson: boolean
-  thumbnailUrl: string | null
-  prerequisites: { courseId: string; minScore: number | null; modules: string[] }[]
-  enrollmentCount: number
-  createdAt: string
-  updatedAt: string
-}
+export const adminCourseSchema = z
+  .object({
+    id: z.string(),
+    slug: z.string(),
+    title: z.string(),
+    description: z.string().nullable(),
+    categoryId: z.string().nullable(),
+    category: courseCategorySchema.nullable(),
+    difficulty: z.enum(DIFFICULTIES).nullable(),
+    xpRequired: z.number(),
+    completionXp: z.number(),
+    visibility: z.enum(COURSE_VISIBILITIES),
+    status: z.enum(COURSE_STATUSES),
+    badge: badgeViewSchema.nullable(),
+    inPerson: z.boolean(),
+    thumbnailUrl: z.string().nullable(),
+    prerequisites: z.array(z.object({ courseId: z.string(), minScore: z.number().nullable(), modules: z.array(z.string()) })),
+    enrollmentCount: z.number(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .meta({ id: 'AdminCourse' })
+export type AdminCourse = z.infer<typeof adminCourseSchema>
 
-export type AdminCourseEnrollment = {
-  userId: string
-  username: string | null
-  name: string
-  email: string
-  enrolledAt: string
-  sources: EnrollmentSource[]
-  completedAt: string | null
-}
+export const adminCourseEnrollmentSchema = z
+  .object({
+    userId: z.string(),
+    username: z.string().nullable(),
+    name: z.string(),
+    email: z.string(),
+    enrolledAt: z.string(),
+    sources: z.array(z.enum(ENROLLMENT_SOURCES)),
+    completedAt: z.string().nullable(),
+  })
+  .meta({ id: 'AdminCourseEnrollment' })
+export type AdminCourseEnrollment = z.infer<typeof adminCourseEnrollmentSchema>
 
-export type AdminUserSearchResult = {
-  id: string
-  username: string | null
-  name: string
-  email: string
-}
+export const adminUserSearchResultSchema = z
+  .object({ id: z.string(), username: z.string().nullable(), name: z.string(), email: z.string() })
+  .meta({ id: 'AdminUserSearchResult' })
+export type AdminUserSearchResult = z.infer<typeof adminUserSearchResultSchema>
 
-export type AdminCategory = {
-  id: string
-  slug: string
-  title: string
-  parentId: string | null
-  /** Courses directly in this category. */
-  courseCount: number
-  childCount: number
-  createdAt: string
-  updatedAt: string
-}
+export const adminCategorySchema = z
+  .object({
+    id: z.string(),
+    slug: z.string(),
+    title: z.string(),
+    parentId: z.string().nullable(),
+    /** Courses directly in this category. */
+    courseCount: z.number(),
+    childCount: z.number(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .meta({ id: 'AdminCategory' })
+export type AdminCategory = z.infer<typeof adminCategorySchema>

@@ -1,11 +1,19 @@
-import type { AdminLeaderboardResponse } from '@pupitre/shared'
+import { adminLeaderboardResponseSchema } from '@pupitre/shared'
 import { sql } from 'drizzle-orm'
-import { Hono } from 'hono'
 import { db } from '../../db/index.ts'
-import type { AppEnv } from '../../middleware/session.ts'
+import { ADMIN, createRoute, createRouter, errors, json } from '../../lib/openapi.ts'
+
+const getLeaderboard = createRoute({
+  method: 'get',
+  path: '/',
+  tags: ['Admin: stats'],
+  summary: 'Learners by quiz score',
+  description: 'Spec 115: the top 100 by total quiz score (sum of best scores), with passed modules and enrolled courses.',
+  responses: { 200: json(adminLeaderboardResponseSchema), ...errors(...ADMIN) },
+})
 
 /** Spec 115: learners ranked by total quiz score (sum of best scores), with passed modules and enrolled courses. */
-export const adminLeaderboardRoutes = new Hono<AppEnv>().get('/', (c) => {
+export const adminLeaderboardRoutes = createRouter().openapi(getLeaderboard, (c) => {
   const rows = db.all<{
     id: string
     username: string | null
@@ -26,10 +34,10 @@ export const adminLeaderboardRoutes = new Hono<AppEnv>().get('/', (c) => {
     LIMIT 100`)
   const ranked = rows.filter((r) => r.totalScore > 0 || r.passedModules > 0)
   let rank = 0
-  return c.json<AdminLeaderboardResponse>({
+  return c.json({
     leaderboard: ranked.map((r, i) => {
       if (i === 0 || r.totalScore !== ranked[i - 1]!.totalScore) rank = i + 1
       return { ...r, username: r.username ?? r.name, rank }
     }),
-  })
+  }, 200)
 })

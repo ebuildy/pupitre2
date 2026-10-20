@@ -43,28 +43,50 @@ export const labConfigSchema = z.object({
 export type LabConfig = z.output<typeof labConfigSchema>
 export type LabConfigInput = z.input<typeof labConfigSchema>
 
-export type LabCheckResult = { allow: boolean; violations: string[] }
+export const labCheckResultSchema = z.object({ allow: z.boolean(), violations: z.array(z.string()) }).meta({ id: 'LabCheckResult' })
+export type LabCheckResult = z.infer<typeof labCheckResultSchema>
+
+/** `POST …/steps/:index/record`: the result of a local check, reported by the desktop app (spec 093). */
+export const labStepRecordSchema = z.object({ allow: z.boolean(), violations: z.array(z.string().max(500)).max(50).default([]) })
 
 /** In a lab module's detail. */
-export type LabView = {
-  labUrl: string | null
-  provider: LabProvider
-  steps: { index: number; title: string; checkType: string; checkParams: Record<string, unknown>; passed: boolean; lastCheck: (LabCheckResult & { checkedAt: string }) | null }[]
-}
+export const labViewSchema = z
+  .object({
+    labUrl: z.string().nullable(),
+    provider: z.enum(LAB_PROVIDERS),
+    steps: z.array(
+      z.object({
+        index: z.number(),
+        title: z.string(),
+        checkType: z.string(),
+        checkParams: z.record(z.string(), z.unknown()),
+        passed: z.boolean(),
+        lastCheck: labCheckResultSchema.extend({ checkedAt: z.string() }).nullable(),
+      }),
+    ),
+  })
+  .meta({ id: 'LabView' })
+export type LabView = z.infer<typeof labViewSchema>
 
 /** `POST …/steps/:index/check` and `…/record`. */
-export type LabStepCheckResponse = LabCheckResult & { completed: boolean; courseCompleted: boolean }
+export const labStepCheckResponseSchema = labCheckResultSchema
+  .extend({ completed: z.boolean(), courseCompleted: z.boolean() })
+  .meta({ id: 'LabStepCheck' })
+export type LabStepCheckResponse = z.infer<typeof labStepCheckResponseSchema>
 
 /** `GET /api/admin/lab-checks` (spec 094). */
-export type AdminLabCheck = {
-  id: string
-  user: { id: string; username: string; email: string } | null
-  userEmail: string
-  course: { id: string; slug: string; title: string } | null
-  module: string
-  step: string | null
-  allow: boolean
-  violations: string[]
-  verified: boolean
-  checkedAt: string
-}
+export const adminLabCheckSchema = z
+  .object({
+    id: z.string(),
+    user: z.object({ id: z.string(), username: z.string(), email: z.string() }).nullable(),
+    userEmail: z.string(),
+    course: z.object({ id: z.string(), slug: z.string(), title: z.string() }).nullable(),
+    module: z.string(),
+    step: z.string().nullable(),
+    allow: z.boolean(),
+    violations: z.array(z.string()),
+    verified: z.boolean(),
+    checkedAt: z.string(),
+  })
+  .meta({ id: 'AdminLabCheck' })
+export type AdminLabCheck = z.infer<typeof adminLabCheckSchema>

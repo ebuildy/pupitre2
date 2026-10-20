@@ -1,11 +1,10 @@
-import { type AdminCategory, categoryCreateSchema, categoryUpdateSchema } from '@pupitre/shared'
+import { type AdminCategory, adminCategorySchema, categoryCreateSchema, categoryUpdateSchema, messageSchema } from '@pupitre/shared'
 import { count, eq } from 'drizzle-orm'
-import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
+import { z } from 'zod'
 import { db } from '../../db/index.ts'
 import { category, course } from '../../db/schema/index.ts'
-import { validate } from '../../lib/validate.ts'
-import type { AppEnv } from '../../middleware/session.ts'
+import { ADMIN, createRoute, createRouter, errors, json, jsonBody, params } from '../../lib/openapi.ts'
 import { type Category, CategoryTree } from '../../services/categories.ts'
 
 const NOT_FOUND = 'Category not found'
@@ -45,35 +44,83 @@ function checkParent(tree: CategoryTree, parentId: string | null | undefined, id
   }
 }
 
+const tags = ['Admin: categories']
+
+const listCategories = createRoute({
+  method: 'get',
+  path: '/',
+  tags,
+  summary: 'Course categories',
+  responses: { 200: json(z.object({ categories: z.array(adminCategorySchema), total: z.number() })), ...errors(...ADMIN) },
+})
+
+const createCategory = createRoute({
+  method: 'post',
+  path: '/',
+  tags,
+  summary: 'Create a category',
+  request: { body: jsonBody(categoryCreateSchema) },
+  responses: { 201: json(adminCategorySchema, 'Created'), ...errors(400, ...ADMIN, 409) },
+})
+
+const getCategory = createRoute({
+  method: 'get',
+  path: '/{id}',
+  tags,
+  summary: 'A category',
+  request: { params: params('id') },
+  responses: { 200: json(adminCategorySchema), ...errors(...ADMIN, 404) },
+})
+
+const updateCategory = createRoute({
+  method: 'patch',
+  path: '/{id}',
+  tags,
+  summary: 'Edit or move a category',
+  description: 'A category cannot be moved under itself or its subcategories (400).',
+  request: { params: params('id'), body: jsonBody(categoryUpdateSchema) },
+  responses: { 200: json(adminCategorySchema), ...errors(400, ...ADMIN, 404, 409) },
+})
+
+const deleteCategory = createRoute({
+  method: 'delete',
+  path: '/{id}',
+  tags,
+  summary: 'Delete a category',
+  description: 'Only without subcategories and courses (409): nothing is re-filed silently.',
+  request: { params: params('id') },
+  responses: { 200: json(messageSchema), ...errors(...ADMIN, 404, 409) },
+})
+
 /** Course categories (a tree), under /api/admin/categories. */
-export const adminCategoryRoutes = new Hono<AppEnv>()
-  .get('/', async (c) => {
+export const adminCategoryRoutes = createRouter()
+  .openapi(listCategories, async (c) => {
     const tree = await CategoryTree.load()
     const courses = await courseCounts()
-    return c.json<{ categories: AdminCategory[]; total: number }>({
+    return c.json({
       categories: tree.all.map((x) => toAdminCategory(x, tree, courses)),
       total: tree.all.length,
-    })
+    }, 200)
   })
-  .post('/', validate('json', categoryCreateSchema), async (c) => {
+  .openapi(createCategory, async (c) => {
     const input = c.req.valid('json')
     const tree = await CategoryTree.load()
     checkParent(tree, input.parentId)
     try {
       const [created] = await db.insert(category).values(input).returning()
-      return c.json<AdminCategory>(toAdminCategory(created!, tree, new Map()), 201)
+      return c.json(toAdminCategory(created!, tree, new Map()), 201)
     } catch (err) {
       if (isSlugTaken(err)) throw new HTTPException(409, { message: SLUG_TAKEN })
       throw err
     }
   })
-  .get('/:id', async (c) => {
+  .openapi(getCategory, async (c) => {
     const tree = await CategoryTree.load()
     const found = tree.byId.get(c.req.param('id'))
     if (!found) throw new HTTPException(404, { message: NOT_FOUND })
-    return c.json<AdminCategory>(toAdminCategory(found, tree, await courseCounts()))
+    return c.json(toAdminCategory(found, tree, await courseCounts()), 200)
   })
-  .patch('/:id', validate('json', categoryUpdateSchema), async (c) => {
+  .openapi(updateCategory, async (c) => {
     const tree = await CategoryTree.load()
     const found = tree.byId.get(c.req.param('id'))
     if (!found) throw new HTTPException(404, { message: NOT_FOUND })
@@ -81,13 +128,13 @@ export const adminCategoryRoutes = new Hono<AppEnv>()
     checkParent(tree, input.parentId, found.id)
     try {
       const [updated] = await db.update(category).set(input).where(eq(category.id, found.id)).returning()
-      return c.json<AdminCategory>(toAdminCategory(updated!, tree, await courseCounts()))
+      return c.json(toAdminCategory(updated!, tree, await courseCounts()), 200)
     } catch (err) {
       if (isSlugTaken(err)) throw new HTTPException(409, { message: SLUG_TAKEN })
       throw err
     }
   })
-  .delete('/:id', async (c) => {
+  .openapi(deleteCategory, async (c) => {
     const tree = await CategoryTree.load()
     const found = tree.byId.get(c.req.param('id'))
     if (!found) throw new HTTPException(404, { message: NOT_FOUND })
@@ -95,5 +142,5 @@ export const adminCategoryRoutes = new Hono<AppEnv>()
     if (tree.childrenOf(found.id).length) throw new HTTPException(409, { message: 'Category has subcategories' })
     if ((await courseCounts()).get(found.id)) throw new HTTPException(409, { message: 'Category is used by courses' })
     await db.delete(category).where(eq(category.id, found.id))
-    return c.json({ message: 'Category deleted' })
+    return c.json({ message: 'Category deleted' }, 200)
   })

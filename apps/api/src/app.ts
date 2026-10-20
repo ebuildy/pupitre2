@@ -1,19 +1,21 @@
-import type { ApiError, HealthResponse } from '@pupitre/shared'
-import { Hono } from 'hono'
+import { swaggerUI } from '@hono/swagger-ui'
+import { type ApiError, healthResponseSchema } from '@pupitre/shared'
 import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { logger } from 'hono/logger'
 import { requestId } from 'hono/request-id'
 import { secureHeaders } from 'hono/secure-headers'
-import { ZodError } from 'zod'
+import { z, ZodError } from 'zod'
 import { auth } from './auth.ts'
 import { env } from './env.ts'
 import { queryCounter, sqlite } from './db/index.ts'
 import { metricsMiddleware, renderMetrics } from './lib/metrics.ts'
+import { createRoute, createRouter, json, PUBLIC, issueMessage } from './lib/openapi.ts'
+import { openApiDocument } from './openapi.ts'
 import { uploadsDir } from './services/media.ts'
 import { serveStatic } from '@hono/node-server/serve-static'
-import { type AppEnv, sessionMiddleware } from './middleware/session.ts'
+import { sessionMiddleware } from './middleware/session.ts'
 import { adminRoutes } from './routes/admin/index.ts'
 import { courseRoutes, enrollmentRoutes, leaderboardRoutes, myRoutes } from './routes/courses.ts'
 import { badgeRoutes, myBadgeRoutes, mySkillRoutes, skillRoutes } from './routes/gamification.ts'
@@ -26,7 +28,7 @@ import { meRoutes } from './routes/me.ts'
 import { moduleRoutes } from './routes/modules.ts'
 import { settingsRoutes, userRoutes } from './routes/users.ts'
 
-const app = new Hono<AppEnv>()
+const app = createRouter()
 
 app.use(requestId())
 if (env.QUERY_COUNT_HEADER) {
@@ -43,17 +45,44 @@ app.use(secureHeaders())
 
 app.use(metricsMiddleware)
 
+const probe = { tags: ['Probes'], security: PUBLIC }
+
 // Spec 006: the liveness probe never touches the database; readiness checks it; metrics for Prometheus.
-app.get('/health', (c) => c.json<HealthResponse>({ status: 'ok' }))
-app.get('/ready', (c) => {
-  try {
-    sqlite.prepare('SELECT 1').get()
-    return c.json({ status: 'ok' })
-  } catch {
-    return c.json({ status: 'unavailable' }, 503)
-  }
-})
-app.get('/metrics', (c) => c.body(renderMetrics(), 200, { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8' }))
+app.openapi(
+  createRoute({ method: 'get', path: '/health', ...probe, summary: 'Liveness', responses: { 200: json(healthResponseSchema) } }),
+  (c) => c.json({ status: 'ok' as const }, 200),
+)
+app.openapi(
+  createRoute({
+    method: 'get',
+    path: '/ready',
+    ...probe,
+    summary: 'Readiness',
+    description: 'Checks the database.',
+    responses: {
+      200: json(z.object({ status: z.literal('ok') })),
+      503: json(z.object({ status: z.literal('unavailable') }), 'The database cannot be read'),
+    },
+  }),
+  (c) => {
+    try {
+      sqlite.prepare('SELECT 1').get()
+      return c.json({ status: 'ok' as const }, 200)
+    } catch {
+      return c.json({ status: 'unavailable' as const }, 503)
+    }
+  },
+)
+app.openapi(
+  createRoute({
+    method: 'get',
+    path: '/metrics',
+    ...probe,
+    summary: 'Prometheus metrics',
+    responses: { 200: { description: 'Text exposition format', content: { 'text/plain': { schema: z.string() } } } },
+  }),
+  (c) => c.text(renderMetrics(), 200, { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8' }),
+)
 
 // Spec 062: uploaded and replicated media, public. Names are generated: anything else is refused.
 app.use('/uploads/:filename', async (c, next) => {
@@ -91,8 +120,7 @@ app.route('/api/sso', ssoRoutes)
 app.use('/api/*', sessionMiddleware)
 
 // Learner app routes. Chained so `AppType` carries their types to apps/app.
-const routes = app
-  .basePath('/api')
+const learnerRoutes = createRouter()
   .route('/me', meRoutes)
   .route('/courses', courseRoutes)
   .route('/courses/:slug/modules', moduleRoutes)
@@ -110,10 +138,15 @@ const routes = app
   .route('/leaderboard', leaderboardRoutes)
   .route('/users', userRoutes)
   .route('/settings', settingsRoutes)
+const routes = app.route('/api', learnerRoutes)
 
 // Admin app routes, all under /api/admin and admin-only. Typed separately (`AdminAppType`)
 // so each frontend's client only sees its own endpoints.
 app.route('/api/admin', adminRoutes)
+
+// The OpenAPI document of the whole API, and Swagger UI to browse and try it (public).
+app.get('/api/docs/openapi.json', (c) => c.json(openApiDocument(app)))
+app.get('/api/docs/swagger', swaggerUI({ url: '/api/docs/openapi.json', title: 'pupitre API' }))
 
 app.notFound((c) => c.json<ApiError>({ error: 'Not found' }, 404))
 
@@ -122,11 +155,7 @@ app.onError((err, c) => {
     return c.json<ApiError>({ error: err.message }, err.status)
   }
   // Documents validated inside services (course definitions, markdown imports): 400 with the first issue.
-  if (err instanceof ZodError) {
-    const issue = err.issues[0]
-    const field = issue?.path.join('.')
-    return c.json<ApiError>({ error: issue ? (field ? `${field}: ${issue.message}` : issue.message) : 'Invalid request' }, 400)
-  }
+  if (err instanceof ZodError) return c.json<ApiError>({ error: issueMessage(err) }, 400)
   console.error(err)
   return c.json<ApiError>({ error: 'Internal server error' }, 500)
 })

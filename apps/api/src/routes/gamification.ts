@@ -1,25 +1,36 @@
 import {
-  type MyBadgesResponse,
-  type MySkillsResponse,
+  badgeRarityResponseSchema,
+  myBadgesResponseSchema,
+  mySkillsResponseSchema,
   type SkillDetail,
-  type SkillListResponse,
+  skillDetailSchema,
+  skillListResponseSchema,
   type SkillModuleStatus,
   SKILL_SLUG_PATTERN,
 } from '@pupitre/shared'
 import { and, asc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
-import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { db } from '../db/index.ts'
 import { course, courseModule, moduleProgress, moduleSkill, skill, skillLevel } from '../db/schema/index.ts'
-import { type AppEnv, requireAuth } from '../middleware/session.ts'
+import { $, createRoute, createRouter, errors, json, params, PUBLIC } from '../lib/openapi.ts'
+import { requireAuth } from '../middleware/session.ts'
 import { badgeHolders, earnedBadges } from '../services/badges.ts'
 import { completionsFor } from '../services/xp.ts'
 import { enrolledCourseIds, findCourseBySlug, listMyCourses } from '../services/courses.ts'
 import { courseExtras, userSkillLevel } from '../services/skills.ts'
 
+const getMyBadges = createRoute({
+  method: 'get',
+  path: '/',
+  tags: ['Me'],
+  summary: 'My badges',
+  description: 'Specs 106, 107: badges earned, and the badges of published public courses still to earn.',
+  responses: { 200: json(myBadgesResponseSchema), ...errors(401) },
+})
+
 /** Specs 106, 107: the signed-in user's badges, and the ones still to earn. */
-export const myBadgeRoutes = new Hono<AppEnv>().use(requireAuth).get('/', (c) => {
-  const me = c.get('user')!
+export const myBadgeRoutes = $(createRouter().use(requireAuth)).openapi(getMyBadges, (c) => {
+  const me = c.get('user')
   const earned = earnedBadges(me.id)
   const earnedCourses = new Set(earned.flatMap((b) => (b.course ? [b.course.slug] : [])))
   const withBadge = db
@@ -31,24 +42,44 @@ export const myBadgeRoutes = new Hono<AppEnv>().use(requireAuth).get('/', (c) =>
     .orderBy(asc(course.title))
     .all()
   const holders = badgeHolders(withBadge.map((x) => x.id))
-  return c.json<MyBadgesResponse>({
+  return c.json({
     earned,
     locked: withBadge
       .filter((x) => !earnedCourses.has(x.slug))
       .map((x) => ({ name: x.name!, icon: x.icon!, course: { slug: x.slug, title: x.title }, earnedBy: holders.get(x.id) ?? 0 })),
-  })
+  }, 200)
+})
+
+const getBadgeRarity = createRoute({
+  method: 'get',
+  path: '/{courseSlug}',
+  tags: ['Badges'],
+  security: PUBLIC,
+  summary: "Rarity of a course's badge",
+  description: 'Spec 109: the number of learners holding it.',
+  request: { params: params('courseSlug') },
+  responses: { 200: json(badgeRarityResponseSchema), ...errors(404) },
 })
 
 /** Spec 109: rarity of a course badge. */
-export const badgeRoutes = new Hono<AppEnv>().get('/:courseSlug', async (c) => {
+export const badgeRoutes = createRouter().openapi(getBadgeRarity, async (c) => {
   const found = await findCourseBySlug(c.req.param('courseSlug'))
   if (!found || found.status === 'draft') throw new HTTPException(404, { message: 'Course not found' })
-  return c.json({ courseSlug: found.slug, earnedBy: badgeHolders([found.id]).get(found.id) ?? 0 })
+  return c.json({ courseSlug: found.slug, earnedBy: badgeHolders([found.id]).get(found.id) ?? 0 }, 200)
+})
+
+const getMySkills = createRoute({
+  method: 'get',
+  path: '/',
+  tags: ['Me'],
+  summary: 'My skills',
+  description: 'Spec 114: skill levels, and the skills of enrolled unfinished courses without a level yet.',
+  responses: { 200: json(mySkillsResponseSchema), ...errors(401) },
 })
 
 /** Spec 114: levels, and skills of enrolled unfinished courses. */
-export const mySkillRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c) => {
-  const me = c.get('user')!
+export const mySkillRoutes = $(createRouter().use(requireAuth)).openapi(getMySkills, async (c) => {
+  const me = c.get('user')
   const levels = db
     .select({
       slug: skill.slug,
@@ -70,15 +101,36 @@ export const mySkillRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async 
   const extras = courseExtras(unfinished, null)
   const inProgress = new Map<string, { slug: string; label: string }>()
   for (const id of unfinished) for (const s of extras.skills.get(id) ?? []) if (!known.has(s.slug)) inProgress.set(s.slug, s)
-  return c.json<MySkillsResponse>({
+  return c.json({
     skills: levels.map((l) => ({ ...l, updatedAt: l.updatedAt.toISOString() })),
     inProgress: [...inProgress.values()].sort((a, b) => a.label.localeCompare(b.label)),
-  })
+  }, 200)
+})
+
+const listSkills = createRoute({
+  method: 'get',
+  path: '/',
+  tags: ['Skills'],
+  security: PUBLIC,
+  summary: 'Skills',
+  description: 'Spec 110: skills taught by visible modules of published public courses, with their course count.',
+  responses: { 200: json(skillListResponseSchema) },
+})
+
+const getSkill = createRoute({
+  method: 'get',
+  path: '/{slug}',
+  tags: ['Skills'],
+  security: PUBLIC,
+  summary: 'A skill and what teaches it',
+  description: "Specs 110–112: courses and modules teaching it; signed in, the viewer's level and each module's status.",
+  request: { params: params('slug') },
+  responses: { 200: json(skillDetailSchema), ...errors(400, 404) },
 })
 
 /** Specs 110–112: skills and what teaches them. */
-export const skillRoutes = new Hono<AppEnv>()
-  .get('/', (c) => {
+export const skillRoutes = createRouter()
+  .openapi(listSkills, (c) => {
     const rows = db
       .select({
         slug: skill.slug,
@@ -92,9 +144,9 @@ export const skillRoutes = new Hono<AppEnv>()
       .groupBy(skill.id)
       .orderBy(asc(skill.label))
       .all()
-    return c.json<SkillListResponse>({ skills: rows })
+    return c.json({ skills: rows }, 200)
   })
-  .get('/:slug', async (c) => {
+  .openapi(getSkill, async (c) => {
     const slug = c.req.param('slug')
     if (!SKILL_SLUG_PATTERN.test(slug)) throw new HTTPException(400, { message: 'Invalid skill slug' })
     const found = db.select().from(skill).where(eq(skill.slug, slug)).get()
@@ -154,9 +206,9 @@ export const skillRoutes = new Hono<AppEnv>()
       if (done) entry.done++
       courses.set(r.courseId, entry)
     }
-    return c.json<SkillDetail>({
+    return c.json({
       skill: { slug: found.slug, label: found.label, description: found.description },
       courses: [...courses.values()],
       level: user ? userSkillLevel(user.id, slug) : null,
-    })
+    }, 200)
   })

@@ -1,12 +1,14 @@
 import { z } from 'zod'
-import { COURSE_STATUSES, type CourseStatus, DIFFICULTIES, type Difficulty, SLUG_PATTERN } from './courses.ts'
-import { type SkillRef, skillSlugSchema } from './gamification.ts'
+import { COURSE_STATUSES, DIFFICULTIES, skillRefSchema } from './common.ts'
+import { SLUG_PATTERN } from './courses.ts'
+import { skillSlugSchema } from './gamification.ts'
 
 /** Spec 120: a sequence of courses, or a sequence of skills. */
 export const PATH_KINDS = ['course', 'skill'] as const
 export type PathKind = (typeof PATH_KINDS)[number]
 
-export type PathItemStatus = 'completed' | 'available' | 'locked'
+export const PATH_ITEM_STATUSES = ['completed', 'available', 'locked'] as const
+export type PathItemStatus = (typeof PATH_ITEM_STATUSES)[number]
 
 export const pathInputSchema = z.object({
   slug: z.string().trim().regex(SLUG_PATTERN, 'Invalid slug').max(100),
@@ -32,53 +34,72 @@ export const pathUpdateSchema = pathInputSchema.partial()
 export type PathUpdateInput = z.input<typeof pathUpdateSchema>
 export { skillSlugSchema as pathSkillSchema }
 
-export type PathItem =
-  | { kind: 'course'; id: string; slug: string; title: string; status: CourseStatus }
-  | { kind: 'skill'; id: string; slug: string; title: string }
+export const pathItemSchema = z
+  .discriminatedUnion('kind', [
+    z.object({ kind: z.literal('course'), id: z.string(), slug: z.string(), title: z.string(), status: z.enum(COURSE_STATUSES) }),
+    z.object({ kind: z.literal('skill'), id: z.string(), slug: z.string(), title: z.string() }),
+  ])
+  .meta({ id: 'PathItem' })
+export type PathItem = z.infer<typeof pathItemSchema>
 
-export type AdminPath = {
-  id: string
-  slug: string
-  title: string
-  description: string | null
-  kind: PathKind
-  level: Difficulty | null
-  status: CourseStatus
-  items: PathItem[]
-  enrollmentCount: number
-  createdAt: string
-  updatedAt: string
-}
+export const adminPathSchema = z
+  .object({
+    id: z.string(),
+    slug: z.string(),
+    title: z.string(),
+    description: z.string().nullable(),
+    kind: z.enum(PATH_KINDS),
+    level: z.enum(DIFFICULTIES).nullable(),
+    status: z.enum(COURSE_STATUSES),
+    items: z.array(pathItemSchema),
+    enrollmentCount: z.number(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .meta({ id: 'AdminPath' })
+export type AdminPath = z.infer<typeof adminPathSchema>
 
 /** A learner's progress in a path (spec 124). */
-export type PathProgressItem = { slug: string; title: string; status: PathItemStatus }
+export const pathProgressItemSchema = z
+  .object({ slug: z.string(), title: z.string(), status: z.enum(PATH_ITEM_STATUSES) })
+  .meta({ id: 'PathProgressItem' })
+export type PathProgressItem = z.infer<typeof pathProgressItemSchema>
 
-export type PathEnrollmentRow = {
-  userId: string
-  username: string | null
-  name: string
-  email: string
-  enrolledAt: string
-  completed: number
-  total: number
-  items: PathProgressItem[]
-}
+export const pathEnrollmentRowSchema = z
+  .object({
+    userId: z.string(),
+    username: z.string().nullable(),
+    name: z.string(),
+    email: z.string(),
+    enrolledAt: z.string(),
+    completed: z.number(),
+    total: z.number(),
+    items: z.array(pathProgressItemSchema),
+  })
+  .meta({ id: 'PathEnrollment' })
+export type PathEnrollmentRow = z.infer<typeof pathEnrollmentRowSchema>
 
 /** `GET /api/paths` and `/api/paths/:slug` (spec 121): published paths. */
-export type PublicPath = {
-  slug: string
-  title: string
-  description: string | null
-  kind: PathKind
-  level: Difficulty | null
-  /** Course paths: the aggregated skills of the member courses. */
-  skills: SkillRef[]
-  items: { slug: string; title: string }[]
-}
+export const publicPathSchema = z
+  .object({
+    slug: z.string(),
+    title: z.string(),
+    description: z.string().nullable(),
+    kind: z.enum(PATH_KINDS),
+    level: z.enum(DIFFICULTIES).nullable(),
+    /** Course paths: the aggregated skills of the member courses. */
+    skills: z.array(skillRefSchema),
+    items: z.array(z.object({ slug: z.string(), title: z.string() })),
+  })
+  .meta({ id: 'PublicPath' })
+export type PublicPath = z.infer<typeof publicPathSchema>
 
 /** `GET /api/my/paths` (spec 123). */
-export type MyPath = PublicPath & {
-  enrolledAt: string
-  progress: PathProgressItem[]
-  completed: number
-}
+export const myPathSchema = publicPathSchema
+  .extend({
+    enrolledAt: z.string(),
+    progress: z.array(pathProgressItemSchema),
+    completed: z.number(),
+  })
+  .meta({ id: 'MyPath' })
+export type MyPath = z.infer<typeof myPathSchema>

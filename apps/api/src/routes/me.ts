@@ -1,12 +1,11 @@
-import { isImageUrl, type MeResponse, profileUpdateSchema, type Role } from '@pupitre/shared'
+import { isImageUrl, type MeResponse, meResponseSchema, profileUpdateSchema, type Role } from '@pupitre/shared'
 import { and, eq, isNotNull, ne, sql } from 'drizzle-orm'
-import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import type { Session } from '../auth.ts'
 import { db } from '../db/index.ts'
 import { account, user } from '../db/schema/index.ts'
-import { validate } from '../lib/validate.ts'
-import { type AppEnv, requireAuth } from '../middleware/session.ts'
+import { $, createRoute, createRouter, errors, json, jsonBody } from '../lib/openapi.ts'
+import { requireAuth } from '../middleware/session.ts'
 import { badgeIcons } from '../services/badges.ts'
 import { getSettings } from '../services/settings.ts'
 
@@ -33,13 +32,32 @@ function toMe(u: Session['user'] | typeof user.$inferSelect): MeResponse {
   }
 }
 
+const tags = ['Me']
+
+const getMe = createRoute({
+  method: 'get',
+  path: '/',
+  tags,
+  summary: 'The signed-in user',
+  responses: { 200: json(meResponseSchema), ...errors(401) },
+})
+
+const updateMe = createRoute({
+  method: 'patch',
+  path: '/',
+  tags,
+  summary: 'Update the profile',
+  description: 'Username (when the platform allows it), display name, bio, avatar. Empty strings clear `bio` and `image`.',
+  request: { body: jsonBody(profileUpdateSchema) },
+  responses: { 200: json(meResponseSchema), ...errors(400, 401, 403, 409) },
+})
+
 // Spec 034. Lives at /api/me because /api/auth/* belongs to better-auth.
-export const meRoutes = new Hono<AppEnv>()
-  .use(requireAuth)
-  .get('/', (c) => c.json<MeResponse>(toMe(c.get('user')!)))
+export const meRoutes = $(createRouter().use(requireAuth))
+  .openapi(getMe, (c) => c.json(toMe(c.get('user')), 200))
   // Spec 035: username (if allowed), display name, bio, avatar. E-mail and role are not editable here.
-  .patch('/', validate('json', profileUpdateSchema), async (c) => {
-    const me = c.get('user')!
+  .openapi(updateMe, async (c) => {
+    const me = c.get('user')
     const input = c.req.valid('json')
     const changes: Partial<typeof user.$inferInsert> = {}
 
@@ -71,5 +89,5 @@ export const meRoutes = new Hono<AppEnv>()
     const [updated] = Object.keys(changes).length
       ? await db.update(user).set(changes).where(eq(user.id, me.id)).returning()
       : await db.select().from(user).where(eq(user.id, me.id))
-    return c.json<MeResponse>(toMe(updated!))
+    return c.json(toMe(updated!), 200)
   })

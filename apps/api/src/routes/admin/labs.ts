@@ -1,14 +1,22 @@
-import type { AdminLabCheck } from '@pupitre/shared'
+import { type AdminLabCheck, adminLabCheckSchema } from '@pupitre/shared'
 import { and, desc, eq } from 'drizzle-orm'
-import { Hono } from 'hono'
 import { z } from 'zod'
 import { db } from '../../db/index.ts'
 import { course, courseModule, labCheck, user } from '../../db/schema/index.ts'
-import { validate } from '../../lib/validate.ts'
-import type { AppEnv } from '../../middleware/session.ts'
+import { ADMIN, createRoute, createRouter, errors, json } from '../../lib/openapi.ts'
+
+const listLabChecks = createRoute({
+  method: 'get',
+  path: '/',
+  tags: ['Admin: labs'],
+  summary: 'Lab check history',
+  description: 'Specs 094, 095: the last 1000 checks, most recent first; `course`: a course id.',
+  request: { query: z.object({ course: z.string().optional() }) },
+  responses: { 200: json(z.object({ checks: z.array(adminLabCheckSchema) })), ...errors(400, ...ADMIN) },
+})
 
 /** Spec 094/095: lab check history, most recent first (`?course=<id>`). */
-export const adminLabRoutes = new Hono<AppEnv>().get('/', validate('query', z.object({ course: z.string().optional() })), (c) => {
+export const adminLabRoutes = createRouter().openapi(listLabChecks, (c) => {
   const courseId = c.req.valid('query').course
   const rows = db
     .select({
@@ -37,5 +45,5 @@ export const adminLabRoutes = new Hono<AppEnv>().get('/', validate('query', z.ob
     verified: r.check.verified,
     checkedAt: r.check.checkedAt.toISOString(),
   }))
-  return c.json({ checks })
+  return c.json({ checks }, 200)
 })

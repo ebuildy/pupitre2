@@ -1,14 +1,24 @@
-import type { MyGroup } from '@pupitre/shared'
+import { type MyGroup, myGroupSchema } from '@pupitre/shared'
 import { and, asc, eq, inArray } from 'drizzle-orm'
-import { Hono } from 'hono'
+import { z } from 'zod'
 import { db } from '../db/index.ts'
 import { course, groupCourseEnrollment, groupMembership, user, userGroup } from '../db/schema/index.ts'
-import { type AppEnv, requireAuth } from '../middleware/session.ts'
+import { $, createRoute, createRouter, errors, json } from '../lib/openapi.ts'
+import { requireAuth } from '../middleware/session.ts'
 import { GroupTree } from '../services/groups.ts'
 
+const getMyGroups = createRoute({
+  method: 'get',
+  path: '/',
+  tags: ['Me'],
+  summary: 'My groups',
+  description: 'Spec 136: groups of the signed-in user (not the default one), with their courses and members.',
+  responses: { 200: json(z.object({ groups: z.array(myGroupSchema) })), ...errors(401) },
+})
+
 /** Spec 136: the signed-in user's groups (not the default one), with their courses and members. */
-export const myGroupRoutes = new Hono<AppEnv>().use(requireAuth).get('/', (c) => {
-  const me = c.get('user')!
+export const myGroupRoutes = $(createRouter().use(requireAuth)).openapi(getMyGroups, (c) => {
+  const me = c.get('user')
   const mine = db
     .select({ groupId: groupMembership.groupId, role: groupMembership.role })
     .from(groupMembership)
@@ -16,7 +26,7 @@ export const myGroupRoutes = new Hono<AppEnv>().use(requireAuth).get('/', (c) =>
     .where(and(eq(groupMembership.userId, me.id), eq(userGroup.isDefault, false)))
     .all()
   const ids = mine.map((m) => m.groupId)
-  if (ids.length === 0) return c.json<{ groups: MyGroup[] }>({ groups: [] })
+  if (ids.length === 0) return c.json({ groups: [] }, 200)
 
   const tree = GroupTree.load()
   const courses = db
@@ -58,5 +68,5 @@ export const myGroupRoutes = new Hono<AppEnv>().use(requireAuth).get('/', (c) =>
       }
     })
     .sort((a, b) => a.name.localeCompare(b.name))
-  return c.json({ groups })
+  return c.json({ groups }, 200)
 })

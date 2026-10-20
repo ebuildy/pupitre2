@@ -1,12 +1,10 @@
-import { landingPath, safeRedirectPath } from '@pupitre/shared'
-import { Hono } from 'hono'
+import { landingPath, ROLES, safeRedirectPath } from '@pupitre/shared'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { env } from '../env.ts'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
-import { validate } from '../lib/validate.ts'
+import { createRoute, createRouter, errors, json, jsonBody, params, PUBLIC } from '../lib/openapi.ts'
 import { LdapNotConfiguredError, ldapAuthenticate, ldapProvider } from '../services/ldap.ts'
-import type { AppEnv } from '../middleware/session.ts'
 import {
   authorizationRequest,
   completeSsoLogin,
@@ -39,10 +37,79 @@ function rateLimited(ip: string) {
   return recent.length > env.AUTH_RATE_LIMIT_REQUESTS
 }
 
+const tags = ['SSO']
+const signedIn = json(z.object({ role: z.enum(ROLES) }), 'Signed in: the session cookie is set')
+const loginFailed = 'Login failed: `?sso_error=<code>` on the login page'
+
+const ldapLogin = createRoute({
+  method: 'post',
+  path: '/ldap/login',
+  tags,
+  security: PUBLIC,
+  summary: 'Sign in with LDAP',
+  description: 'Spec 030: LDAP / Active Directory, from the login form. Rate-limited per client IP (spec 009).',
+  request: { body: jsonBody(z.object({ identifier: z.string().trim().min(1), password: z.string().min(1) })) },
+  responses: { 200: signedIn, ...errors(400, 401, 403, 409, 429, 500) },
+})
+
+const listProviders = createRoute({
+  method: 'get',
+  path: '/providers',
+  tags,
+  security: PUBLIC,
+  summary: 'Identity providers of the login page',
+  responses: {
+    200: json(
+      z.object({
+        providers: z.array(z.object({ id: z.string(), name: z.string(), kind: z.enum(['oidc', 'github']), demoLogin: z.boolean() })),
+      }),
+    ),
+  },
+})
+
+const demoLogin = createRoute({
+  method: 'post',
+  path: '/{provider}/demo-login',
+  tags,
+  security: PUBLIC,
+  summary: 'One-click sign-in of the SSO demo',
+  description: 'Spec 027, development only (`SSO_DEMO_PASSWORD_GRANT`; 404 otherwise): password grant on the provider.',
+  request: {
+    params: params('provider'),
+    body: jsonBody(z.object({ username: z.string().trim().min(1), password: z.string().min(1) })),
+  },
+  responses: { 200: signedIn, ...errors(400, 401, 403, 404, 409, 429, 502) },
+})
+
+const authorize = createRoute({
+  method: 'get',
+  path: '/{provider}/authorize',
+  tags,
+  security: PUBLIC,
+  summary: 'Start an SSO sign-in',
+  description: 'Redirects to the identity provider. `redirect`: where to land after sign-in (a path of this site).',
+  request: { params: params('provider'), query: z.object({ redirect: z.string().optional(), login_hint: z.string().optional() }) },
+  responses: { 302: { description: `To the identity provider. ${loginFailed}` } },
+})
+
+const callback = createRoute({
+  method: 'get',
+  path: '/{provider}/callback',
+  tags,
+  security: PUBLIC,
+  summary: 'SSO callback',
+  description: 'Where the identity provider sends the browser back.',
+  request: {
+    params: params('provider'),
+    query: z.object({ code: z.string().optional(), state: z.string().optional(), error: z.string().optional() }),
+  },
+  responses: { 302: { description: `Signed in: to the landing page. ${loginFailed}` } },
+})
+
 /** Specs 027–033, under /api/sso (better-auth owns /api/auth). */
-export const ssoRoutes = new Hono<AppEnv>()
+export const ssoRoutes = createRouter()
   // Spec 030: LDAP / Active Directory, from the login form.
-  .post('/ldap/login', validate('json', z.object({ identifier: z.string().trim().min(1), password: z.string().min(1) })), async (c) => {
+  .openapi(ldapLogin, async (c) => {
     const ip = (c.req.header(env.CLIENT_IP_HEADER) ?? '').split(',')[0]!.trim() || 'unknown'
     if (rateLimited(ip)) throw new HTTPException(429, { message: 'Too many requests' })
     const { identifier, password } = c.req.valid('json')
@@ -50,7 +117,7 @@ export const ssoRoutes = new Hono<AppEnv>()
       const identity = await ldapAuthenticate(identifier, password)
       const { role, cookie } = await completeSsoLogin(ldapProvider(), identity)
       setCookie(c, cookie.name, cookie.value, { httpOnly: true, secure: cookie.attributes.secure ?? secure, sameSite: 'Lax', path: '/', maxAge: cookie.attributes.maxAge })
-      return c.json({ role })
+      return c.json({ role }, 200)
     } catch (err) {
       if (err instanceof LdapNotConfiguredError) throw new HTTPException(400, { message: 'LDAP not configured' })
       if (err instanceof SsoError) {
@@ -61,11 +128,11 @@ export const ssoRoutes = new Hono<AppEnv>()
       throw new HTTPException(500, { message: 'LDAP server call failed' })
     }
   })
-  .get('/providers', (c) =>
-    c.json({ providers: ssoProviders().map((p) => ({ id: p.id, name: p.name, kind: p.kind, demoLogin: demoLoginEnabled(p) })) }),
+  .openapi(listProviders, (c) =>
+    c.json({ providers: ssoProviders().map((p) => ({ id: p.id, name: p.name, kind: p.kind, demoLogin: demoLoginEnabled(p) })) }, 200),
   )
   // Spec 027, SSO demo (development only, `SSO_DEMO_PASSWORD_GRANT`): the demo accounts' one-click sign-in.
-  .post('/:provider/demo-login', validate('json', z.object({ username: z.string().trim().min(1), password: z.string().min(1) })), async (c) => {
+  .openapi(demoLogin, async (c) => {
     if (!env.SSO_DEMO_PASSWORD_GRANT) throw new HTTPException(404, { message: 'Not found' })
     const ip = (c.req.header(env.CLIENT_IP_HEADER) ?? '').split(',')[0]!.trim() || 'unknown'
     if (rateLimited(ip)) throw new HTTPException(429, { message: 'Too many requests' })
@@ -82,13 +149,13 @@ export const ssoRoutes = new Hono<AppEnv>()
     try {
       const { role, cookie } = await completeSsoLogin(findProvider(c.req.param('provider')), identity)
       setCookie(c, cookie.name, cookie.value, { httpOnly: true, secure: cookie.attributes.secure ?? secure, sameSite: 'Lax', path: '/', maxAge: cookie.attributes.maxAge })
-      return c.json({ role })
+      return c.json({ role }, 200)
     } catch (err) {
       if (err instanceof SsoError) throw new HTTPException(err.code === 'conflict' ? 409 : err.code === 'inactive' ? 403 : 401, { message: err.message })
       throw err
     }
   })
-  .get('/:provider/authorize', async (c) => {
+  .openapi(authorize, async (c) => {
     try {
       const provider = findProvider(c.req.param('provider'))
       const redirect = c.req.query('redirect')
@@ -103,7 +170,7 @@ export const ssoRoutes = new Hono<AppEnv>()
       return c.redirect(fail(err instanceof SsoError ? err.code : 'failed'), 302)
     }
   })
-  .get('/:provider/callback', async (c) => {
+  .openapi(callback, async (c) => {
     const providerId = c.req.param('provider')
     const tx = getCookie(c, TX_COOKIE)
     deleteCookie(c, TX_COOKIE, { path: '/api/sso' })

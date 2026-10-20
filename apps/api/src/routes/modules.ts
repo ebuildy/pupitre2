@@ -1,21 +1,22 @@
 import {
-  type CooldownError,
-  type CourseModulesResponse,
-  type ModuleCompleteResult,
+  cooldownErrorSchema,
+  courseModulesResponseSchema,
   type ModuleDetail,
+  moduleCompleteResultSchema,
+  moduleDetailSchema,
   type LabConfig,
   type LabStepCheckResponse,
+  labStepCheckResponseSchema,
+  labStepRecordSchema,
   POLICY_CHECK_TYPE,
-  type QuizResult,
+  quizResultSchema,
   quizSubmitSchema,
   type Role,
 } from '@pupitre/shared'
-import { Hono } from 'hono'
-import { z } from 'zod'
 import { HTTPException } from 'hono/http-exception'
 import { ContentUnavailableError } from '../content/loader.ts'
 import { renderMarkdown } from '../content/markdown.ts'
-import { validate } from '../lib/validate.ts'
+import { $, createRoute, createRouter, errors, json, jsonBody, params } from '../lib/openapi.ts'
 import { type AppEnv, requireAuth } from '../middleware/session.ts'
 import { canSelfEnroll, canView, type Course, findCourseBySlug, grant, grantsFor } from '../services/courses.ts'
 import { mediaUrlFor } from '../services/media.ts'
@@ -105,20 +106,86 @@ function findModule(states: ModuleState[], slug: string) {
   return { state, index }
 }
 
+const tags = ['Course content']
+const ACCESS = 'Content is for enrolled learners and admins: 403 when not enrolled or prerequisites are unmet.'
+
+const listModules = createRoute({
+  method: 'get',
+  path: '/',
+  tags,
+  summary: "A course's modules",
+  description: `With the learner's progress. Never enrolls. ${ACCESS}`,
+  request: { params: params('slug') },
+  responses: { 200: json(courseModulesResponseSchema), ...errors(401, 403, 404) },
+})
+
+const getModule = createRoute({
+  method: 'get',
+  path: '/{moduleSlug}',
+  tags,
+  summary: 'A module',
+  description: `Lesson HTML, quiz (without answers), media or lab, and its neighbours. Opening a module of a public course the learner may join enrolls them (spec 048). ${ACCESS}`,
+  request: { params: params('slug', 'moduleSlug') },
+  responses: { 200: json(moduleDetailSchema), ...errors(401, 403, 404) },
+})
+
+const completeModule = createRoute({
+  method: 'post',
+  path: '/{moduleSlug}/complete',
+  tags,
+  summary: 'Mark a lesson as done',
+  description: 'Quizzes are completed by passing them, labs with steps by validating their steps (400).',
+  request: { params: params('slug', 'moduleSlug') },
+  responses: { 200: json(moduleCompleteResultSchema), ...errors(400, 401, 403, 404) },
+})
+
+const checkLabStep = createRoute({
+  method: 'post',
+  path: '/{moduleSlug}/steps/{index}/check',
+  tags,
+  summary: 'Check a GitLab lab step',
+  description: 'Spec 092: checked by the server against GitLab (or an OPA policy, spec 091); recorded as verified.',
+  request: { params: params('slug', 'moduleSlug', 'index') },
+  responses: { 200: json(labStepCheckResponseSchema), ...errors(400, 401, 403, 404, 502) },
+})
+
+const recordLabStep = createRoute({
+  method: 'post',
+  path: '/{moduleSlug}/steps/{index}/record',
+  tags,
+  summary: 'Record a local lab step',
+  description: "Spec 093: the result of a check run by the desktop app on the learner's machine (not verified).",
+  request: { params: params('slug', 'moduleSlug', 'index'), body: jsonBody(labStepRecordSchema) },
+  responses: { 200: json(labStepCheckResponseSchema), ...errors(400, 401, 403, 404) },
+})
+
+const submitAnswers = createRoute({
+  method: 'post',
+  path: '/{moduleSlug}/submit',
+  tags,
+  summary: 'Submit quiz answers',
+  description: 'Scored with the correct answers and feedback revealed. 425 while some questions are cooling down (spec 080).',
+  request: { params: params('slug', 'moduleSlug'), body: jsonBody(quizSubmitSchema) },
+  responses: {
+    200: json(quizResultSchema),
+    425: json(cooldownErrorSchema, 'Some questions are still cooling down'),
+    ...errors(400, 401, 403, 404),
+  },
+})
+
 /** Specs 053, 056, 067, 075–083, under /api/courses/:slug/modules. */
-export const moduleRoutes = new Hono<AppEnv>()
-  .use(requireAuth)
-  .get('/', async (c) => {
+export const moduleRoutes = $(createRouter().use(requireAuth))
+  .openapi(listModules, async (c) => {
     // The list never enrolls: the course page reads it, and must not re-enroll right after an unenrollment.
-    const { states } = await access(c.get('user')!, c.req.param('slug'), false)
+    const { states } = await access(c.get('user'), c.req.param('slug'), false)
     const counted = states.filter((s) => !s.module.hidden)
-    return c.json<CourseModulesResponse>({
+    return c.json({
       modules: states.map(toSummary),
       progress: { done: counted.filter((s) => s.done).length, total: counted.length },
-    })
+    }, 200)
   })
-  .get('/:moduleSlug', async (c) => {
-    const { user, course, states } = await access(c.get('user')!, c.req.param('slug'))
+  .openapi(getModule, async (c) => {
+    const { user, course, states } = await access(c.get('user'), c.req.param('slug'))
     const { state, index } = findModule(states, c.req.param('moduleSlug'))
     const m = state.module
 
@@ -156,7 +223,7 @@ export const moduleRoutes = new Hono<AppEnv>()
         ? { module: toSummary(following), quiz: quizView(await loadQuiz(following.module), attemptStates(user.id, following.module.id)) }
         : null
 
-    return c.json<ModuleDetail>({
+    return c.json({
       ...toSummary(state),
       lesson,
       quiz,
@@ -168,10 +235,10 @@ export const moduleRoutes = new Hono<AppEnv>()
       next: nextState
         ? { slug: nextState.module.slug, type: nextState.module.type, locked: nextState.locked && !state.done }
         : null,
-    })
+    }, 200)
   })
-  .post('/:moduleSlug/complete', async (c) => {
-    const { user, course, states } = await access(c.get('user')!, c.req.param('slug'))
+  .openapi(completeModule, async (c) => {
+    const { user, course, states } = await access(c.get('user'), c.req.param('slug'))
     const { state } = findModule(states, c.req.param('moduleSlug'))
     if (state.module.type === 'quiz') throw new HTTPException(400, { message: 'Quiz modules are completed by passing them' })
     // Spec 090: a lab with steps is completed by validating its steps.
@@ -179,11 +246,11 @@ export const moduleRoutes = new Hono<AppEnv>()
       throw new HTTPException(400, { message: 'Validate the lab steps to complete it' })
     }
     markViewed(user.id, course, state.module)
-    return c.json<ModuleCompleteResult>({ courseCompleted: await checkCourseCompletion(user.id, course) })
+    return c.json({ courseCompleted: await checkCourseCompletion(user.id, course) }, 200)
   })
   // Spec 092: a GitLab step, checked by the server; recorded in the history (verified).
-  .post('/:moduleSlug/steps/:index/check', async (c) => {
-    const { user, course, states } = await access(c.get('user')!, c.req.param('slug'))
+  .openapi(checkLabStep, async (c) => {
+    const { user, course, states } = await access(c.get('user'), c.req.param('slug'))
     const { state } = findModule(states, c.req.param('moduleSlug'))
     const { config, step, index } = await labStep(state.module, c.req.param('index'))
     if (config.provider !== 'gitlab') throw new HTTPException(400, { message: 'Module does not have GitLab step checks' })
@@ -203,18 +270,18 @@ export const moduleRoutes = new Hono<AppEnv>()
       console.error('lab check failed', err)
       throw new HTTPException(502, { message: 'GitLab could not be reached' })
     }
-    return c.json<LabStepCheckResponse>(await recordStep(user, course, state.module, config, index, step.title, result, true))
+    return c.json(await recordStep(user, course, state.module, config, index, step.title, result, true), 200)
   })
   // Spec 093: a local step checked by the desktop app on the learner's machine (client-reported, not verified).
-  .post('/:moduleSlug/steps/:index/record', validate('json', z.object({ allow: z.boolean(), violations: z.array(z.string().max(500)).max(50).default([]) })), async (c) => {
-    const { user, course, states } = await access(c.get('user')!, c.req.param('slug'))
+  .openapi(recordLabStep, async (c) => {
+    const { user, course, states } = await access(c.get('user'), c.req.param('slug'))
     const { state } = findModule(states, c.req.param('moduleSlug'))
     const { config, step, index } = await labStep(state.module, c.req.param('index'))
     if (config.provider !== 'local') throw new HTTPException(400, { message: 'Module does not have local checks' })
-    return c.json<LabStepCheckResponse>(await recordStep(user, course, state.module, config, index, step.title, c.req.valid('json'), false))
+    return c.json(await recordStep(user, course, state.module, config, index, step.title, c.req.valid('json'), false), 200)
   })
-  .post('/:moduleSlug/submit', validate('json', quizSubmitSchema), async (c) => {
-    const { user, course, states } = await access(c.get('user')!, c.req.param('slug'))
+  .openapi(submitAnswers, async (c) => {
+    const { user, course, states } = await access(c.get('user'), c.req.param('slug'))
     const { state } = findModule(states, c.req.param('moduleSlug'))
     const m = state.module
     if (m.type !== 'quiz') throw new HTTPException(400, { message: 'Module is not a quiz' })
@@ -223,10 +290,10 @@ export const moduleRoutes = new Hono<AppEnv>()
     // Spec 080: nothing is scored while a question is cooling down.
     const view = quizView(doc, attemptStates(user.id, m.id))
     if (Object.values(view.cooldowns).some((cd) => cd.remainingSeconds > 0 && !cd.locked)) {
-      return c.json<CooldownError>({ error: 'Cooldown active for some questions', cooldowns: view.cooldowns }, 425)
+      return c.json({ error: 'Cooldown active for some questions', cooldowns: view.cooldowns }, 425)
     }
 
     const result = submitQuiz(user.id, course, m, doc, c.req.valid('json').answers)
     const courseCompleted = result.passed ? await checkCourseCompletion(user.id, course) : false
-    return c.json<QuizResult>({ ...result, courseCompleted })
+    return c.json({ ...result, courseCompleted }, 200)
   })

@@ -1,19 +1,19 @@
 import {
-  type BadgeLeaderboardResponse,
-  type CourseDetail,
-  type CourseListResponse,
+  badgeLeaderboardResponseSchema,
+  courseDetailSchema,
+  courseListResponseSchema,
   DIFFICULTIES,
-  type LeaderboardResponse,
-  type MyCoursesResponse,
-  type MyXpResponse,
+  leaderboardResponseSchema,
+  messageSchema,
+  myCoursesResponseSchema,
+  myXpResponseSchema,
   type Role,
   skillLevelOrder,
 } from '@pupitre/shared'
-import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
-import { validate } from '../lib/validate.ts'
-import { type AppEnv, requireAuth } from '../middleware/session.ts'
+import { $, createRoute, createRouter, errors, json, params, PUBLIC } from '../lib/openapi.ts'
+import { requireAuth } from '../middleware/session.ts'
 import {
   canSelfEnroll,
   courseIdsWithSkill,
@@ -44,9 +44,31 @@ const catalogueQuery = z.object({
   category: z.union([z.string(), z.array(z.string())]).optional(),
 })
 
+const getCatalogue = createRoute({
+  method: 'get',
+  path: '/',
+  tags: ['Courses'],
+  security: PUBLIC,
+  summary: 'Course catalogue',
+  description: 'Spec 040: published public courses, filtered; `category` may be repeated (OR, subcategories included).',
+  request: { query: catalogueQuery },
+  responses: { 200: json(courseListResponseSchema), ...errors(400) },
+})
+
+const getCourse = createRoute({
+  method: 'get',
+  path: '/{slug}',
+  tags: ['Courses'],
+  security: PUBLIC,
+  summary: 'Course page',
+  description: 'Spec 045. A course the viewer may not see is 404.',
+  request: { params: params('slug') },
+  responses: { 200: json(courseDetailSchema), ...errors(404) },
+})
+
 /** Specs 040, 045: public catalogue and course page. */
-export const courseRoutes = new Hono<AppEnv>()
-  .get('/', validate('query', catalogueQuery), async (c) => {
+export const courseRoutes = createRouter()
+  .openapi(getCatalogue, async (c) => {
     const { search, difficulty, category, skill } = c.req.valid('query')
     const categories = category === undefined ? [] : [category].flat()
     const tree = await CategoryTree.load()
@@ -66,16 +88,16 @@ export const courseRoutes = new Hono<AppEnv>()
     const completed = user ? await completionsFor(user.id, ids) : new Map<string, Date>()
     const extras = courseExtras(ids, user?.id ?? null)
 
-    return c.json<CourseListResponse>({
+    return c.json({
       courses: result.courses.map((x) =>
         toSummary(x, tree, { enrolled: enrolled.has(x.id), completed: completed.has(x.id) }, extras),
       ),
       total: result.courses.length,
       categories: result.categories,
       skillFilter: skill ? { ...skillRef(skill), level } : null,
-    })
+    }, 200)
   })
-  .get('/:slug', async (c) => {
+  .openapi(getCourse, async (c) => {
     const found = await findCourseBySlug(c.req.param('slug'))
     if (!found) throw new HTTPException(404, { message: NOT_FOUND })
 
@@ -87,7 +109,7 @@ export const courseRoutes = new Hono<AppEnv>()
 
     const completedAt = user ? (await completionsFor(user.id, [found.id])).get(found.id) : undefined
     const prerequisites = prerequisiteViews(user?.id ?? null, found.id)
-    return c.json<CourseDetail>({
+    return c.json({
       ...toSummary(found, await CategoryTree.load(), { enrolled, completed: !!completedAt }, courseExtras([found.id], user?.id ?? null)),
       visibility: found.visibility,
       status: found.status,
@@ -101,14 +123,33 @@ export const courseRoutes = new Hono<AppEnv>()
       userXp: user ? totalXp(user.id) : null,
       prerequisites,
       prerequisitesMet: user?.role === 'admin' || prerequisites.every((p) => p.met),
-    })
+    }, 200)
   })
 
+const enroll = createRoute({
+  method: 'post',
+  path: '/{slug}',
+  tags: ['Courses'],
+  summary: 'Enroll in a course',
+  description: 'Spec 047: self-enrollment, open for published public courses; the XP gate applies (spec 049).',
+  request: { params: params('slug') },
+  responses: { 200: json(messageSchema), ...errors(401, 403, 404) },
+})
+
+const unenroll = createRoute({
+  method: 'delete',
+  path: '/{slug}',
+  tags: ['Courses'],
+  summary: 'Withdraw from a course',
+  description: "Removes the learner's own grant only: access given by an admin, a manager, a group or a path stays.",
+  request: { params: params('slug') },
+  responses: { 200: json(messageSchema), ...errors(401, 404) },
+})
+
 /** Spec 047: self-enrollment. */
-export const enrollmentRoutes = new Hono<AppEnv>()
-  .use(requireAuth)
-  .post('/:slug', async (c) => {
-    const user = c.get('user')!
+export const enrollmentRoutes = $(createRouter().use(requireAuth))
+  .openapi(enroll, async (c) => {
+    const user = c.get('user')
     const found = await findCourseBySlug(c.req.param('slug'))
     const enrolled = found ? (await grantsFor(user.id, found.id)).length > 0 : false
     if (!found || !canView(found, user.role as Role, enrolled)) throw new HTTPException(404, { message: NOT_FOUND })
@@ -119,29 +160,46 @@ export const enrollmentRoutes = new Hono<AppEnv>()
     }
 
     await grant(user.id, found.id, 'self', user.id)
-    return c.json({ message: 'Enrolled successfully' })
+    return c.json({ message: 'Enrolled successfully' }, 200)
   })
-  .delete('/:slug', async (c) => {
-    const user = c.get('user')!
+  .openapi(unenroll, async (c) => {
+    const user = c.get('user')
     const found = await findCourseBySlug(c.req.param('slug'))
     if (!found) throw new HTTPException(404, { message: NOT_FOUND })
 
     // Only the learner's own grant: access given by an admin (or later a group/path) stays.
     await revoke(user.id, found.id, ['self'])
-    return c.json({ message: 'Unenrolled successfully' })
+    return c.json({ message: 'Unenrolled successfully' }, 200)
   })
 
+const getMyCourses = createRoute({
+  method: 'get',
+  path: '/courses',
+  tags: ['Me'],
+  summary: 'My courses',
+  description: 'Spec 052: the courses the signed-in user has access to, with progress and last activity.',
+  responses: { 200: json(myCoursesResponseSchema), ...errors(401) },
+})
+
+const getMyXp = createRoute({
+  method: 'get',
+  path: '/xp',
+  tags: ['Me'],
+  summary: 'My XP',
+  description: 'Specs 104, 105: total, history (most recent first) and what is left to earn.',
+  responses: { 200: json(myXpResponseSchema), ...errors(401) },
+})
+
 /** The signed-in user's courses (spec 052) and XP (specs 104, 105). */
-export const myRoutes = new Hono<AppEnv>()
-  .use(requireAuth)
-  .get('/courses', async (c) => {
-    const userId = c.get('user')!.id
+export const myRoutes = $(createRouter().use(requireAuth))
+  .openapi(getMyCourses, async (c) => {
+    const userId = c.get('user').id
     const rows = await listMyCourses(userId)
     const tree = await CategoryTree.load()
     const ids = rows.map((r) => r.course.id)
     const completed = await completionsFor(userId, ids)
     const extras = courseExtras(ids, userId)
-    return c.json<MyCoursesResponse>({
+    return c.json({
       courses: rows.map(({ course, enrolledAt, lastActivity }) => ({
         ...toSummary(course, tree, { enrolled: true, completed: completed.has(course.id) }, extras),
         status: course.status,
@@ -149,37 +207,57 @@ export const myRoutes = new Hono<AppEnv>()
         completedAt: completed.get(course.id)?.toISOString() ?? null,
         lastActivityAt: lastActivity ? new Date(lastActivity).toISOString() : null,
       })),
-    })
+    }, 200)
   })
-  .get('/xp', async (c) => {
-    const userId = c.get('user')!.id
+  .openapi(getMyXp, async (c) => {
+    const userId = c.get('user').id
     const rows = await listMyCourses(userId)
     const completed = await completionsFor(
       userId,
       rows.map((r) => r.course.id),
     )
-    return c.json<MyXpResponse>({
+    return c.json({
       total: totalXp(userId),
       history: await xpHistory(userId),
       inProgress: rows
         .filter(({ course }) => !completed.has(course.id) && course.status === 'published')
         .map(({ course }) => ({ slug: course.slug, title: course.title, completionXp: course.completionXp })),
-    })
+    }, 200)
   })
 
 const LEADERBOARD_SIZE = 20
 
-/** Leaderboard (public): by XP, or by badges (spec 108, `?by=badges`). */
-export const leaderboardRoutes = new Hono<AppEnv>()
-  .get('/badges', (c) => c.json<BadgeLeaderboardResponse>({ leaderboard: badgeRanking(LEADERBOARD_SIZE) }))
-  .get('/', async (c) => {
-  const ranking = await xpRanking()
-  const user = c.get('user')
-  const mine = user ? ranking.find((r) => r.userId === user.id) : undefined
-  return c.json<LeaderboardResponse>({
-    leaderboard: ranking
-      .slice(0, LEADERBOARD_SIZE)
-      .map(({ rank, userId, username, name, image, xp }) => ({ rank, id: userId, username: username ?? name, name, image, xp })),
-    me: mine ? { rank: mine.rank, xp: mine.xp } : null,
-  })
+const getBadgeLeaderboard = createRoute({
+  method: 'get',
+  path: '/badges',
+  tags: ['Leaderboard'],
+  security: PUBLIC,
+  summary: 'Leaderboard by badges',
+  description: `Spec 108: the top ${LEADERBOARD_SIZE} learners by number of badges.`,
+  responses: { 200: json(badgeLeaderboardResponseSchema) },
 })
+
+const getXpLeaderboard = createRoute({
+  method: 'get',
+  path: '/',
+  tags: ['Leaderboard'],
+  security: PUBLIC,
+  summary: 'Leaderboard by XP',
+  description: `The top ${LEADERBOARD_SIZE} learners by XP, and the signed-in user's own position.`,
+  responses: { 200: json(leaderboardResponseSchema) },
+})
+
+/** Leaderboard (public): by XP, or by badges (spec 108). */
+export const leaderboardRoutes = createRouter()
+  .openapi(getBadgeLeaderboard, (c) => c.json({ leaderboard: badgeRanking(LEADERBOARD_SIZE) }, 200))
+  .openapi(getXpLeaderboard, async (c) => {
+    const ranking = await xpRanking()
+    const user = c.get('user')
+    const mine = user ? ranking.find((r) => r.userId === user.id) : undefined
+    return c.json({
+      leaderboard: ranking
+        .slice(0, LEADERBOARD_SIZE)
+        .map(({ rank, userId, username, name, image, xp }) => ({ rank, id: userId, username: username ?? name, name, image, xp })),
+      me: mine ? { rank: mine.rank, xp: mine.xp } : null,
+    }, 200)
+  })

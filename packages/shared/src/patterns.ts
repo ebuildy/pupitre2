@@ -17,19 +17,22 @@ export const patternInputSchema = z.object({
 })
 export type PatternInput = z.input<typeof patternInputSchema>
 
-export type MarkdownPattern = {
-  id: string
-  name: string
-  label: string
-  description: string | null
-  parameter: string | null
-  html: string
-  css: string | null
-  course: { id: string; slug: string; title: string } | null
-  /** `config`: seeded from the configuration file (spec 181). */
-  origin: 'admin' | 'config'
-  updatedAt: string
-}
+export const markdownPatternSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    label: z.string(),
+    description: z.string().nullable(),
+    parameter: z.string().nullable(),
+    html: z.string(),
+    css: z.string().nullable(),
+    course: z.object({ id: z.string(), slug: z.string(), title: z.string() }).nullable(),
+    /** `config`: seeded from the configuration file (spec 181). */
+    origin: z.enum(['admin', 'config']),
+    updatedAt: z.string(),
+  })
+  .meta({ id: 'MarkdownPattern' })
+export type MarkdownPattern = z.infer<typeof markdownPatternSchema>
 
 export const patternPreviewSchema = z.object({
   markdown: z.string().max(100_000),

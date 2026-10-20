@@ -1,21 +1,22 @@
 import {
   ATTENDANCES,
+  messageSchema,
   type Role,
-  type SessionListResponse,
+  sessionListResponseSchema,
   type SessionParticipant,
+  sessionParticipantSchema,
   type SessionView,
   sessionInputSchema,
   sessionUpdateSchema,
 } from '@pupitre/shared'
 import { and, asc, eq, gte, inArray, lt, or, sql } from 'drizzle-orm'
-import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import type { Session } from '../auth.ts'
 import { db } from '../db/index.ts'
 import { course, courseSession, enrollmentGrant, sessionBooking, user } from '../db/schema/index.ts'
-import { validate } from '../lib/validate.ts'
-import { type AppEnv, requireAuth } from '../middleware/session.ts'
+import { $, createRoute, createRouter, errors, json, jsonBody, params, PUBLIC } from '../lib/openapi.ts'
+import { requireAuth } from '../middleware/session.ts'
 import { audit } from '../services/audit.ts'
 import { canSelfEnroll, canView, grant } from '../services/courses.ts'
 import { managedGroupIds } from '../services/groups.ts'
@@ -56,73 +57,184 @@ const listQuery = z.object({
   courseSlug: z.string().optional(),
 })
 
-/** Specs 150–155, under /api/sessions. */
-export const sessionRoutes = new Hono<AppEnv>()
-  // Spec 154: sessions of in-person courses the viewer may see, with booking counts and the viewer's bookings.
-  .get('/', validate('query', listQuery), (c) => {
-    const me = c.get('user')
-    const { from, to, courseSlug } = c.req.valid('query')
-    const trainer = isTrainer(me)
-    const enrolled = me
-      ? db.selectDistinct({ id: enrollmentGrant.courseId }).from(enrollmentGrant).where(eq(enrollmentGrant.userId, me.id)).all().map((r) => r.id)
-      : []
-    const visible = trainer
-      ? sql`${course.status} != 'draft'`
-      : or(
-          and(eq(course.status, 'published'), eq(course.visibility, 'public')),
-          enrolled.length ? and(inArray(course.id, enrolled), sql`${course.status} != 'draft'`) : undefined,
-        )
-    const rows = db
-      .select({
-        session: courseSession,
-        course: { id: course.id, slug: course.slug, title: course.title },
-        bookedCount: sql<number>`(SELECT count(*) FROM session_booking b WHERE b.session_id = ${courseSession.id})`,
-        booked: me
-          ? sql<number>`EXISTS (SELECT 1 FROM session_booking b WHERE b.session_id = ${courseSession.id} AND b.user_id = ${me.id})`
-          : sql<number>`0`,
-      })
-      .from(courseSession)
-      .innerJoin(course, eq(course.id, courseSession.courseId))
-      .where(
-        and(
-          eq(course.inPerson, true),
-          visible,
-          from ? gte(courseSession.startsAt, new Date(from)) : undefined,
-          to ? lt(courseSession.startsAt, new Date(to)) : undefined,
-          courseSlug ? eq(course.slug, courseSlug) : undefined,
-        ),
+const tags = ['Sessions']
+const TRAINERS = 'Trainers only: admins, managers and group managers (403).'
+const idResponse = json(z.object({ id: z.string() }))
+
+const listSessions = createRoute({
+  method: 'get',
+  path: '/',
+  tags,
+  security: PUBLIC,
+  summary: 'Sessions',
+  description: "Spec 154: sessions of in-person courses the viewer may see, with booking counts and the viewer's bookings.",
+  request: { query: listQuery },
+  responses: { 200: json(sessionListResponseSchema), ...errors(400) },
+})
+
+const listSessionCourses = createRoute({
+  method: 'get',
+  path: '/courses',
+  tags,
+  summary: 'In-person courses a trainer can schedule',
+  description: TRAINERS,
+  responses: {
+    200: json(z.object({ courses: z.array(z.object({ id: z.string(), slug: z.string(), title: z.string() })) })),
+    ...errors(401, 403),
+  },
+})
+
+const createSession = createRoute({
+  method: 'post',
+  path: '/',
+  tags,
+  summary: 'Create a session',
+  description: `Spec 151, for in-person courses. ${TRAINERS}`,
+  request: { body: jsonBody(sessionInputSchema) },
+  responses: { 201: json(z.object({ id: z.string() }), 'Created'), ...errors(400, 401, 403, 404) },
+})
+
+const updateSession = createRoute({
+  method: 'patch',
+  path: '/{id}',
+  tags,
+  summary: 'Edit a session',
+  description: TRAINERS,
+  request: { params: params('id'), body: jsonBody(sessionUpdateSchema) },
+  responses: { 200: idResponse, ...errors(400, 401, 403, 404) },
+})
+
+const deleteSession = createRoute({
+  method: 'delete',
+  path: '/{id}',
+  tags,
+  summary: 'Delete a session',
+  description: `Its bookings go with it. ${TRAINERS}`,
+  request: { params: params('id') },
+  responses: { 200: json(messageSchema), ...errors(401, 403, 404) },
+})
+
+const book = createRoute({
+  method: 'post',
+  path: '/{id}/booking',
+  tags,
+  summary: 'Book a seat',
+  description: 'Spec 152: upcoming sessions of courses the learner can access; a public course is joined on the way. 409 when full.',
+  request: { params: params('id') },
+  responses: { 200: json(messageSchema), ...errors(400, 401, 403, 404, 409) },
+})
+
+const cancelBooking = createRoute({
+  method: 'delete',
+  path: '/{id}/booking',
+  tags,
+  summary: 'Cancel a booking',
+  request: { params: params('id') },
+  responses: { 200: json(messageSchema), ...errors(401, 404) },
+})
+
+const listParticipants = createRoute({
+  method: 'get',
+  path: '/{id}/participants',
+  tags,
+  summary: 'Presence sheet',
+  description: `Spec 155. ${TRAINERS}`,
+  request: { params: params('id') },
+  responses: {
+    200: json(
+      z.object({
+        session: z.object({
+          id: z.string(),
+          title: z.string(),
+          startsAt: z.string(),
+          location: z.string().nullable(),
+          capacity: z.number().nullable(),
+          course: z.object({ slug: z.string(), title: z.string() }),
+        }),
+        participants: z.array(sessionParticipantSchema),
+      }),
+    ),
+    ...errors(401, 403, 404),
+  },
+})
+
+const markAttendance = createRoute({
+  method: 'patch',
+  path: '/{id}/participants/{userId}',
+  tags,
+  summary: 'Mark attendance',
+  description: `Spec 155. ${TRAINERS}`,
+  request: { params: params('id', 'userId'), body: jsonBody(z.object({ attendance: z.enum(ATTENDANCES) })) },
+  responses: { 200: json(z.object({ ok: z.boolean() })), ...errors(400, 401, 403, 404) },
+})
+
+// Spec 154: sessions of in-person courses the viewer may see, with booking counts and the viewer's bookings.
+const agendaRoutes = createRouter().openapi(listSessions, (c) => {
+  const me = c.get('user')
+  const { from, to, courseSlug } = c.req.valid('query')
+  const trainer = isTrainer(me)
+  const enrolled = me
+    ? db.selectDistinct({ id: enrollmentGrant.courseId }).from(enrollmentGrant).where(eq(enrollmentGrant.userId, me.id)).all().map((r) => r.id)
+    : []
+  const visible = trainer
+    ? sql`${course.status} != 'draft'`
+    : or(
+        and(eq(course.status, 'published'), eq(course.visibility, 'public')),
+        enrolled.length ? and(inArray(course.id, enrolled), sql`${course.status} != 'draft'`) : undefined,
       )
-      .orderBy(asc(courseSession.startsAt))
-      .all()
-    const now = Date.now()
-    const sessions: SessionView[] = rows.map((r) => ({
-      id: r.session.id,
-      course: r.course,
-      title: r.session.title,
-      startsAt: r.session.startsAt.toISOString(),
-      endsAt: r.session.endsAt?.toISOString() ?? null,
-      location: r.session.location,
-      capacity: r.session.capacity || null,
-      bookedCount: r.bookedCount,
-      booked: !!r.booked,
-      past: r.session.startsAt.getTime() < now,
-    }))
-    return c.json<SessionListResponse>({ sessions, canManage: trainer })
-  })
-  .use(requireAuth)
+  const rows = db
+    .select({
+      session: courseSession,
+      course: { id: course.id, slug: course.slug, title: course.title },
+      bookedCount: sql<number>`(SELECT count(*) FROM session_booking b WHERE b.session_id = ${courseSession.id})`,
+      booked: me
+        ? sql<number>`EXISTS (SELECT 1 FROM session_booking b WHERE b.session_id = ${courseSession.id} AND b.user_id = ${me.id})`
+        : sql<number>`0`,
+    })
+    .from(courseSession)
+    .innerJoin(course, eq(course.id, courseSession.courseId))
+    .where(
+      and(
+        eq(course.inPerson, true),
+        visible,
+        from ? gte(courseSession.startsAt, new Date(from)) : undefined,
+        to ? lt(courseSession.startsAt, new Date(to)) : undefined,
+        courseSlug ? eq(course.slug, courseSlug) : undefined,
+      ),
+    )
+    .orderBy(asc(courseSession.startsAt))
+    .all()
+  const now = Date.now()
+  const sessions: SessionView[] = rows.map((r) => ({
+    id: r.session.id,
+    course: r.course,
+    title: r.session.title,
+    startsAt: r.session.startsAt.toISOString(),
+    endsAt: r.session.endsAt?.toISOString() ?? null,
+    location: r.session.location,
+    capacity: r.session.capacity || null,
+    bookedCount: r.bookedCount,
+    booked: !!r.booked,
+    past: r.session.startsAt.getTime() < now,
+  }))
+  return c.json({ sessions, canManage: trainer }, 200)
+})
+
+/** Specs 150–155, under /api/sessions. */
+export const sessionRoutes = $(agendaRoutes.use(requireAuth))
   /** In-person courses a trainer can schedule (spec 151 "Cours" select). */
-  .get('/courses', (c) => {
-    requireTrainer(c.get('user')!)
+  .openapi(listSessionCourses, (c) => {
+    requireTrainer(c.get('user'))
     const courses = db
       .select({ id: course.id, slug: course.slug, title: course.title })
       .from(course)
       .where(and(eq(course.inPerson, true), sql`${course.status} != 'archived'`))
       .orderBy(asc(course.title))
       .all()
-    return c.json({ courses })
+    return c.json({ courses }, 200)
   })
-  .post('/', validate('json', sessionInputSchema), (c) => {
-    const me = c.get('user')!
+  .openapi(createSession, (c) => {
+    const me = c.get('user')
     requireTrainer(me)
     const input = c.req.valid('json')
     inPersonCourse(input.courseId)
@@ -140,8 +252,8 @@ export const sessionRoutes = new Hono<AppEnv>()
     audit(me, 'session.create', { type: 'session', id: created.id, label: created.title })
     return c.json({ id: created.id }, 201)
   })
-  .patch('/:id', validate('json', sessionUpdateSchema), (c) => {
-    const me = c.get('user')!
+  .openapi(updateSession, (c) => {
+    const me = c.get('user')
     requireTrainer(me)
     const { session } = requireSession(c.req.param('id'))
     const input = c.req.valid('json')
@@ -154,22 +266,22 @@ export const sessionRoutes = new Hono<AppEnv>()
       })
       .where(eq(courseSession.id, session.id))
       .run()
-    return c.json({ id: session.id })
+    return c.json({ id: session.id }, 200)
   })
   // Bookings go with the session (spec 191).
-  .delete('/:id', (c) => {
-    const me = c.get('user')!
+  .openapi(deleteSession, (c) => {
+    const me = c.get('user')
     requireTrainer(me)
     const { session } = requireSession(c.req.param('id'))
     db.delete(courseSession).where(eq(courseSession.id, session.id)).run()
     audit(me, 'session.delete', { type: 'session', id: session.id, label: session.title })
-    return c.json({ message: 'Session deleted' })
+    return c.json({ message: 'Session deleted' }, 200)
   })
 
   // Spec 152: book a seat. Only upcoming sessions of courses the learner can access; a public course is joined on
   // the way. The capacity check and the insert run in one transaction (no overbooking).
-  .post('/:id/booking', (c) => {
-    const me = c.get('user')!
+  .openapi(book, (c) => {
+    const me = c.get('user')
     const { session, course: target } = requireSession(c.req.param('id'))
     const enrolled = !!db
       .select({ id: enrollmentGrant.id })
@@ -195,18 +307,18 @@ export const sessionRoutes = new Hono<AppEnv>()
     })
     if (result === 'full') throw new HTTPException(409, { message: 'Session is full' })
     if (!enrolled) grant(me.id, target.id, 'self', me.id)
-    return c.json({ message: 'Booked' })
+    return c.json({ message: 'Booked' }, 200)
   })
-  .delete('/:id/booking', (c) => {
-    const me = c.get('user')!
+  .openapi(cancelBooking, (c) => {
+    const me = c.get('user')
     const { session } = requireSession(c.req.param('id'))
     db.delete(sessionBooking).where(and(eq(sessionBooking.sessionId, session.id), eq(sessionBooking.userId, me.id))).run()
-    return c.json({ message: 'Booking cancelled' })
+    return c.json({ message: 'Booking cancelled' }, 200)
   })
 
   // Spec 155: presence sheet.
-  .get('/:id/participants', (c) => {
-    requireTrainer(c.get('user')!)
+  .openapi(listParticipants, (c) => {
+    requireTrainer(c.get('user'))
     const { session, course: target } = requireSession(c.req.param('id'))
     const participants: SessionParticipant[] = db
       .select({
@@ -233,21 +345,17 @@ export const sessionRoutes = new Hono<AppEnv>()
         course: { slug: target.slug, title: target.title },
       },
       participants,
-    })
+    }, 200)
   })
-  .patch(
-    '/:id/participants/:userId',
-    validate('json', z.object({ attendance: z.enum(ATTENDANCES) })),
-    (c) => {
-      const me = c.get('user')!
-      requireTrainer(me)
-      const { session } = requireSession(c.req.param('id'))
-      const updated = db
-        .update(sessionBooking)
-        .set({ attendance: c.req.valid('json').attendance, markedBy: me.id, markedAt: new Date() })
-        .where(and(eq(sessionBooking.sessionId, session.id), eq(sessionBooking.userId, c.req.param('userId'))))
-        .run()
-      if (updated.changes === 0) throw new HTTPException(404, { message: 'Booking not found' })
-      return c.json({ ok: true })
-    },
-  )
+  .openapi(markAttendance, (c) => {
+    const me = c.get('user')
+    requireTrainer(me)
+    const { session } = requireSession(c.req.param('id'))
+    const updated = db
+      .update(sessionBooking)
+      .set({ attendance: c.req.valid('json').attendance, markedBy: me.id, markedAt: new Date() })
+      .where(and(eq(sessionBooking.sessionId, session.id), eq(sessionBooking.userId, c.req.param('userId'))))
+      .run()
+    if (updated.changes === 0) throw new HTTPException(404, { message: 'Booking not found' })
+    return c.json({ ok: true }, 200)
+  })

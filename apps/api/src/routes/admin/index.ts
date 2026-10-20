@@ -1,5 +1,5 @@
-import { Hono } from 'hono'
-import { type AppEnv, requireRole } from '../../middleware/session.ts'
+import { $, createRouter } from '../../lib/openapi.ts'
+import { requireRole } from '../../middleware/session.ts'
 import { adminCacheRoutes } from './cache.ts'
 import { adminCategoryRoutes } from './categories.ts'
 import { adminCourseRoutes } from './courses.ts'
@@ -22,8 +22,7 @@ import { adminUserRoutes } from './users.ts'
  * The guard runs before routing, so any `/api/admin/*` path answers 401/403 to non-admins.
  * Feature routers are chained below so `AdminAppType` carries their types to the admin app.
  */
-export const adminRoutes = new Hono<AppEnv>()
-  .use('*', requireRole('admin'))
+export const adminRoutes = $(createRouter().use('*', requireRole('admin')))
   .route('/cache', adminCacheRoutes)
   .route('/categories', adminCategoryRoutes)
   .route('/courses/import', adminImportRoutes)
@@ -37,6 +36,6 @@ export const adminRoutes = new Hono<AppEnv>()
   .route('/patterns', adminPatternRoutes)
   .route('/skills', adminSkillRoutes)
   .route('/stats', adminStatsRoutes)
-  .route('/exports', exportRoutes(() => null))
+  .route('/exports', exportRoutes(() => null, 'Admin: exports'))
   .route('/users', adminUserRoutes)
   .route('/settings', adminSettingsRoutes)

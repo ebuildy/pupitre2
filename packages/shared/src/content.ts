@@ -1,6 +1,7 @@
 import { z } from 'zod'
-import { type SkillRef, skillSlugSchema } from './gamification.ts'
-import { type LabConfig, labConfigSchema, type LabView } from './labs.ts'
+import { skillRefSchema } from './common.ts'
+import { skillSlugSchema } from './gamification.ts'
+import { labConfigSchema, labViewSchema } from './labs.ts'
 
 // ─── Modules (spec 191 "Module") ──────────────────────────────────────────────
 
@@ -185,120 +186,160 @@ export type QuizAnswer = z.infer<typeof quizAnswerSchema>
 
 export const quizSubmitSchema = z.object({ answers: z.record(z.string(), quizAnswerSchema) })
 
+export const QUIZ_QUESTION_TYPES = ['single', 'multiple', 'boolean', 'order'] as const
+
 // ─── Learner API views ────────────────────────────────────────────────────────
 
-export type ModuleSummary = {
-  slug: string
-  name: string
-  type: ModuleType
-  inline: boolean
-  /** Only admins see hidden modules. */
-  hidden: boolean
-  /** Sequential order or prerequisites not met (never for admins). */
-  locked: boolean
-  /** Viewed (lesson) or passed (quiz). */
-  done: boolean
-  skills: SkillRef[]
-  /** Quizzes: the learner's results so far. */
-  results: { bestScore: number | null; maxScore: number | null; attempts: number; passed: boolean } | null
-}
+export const moduleSummarySchema = z
+  .object({
+    slug: z.string(),
+    name: z.string(),
+    type: z.enum(MODULE_TYPES),
+    inline: z.boolean(),
+    /** Only admins see hidden modules. */
+    hidden: z.boolean(),
+    /** Sequential order or prerequisites not met (never for admins). */
+    locked: z.boolean(),
+    /** Viewed (lesson) or passed (quiz). */
+    done: z.boolean(),
+    skills: z.array(skillRefSchema),
+    /** Quizzes: the learner's results so far. */
+    results: z
+      .object({ bestScore: z.number().nullable(), maxScore: z.number().nullable(), attempts: z.number(), passed: z.boolean() })
+      .nullable(),
+  })
+  .meta({ id: 'ModuleSummary' })
+export type ModuleSummary = z.infer<typeof moduleSummarySchema>
 
 /** `GET /api/courses/:slug/modules` */
-export type CourseModulesResponse = {
-  modules: ModuleSummary[]
-  progress: { done: number; total: number }
-}
+export const courseModulesResponseSchema = z
+  .object({
+    modules: z.array(moduleSummarySchema),
+    progress: z.object({ done: z.number(), total: z.number() }),
+  })
+  .meta({ id: 'CourseModules' })
+export type CourseModulesResponse = z.infer<typeof courseModulesResponseSchema>
 
-export type TocEntry = { id: string; text: string; level: 2 | 3 }
+export const tocEntrySchema = z.object({ id: z.string(), text: z.string(), level: z.union([z.literal(2), z.literal(3)]) })
+export type TocEntry = z.infer<typeof tocEntrySchema>
 
-export type LessonView = {
-  /** Sanitized HTML. */
-  html: string
-  toc: TocEntry[]
-  /** The source could not be loaded; `html` is a placeholder (spec 064). */
-  unavailable: boolean
-  /** CSS of the markdown patterns used (spec 061). */
-  styles: string
-}
+export const lessonViewSchema = z
+  .object({
+    /** Sanitized HTML. */
+    html: z.string(),
+    toc: z.array(tocEntrySchema),
+    /** The source could not be loaded; `html` is a placeholder (spec 064). */
+    unavailable: z.boolean(),
+    /** CSS of the markdown patterns used (spec 061). */
+    styles: z.string(),
+  })
+  .meta({ id: 'Lesson' })
+export type LessonView = z.infer<typeof lessonViewSchema>
 
-export type QuestionCooldown = { remainingSeconds: number; attempts: number; locked: boolean }
+export const questionCooldownSchema = z
+  .object({ remainingSeconds: z.number(), attempts: z.number(), locked: z.boolean() })
+  .meta({ id: 'QuestionCooldown' })
+export type QuestionCooldown = z.infer<typeof questionCooldownSchema>
 
-export type QuizQuestionView = {
-  key: string
-  type: QuizQuestion['type']
-  /** Sanitized HTML. Never includes correct answers or feedback (spec 085). */
-  prompt: string
-  points: number
-  answers?: { id: string; html: string }[]
-  items?: { id: string; html: string }[]
-}
+const cooldownsSchema = z.record(z.string(), questionCooldownSchema)
+const htmlChoiceSchema = z.object({ id: z.string(), html: z.string() })
 
-export type QuizView = {
-  title: string | null
-  passingScore: number
-  maxScore: number
-  questions: QuizQuestionView[]
-  cooldowns: Record<string, QuestionCooldown>
-}
+export const quizQuestionViewSchema = z
+  .object({
+    key: z.string(),
+    type: z.enum(QUIZ_QUESTION_TYPES),
+    /** Sanitized HTML. Never includes correct answers or feedback (spec 085). */
+    prompt: z.string(),
+    points: z.number(),
+    answers: z.array(htmlChoiceSchema).optional(),
+    items: z.array(htmlChoiceSchema).optional(),
+  })
+  .meta({ id: 'QuizQuestion' })
+export type QuizQuestionView = z.infer<typeof quizQuestionViewSchema>
+
+export const quizViewSchema = z
+  .object({
+    title: z.string().nullable(),
+    passingScore: z.number(),
+    maxScore: z.number(),
+    questions: z.array(quizQuestionViewSchema),
+    cooldowns: cooldownsSchema,
+  })
+  .meta({ id: 'Quiz' })
+export type QuizView = z.infer<typeof quizViewSchema>
 
 /** `GET /api/courses/:slug/modules/:moduleSlug` */
-export type ModuleDetail = ModuleSummary & {
-  lesson: LessonView | null
-  /** Video and image modules (spec 062); `url` is the local copy when replicated (063). */
-  media: { url: string } | null
-  /** Lab modules (spec 090). The lesson HTML holds `<div data-lab-step="N"></div>` where steps go. */
-  lab: LabView | null
-  quiz: QuizView | null
-  /** A lesson followed by an inline quiz embeds it (spec 083). */
-  inlineQuiz: { module: ModuleSummary; quiz: QuizView } | null
-  /** An inline quiz is shown on this lesson. */
-  hostSlug: string | null
-  /** Neighbours in the visible, non-inline order. */
-  previous: { slug: string; type: ModuleType } | null
-  next: { slug: string; type: ModuleType; locked: boolean } | null
-}
+export const moduleDetailSchema = moduleSummarySchema
+  .extend({
+    lesson: lessonViewSchema.nullable(),
+    /** Video and image modules (spec 062); `url` is the local copy when replicated (063). */
+    media: z.object({ url: z.string() }).nullable(),
+    /** Lab modules (spec 090). The lesson HTML holds `<div data-lab-step="N"></div>` where steps go. */
+    lab: labViewSchema.nullable(),
+    quiz: quizViewSchema.nullable(),
+    /** A lesson followed by an inline quiz embeds it (spec 083). */
+    inlineQuiz: z.object({ module: moduleSummarySchema, quiz: quizViewSchema }).nullable(),
+    /** An inline quiz is shown on this lesson. */
+    hostSlug: z.string().nullable(),
+    /** Neighbours in the visible, non-inline order. */
+    previous: z.object({ slug: z.string(), type: z.enum(MODULE_TYPES) }).nullable(),
+    next: z.object({ slug: z.string(), type: z.enum(MODULE_TYPES), locked: z.boolean() }).nullable(),
+  })
+  .meta({ id: 'ModuleDetail' })
+export type ModuleDetail = z.infer<typeof moduleDetailSchema>
 
-export type QuestionResult = {
-  key: string
-  correct: boolean
-  pointsEarned: number
-  pointsMax: number
-  /** Revealed after submitting (spec 085): answer id(s), boolean, or order. */
-  correctAnswer: string | string[] | boolean
-  /** Sanitized HTML. */
-  feedback: string | null
-  locked: boolean
-}
+export const questionResultSchema = z
+  .object({
+    key: z.string(),
+    correct: z.boolean(),
+    pointsEarned: z.number(),
+    pointsMax: z.number(),
+    /** Revealed after submitting (spec 085): answer id(s), boolean, or order. */
+    correctAnswer: z.union([z.string(), z.array(z.string()), z.boolean()]),
+    /** Sanitized HTML. */
+    feedback: z.string().nullable(),
+    locked: z.boolean(),
+  })
+  .meta({ id: 'QuestionResult' })
+export type QuestionResult = z.infer<typeof questionResultSchema>
 
 /** `POST …/submit` */
-export type QuizResult = {
-  score: number
-  maxScore: number
-  passed: boolean
-  passingScore: number
-  questionResults: QuestionResult[]
-  cooldowns: Record<string, QuestionCooldown>
-  /** This submission completed the course (spec 068). */
-  courseCompleted: boolean
-}
+export const quizResultSchema = z
+  .object({
+    score: z.number(),
+    maxScore: z.number(),
+    passed: z.boolean(),
+    passingScore: z.number(),
+    questionResults: z.array(questionResultSchema),
+    cooldowns: cooldownsSchema,
+    /** This submission completed the course (spec 068). */
+    courseCompleted: z.boolean(),
+  })
+  .meta({ id: 'QuizResult' })
+export type QuizResult = z.infer<typeof quizResultSchema>
 
 /** `POST …/complete` */
-export type ModuleCompleteResult = { courseCompleted: boolean }
+export const moduleCompleteResultSchema = z.object({ courseCompleted: z.boolean() }).meta({ id: 'ModuleComplete' })
+export type ModuleCompleteResult = z.infer<typeof moduleCompleteResultSchema>
 
 /** 425 body when some questions are still cooling down (spec 080). */
-export type CooldownError = { error: string; cooldowns: Record<string, QuestionCooldown> }
+export const cooldownErrorSchema = z.object({ error: z.string(), cooldowns: cooldownsSchema }).meta({ id: 'CooldownError' })
+export type CooldownError = z.infer<typeof cooldownErrorSchema>
 
 // ─── Admin ────────────────────────────────────────────────────────────────────
 
-export type AdminModule = {
-  id: string
-  slug: string
-  name: string
-  type: ModuleType
-  hidden: boolean
-  inline: boolean
-  prerequisites: string[]
-  skills: string[]
-  content: ModuleContent
-  lab: LabConfig | null
-}
+export const adminModuleSchema = z
+  .object({
+    id: z.string(),
+    slug: z.string(),
+    name: z.string(),
+    type: z.enum(MODULE_TYPES),
+    hidden: z.boolean(),
+    inline: z.boolean(),
+    prerequisites: z.array(z.string()),
+    skills: z.array(z.string()),
+    content: moduleContentSchema,
+    lab: labConfigSchema.nullable(),
+  })
+  .meta({ id: 'AdminModule' })
+export type AdminModule = z.infer<typeof adminModuleSchema>

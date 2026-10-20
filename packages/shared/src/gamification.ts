@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Difficulty } from './courses.ts'
+import { badgeViewSchema, DIFFICULTIES, type Difficulty, SKILL_LEVELS, type SkillLevel, skillRefSchema } from './common.ts'
 
 // ─── Skills (specs 110–114) ───────────────────────────────────────────────────
 
@@ -16,43 +16,59 @@ export function skillLabel(slug: string) {
     .join(' ')
 }
 
-export type SkillRef = { slug: string; label: string }
-
-/** Spec 113: expertise levels, in order. `master` = every course teaching the skill completed. */
-export const SKILL_LEVELS = ['beginner', 'intermediate', 'advanced', 'master'] as const
-export type SkillLevel = (typeof SKILL_LEVELS)[number]
 export const DIFFICULTY_ORDER: Record<Difficulty, number> = { beginner: 1, intermediate: 2, advanced: 3 }
 export function skillLevelOrder(level: SkillLevel) {
   return SKILL_LEVELS.indexOf(level) + 1
 }
 
 /** `GET /api/my/skills` (spec 114). */
-export type MySkillsResponse = {
-  /** Skills with a recorded level, by label. */
-  skills: (SkillRef & { level: SkillLevel; completedCourses: number; totalCourses: number; updatedAt: string })[]
-  /** Skills of enrolled, unfinished courses without a level yet. */
-  inProgress: SkillRef[]
-}
+export const mySkillsResponseSchema = z
+  .object({
+    /** Skills with a recorded level, by label. */
+    skills: z.array(
+      skillRefSchema.extend({
+        level: z.enum(SKILL_LEVELS),
+        completedCourses: z.number(),
+        totalCourses: z.number(),
+        updatedAt: z.string(),
+      }),
+    ),
+    /** Skills of enrolled, unfinished courses without a level yet. */
+    inProgress: z.array(skillRefSchema),
+  })
+  .meta({ id: 'MySkills' })
+export type MySkillsResponse = z.infer<typeof mySkillsResponseSchema>
 
-export type SkillModuleStatus = 'completed' | 'available' | 'locked'
+export const SKILL_MODULE_STATUSES = ['completed', 'available', 'locked'] as const
+export type SkillModuleStatus = (typeof SKILL_MODULE_STATUSES)[number]
 
 /** `GET /api/skills/:slug` (specs 110–112): courses teaching the skill; personal status when signed in. */
-export type SkillDetail = {
-  skill: SkillRef & { description: string | null }
-  courses: {
-    slug: string
-    title: string
-    difficulty: Difficulty | null
-    enrolled: boolean
-    modules: { slug: string; name: string; type: string; status: SkillModuleStatus | null }[]
-    done: number
-  }[]
-  /** The viewer's level, if any. */
-  level: SkillLevel | null
-}
+export const skillDetailSchema = z
+  .object({
+    skill: skillRefSchema.extend({ description: z.string().nullable() }),
+    courses: z.array(
+      z.object({
+        slug: z.string(),
+        title: z.string(),
+        difficulty: z.enum(DIFFICULTIES).nullable(),
+        enrolled: z.boolean(),
+        modules: z.array(
+          z.object({ slug: z.string(), name: z.string(), type: z.string(), status: z.enum(SKILL_MODULE_STATUSES).nullable() }),
+        ),
+        done: z.number(),
+      }),
+    ),
+    /** The viewer's level, if any. */
+    level: z.enum(SKILL_LEVELS).nullable(),
+  })
+  .meta({ id: 'SkillDetail' })
+export type SkillDetail = z.infer<typeof skillDetailSchema>
 
 /** `GET /api/skills` */
-export type SkillListResponse = { skills: (SkillRef & { courseCount: number })[] }
+export const skillListResponseSchema = z
+  .object({ skills: z.array(skillRefSchema.extend({ courseCount: z.number() })) })
+  .meta({ id: 'SkillList' })
+export type SkillListResponse = z.infer<typeof skillListResponseSchema>
 
 // ─── Badges (specs 106–109) ───────────────────────────────────────────────────
 
@@ -69,42 +85,69 @@ export const badgeSchema = z.object({
 })
 export type BadgeInput = z.input<typeof badgeSchema>
 
-export type Badge = { name: string; icon: string }
+const courseLinkSchema = z.object({ slug: z.string(), title: z.string() })
 
-export type EarnedBadge = Badge & {
-  /** The course, when it still exists. */
-  course: { slug: string; title: string } | null
-  courseTitle: string
-  earnedAt: string
-  /** Number of learners holding this badge (rarity, spec 109). */
-  earnedBy: number
-}
+export const earnedBadgeSchema = badgeViewSchema
+  .extend({
+    /** The course, when it still exists. */
+    course: courseLinkSchema.nullable(),
+    courseTitle: z.string(),
+    earnedAt: z.string(),
+    /** Number of learners holding this badge (rarity, spec 109). */
+    earnedBy: z.number(),
+  })
+  .meta({ id: 'EarnedBadge' })
+export type EarnedBadge = z.infer<typeof earnedBadgeSchema>
 
 /** `GET /api/my/badges` (spec 107). */
-export type MyBadgesResponse = {
-  earned: EarnedBadge[]
-  /** Published public courses with a badge not earned yet. */
-  locked: (Badge & { course: { slug: string; title: string }; earnedBy: number })[]
-}
+export const myBadgesResponseSchema = z
+  .object({
+    earned: z.array(earnedBadgeSchema),
+    /** Published public courses with a badge not earned yet. */
+    locked: z.array(badgeViewSchema.extend({ course: courseLinkSchema, earnedBy: z.number() })),
+  })
+  .meta({ id: 'MyBadges' })
+export type MyBadgesResponse = z.infer<typeof myBadgesResponseSchema>
 
 /** `GET /api/users/:id/badges` (spec 037). */
-export type UserBadgesResponse = { badges: EarnedBadge[] }
+export const userBadgesResponseSchema = z.object({ badges: z.array(earnedBadgeSchema) }).meta({ id: 'UserBadges' })
+export type UserBadgesResponse = z.infer<typeof userBadgesResponseSchema>
 
-/** `GET /api/leaderboard?by=badges` (spec 108). */
-export type BadgeLeaderboardResponse = {
-  leaderboard: { rank: number; id: string; username: string; image: string | null; count: number; icons: string[] }[]
-}
+/** `GET /api/badges/:courseSlug` (spec 109): rarity of a course badge. */
+export const badgeRarityResponseSchema = z.object({ courseSlug: z.string(), earnedBy: z.number() }).meta({ id: 'BadgeRarity' })
+
+/** `GET /api/leaderboard/badges` (spec 108). */
+export const badgeLeaderboardResponseSchema = z
+  .object({
+    leaderboard: z.array(
+      z.object({
+        rank: z.number(),
+        id: z.string(),
+        username: z.string(),
+        image: z.string().nullable(),
+        count: z.number(),
+        icons: z.array(z.string()),
+      }),
+    ),
+  })
+  .meta({ id: 'BadgeLeaderboard' })
+export type BadgeLeaderboardResponse = z.infer<typeof badgeLeaderboardResponseSchema>
 
 /** `GET /api/admin/leaderboard` (spec 115). */
-export type AdminLeaderboardResponse = {
-  leaderboard: {
-    rank: number
-    id: string
-    username: string
-    email: string
-    image: string | null
-    totalScore: number
-    passedModules: number
-    enrolledCourses: number
-  }[]
-}
+export const adminLeaderboardResponseSchema = z
+  .object({
+    leaderboard: z.array(
+      z.object({
+        rank: z.number(),
+        id: z.string(),
+        username: z.string(),
+        email: z.string(),
+        image: z.string().nullable(),
+        totalScore: z.number(),
+        passedModules: z.number(),
+        enrolledCourses: z.number(),
+      }),
+    ),
+  })
+  .meta({ id: 'AdminLeaderboard' })
+export type AdminLeaderboardResponse = z.infer<typeof adminLeaderboardResponseSchema>

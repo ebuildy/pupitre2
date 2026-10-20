@@ -11,3 +11,5 @@ playwright-report/
 test-results/
 e2e/.auth/
 .DS_Store
+# `pnpm openapi`
+apps/api/openapi.json

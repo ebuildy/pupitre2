@@ -1,18 +1,26 @@
 import {
+  adminGroupSchema,
+  COURSE_VISIBILITIES,
   groupCreateSchema,
   type GroupMember,
+  groupMemberSchema,
   type ManagerMember,
+  managerMemberCourseSchema,
   type ManagerMemberCourse,
-  type ManagerScope,
+  managerMemberSchema,
+  managerScopeSchema,
+  messageSchema,
+  PATH_KINDS,
+  pathEnrollmentRowSchema,
 } from '@pupitre/shared'
 import { and, asc, count, eq, inArray, ne, sql } from 'drizzle-orm'
-import { type Context, Hono } from 'hono'
+import type { Context } from 'hono'
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { db } from '../db/index.ts'
 import { course, enrollmentGrant, groupMembership, learningPath, pathEnrollment, user, userGroup } from '../db/schema/index.ts'
-import { validate } from '../lib/validate.ts'
+import { $, createRoute, createRouter, errors, json, jsonBody, params } from '../lib/openapi.ts'
 import { type AppEnv, requireAuth } from '../middleware/session.ts'
 import { audit } from '../services/audit.ts'
 import { grant, revoke } from '../services/courses.ts'
@@ -53,25 +61,186 @@ function inScopeUser(managed: string[], userId: string) {
   if (!memberIdsOf(managed).has(userId)) throw new HTTPException(403, { message: 'User not in manager scope' })
 }
 
+const tags = ['Manager']
+/** Every route but the scope: open to platform managers and group managers, 403 for anyone else. */
+const SCOPED = [401, 403] as const
+
+const ref = { id: z.string(), slug: z.string(), title: z.string() }
+const userIdBody = jsonBody(z.object({ userId: z.string().min(1, 'userId is required') }))
+
+const getScope = createRoute({
+  method: 'get',
+  path: '/scope',
+  tags,
+  summary: 'What the signed-in user manages',
+  description: 'Spec 140: the groups where the user is a manager, and the subgroups below them; empty for non-managers.',
+  responses: { 200: json(managerScopeSchema), ...errors(401) },
+})
+
+const listScopeMembers = createRoute({
+  method: 'get',
+  path: '/users',
+  tags,
+  summary: 'Members in scope',
+  description: 'Spec 141 "Mes membres": active users of the managed groups.',
+  responses: { 200: json(z.object({ users: z.array(managerMemberSchema), total: z.number() })), ...errors(...SCOPED) },
+})
+
+const listMemberEnrollments = createRoute({
+  method: 'get',
+  path: '/users/{userId}/enrollments',
+  tags,
+  summary: "A member's courses and paths",
+  request: { params: params('userId') },
+  responses: {
+    200: json(z.object({ courses: z.array(managerMemberCourseSchema), paths: z.array(z.object(ref)) })),
+    ...errors(...SCOPED),
+  },
+})
+
+const enrollMember = createRoute({
+  method: 'post',
+  path: '/users/{userId}/enrollments',
+  tags,
+  summary: 'Enroll a member in a course',
+  description: 'Published courses, public or private.',
+  request: { params: params('userId'), body: jsonBody(z.object({ courseId: z.string().min(1) })) },
+  responses: { 200: json(messageSchema), ...errors(400, ...SCOPED, 404) },
+})
+
+const unenrollMember = createRoute({
+  method: 'delete',
+  path: '/users/{userId}/enrollments/{courseId}',
+  tags,
+  summary: 'Withdraw a member from a course',
+  description: 'Only what a manager granted: self, admin, group and path access stay.',
+  request: { params: params('userId', 'courseId') },
+  responses: { 200: json(messageSchema), ...errors(...SCOPED) },
+})
+
+const listCourses = createRoute({
+  method: 'get',
+  path: '/courses',
+  tags,
+  summary: 'Courses a manager can enroll members in',
+  responses: {
+    200: json(z.object({ courses: z.array(z.object({ ...ref, visibility: z.enum(COURSE_VISIBILITIES) })) })),
+    ...errors(...SCOPED),
+  },
+})
+
+const listPaths = createRoute({
+  method: 'get',
+  path: '/paths',
+  tags,
+  summary: 'Published learning paths',
+  responses: { 200: json(z.object({ paths: z.array(z.object({ ...ref, kind: z.enum(PATH_KINDS) })) })), ...errors(...SCOPED) },
+})
+
+const listPathEnrollments = createRoute({
+  method: 'get',
+  path: '/paths/{id}/enrollments',
+  tags,
+  summary: 'Members enrolled in a path',
+  description: 'Spec 143: with their progress.',
+  request: { params: params('id') },
+  responses: { 200: json(z.object({ users: z.array(pathEnrollmentRowSchema) })), ...errors(...SCOPED, 404) },
+})
+
+const enrollMemberInPath = createRoute({
+  method: 'post',
+  path: '/paths/{id}/enrollments',
+  tags,
+  summary: 'Enroll a member in a path',
+  request: { params: params('id'), body: userIdBody },
+  responses: { 200: json(messageSchema), ...errors(400, ...SCOPED, 404) },
+})
+
+const unenrollMemberFromPath = createRoute({
+  method: 'delete',
+  path: '/paths/{id}/enrollments/{userId}',
+  tags,
+  summary: 'Withdraw a member from a path',
+  request: { params: params('id', 'userId') },
+  responses: { 200: json(messageSchema), ...errors(...SCOPED, 404) },
+})
+
+const listManagedGroups = createRoute({
+  method: 'get',
+  path: '/groups',
+  tags,
+  summary: 'Managed groups',
+  description: 'Spec 142 "Mes groupes".',
+  responses: { 200: json(z.object({ groups: z.array(adminGroupSchema) })), ...errors(...SCOPED) },
+})
+
+const createManagedGroup = createRoute({
+  method: 'post',
+  path: '/groups',
+  tags,
+  summary: 'Create a group',
+  description: 'At the root, or under a managed group. The creator manages it.',
+  request: { body: jsonBody(groupCreateSchema) },
+  responses: { 201: json(z.object({ id: z.string(), message: z.string() }), 'Created'), ...errors(400, ...SCOPED, 409) },
+})
+
+const deleteManagedGroup = createRoute({
+  method: 'delete',
+  path: '/groups/{id}',
+  tags,
+  summary: 'Delete a group',
+  description: 'Local groups without subgroups or learners only (409).',
+  request: { params: params('id') },
+  responses: { 200: json(messageSchema), ...errors(...SCOPED, 404, 409) },
+})
+
+const listGroupMembers = createRoute({
+  method: 'get',
+  path: '/groups/{id}/members',
+  tags,
+  summary: "A managed group's members",
+  request: { params: params('id') },
+  responses: { 200: json(z.object({ members: z.array(groupMemberSchema), total: z.number() })), ...errors(...SCOPED, 404) },
+})
+
+const addGroupMember = createRoute({
+  method: 'post',
+  path: '/groups/{id}/members',
+  tags,
+  summary: 'Add a member to a managed group',
+  description: 'Only users already in scope; adding anyone else is an admin action (spec 191).',
+  request: { params: params('id'), body: userIdBody },
+  responses: { 200: json(messageSchema), ...errors(400, ...SCOPED, 404) },
+})
+
+const removeGroupMember = createRoute({
+  method: 'delete',
+  path: '/groups/{id}/members/{userId}',
+  tags,
+  summary: 'Remove a member from a managed group',
+  description: 'A manager cannot leave a group they manage (400).',
+  request: { params: params('id', 'userId') },
+  responses: { 200: json(messageSchema), ...errors(400, ...SCOPED, 404) },
+})
+
+const scopeRoutes = $(createRouter<ManagerEnv>().use(requireAuth)).openapi(getScope, (c) => {
+  const me = c.get('user')
+  const tree = GroupTree.load()
+  const managed = new Set(managedGroupIds(me.id).flatMap((id) => tree.subtreeIds(id)))
+  return c.json({
+    groups: listGroups(tree, managed),
+    canManage: managed.size > 0 || me.role === 'manager',
+  }, 200)
+})
+
 /** `/api/manager/*`, spec 140. */
-export const managerRoutes = new Hono<ManagerEnv>()
-  .use(requireAuth)
-  .get('/scope', (c) => {
-    const me = c.get('user')!
-    const tree = GroupTree.load()
-    const managed = new Set(managedGroupIds(me.id).flatMap((id) => tree.subtreeIds(id)))
-    return c.json<ManagerScope>({
-      groups: listGroups(tree, managed),
-      canManage: managed.size > 0 || me.role === 'manager',
-    })
-  })
-  .use(requireManager)
+export const managerRoutes = $(scopeRoutes.use(requireManager))
 
   // Spec 141: "Mes membres"
-  .get('/users', (c) => {
+  .openapi(listScopeMembers, (c) => {
     const managed = c.get('managed')
     const ids = [...memberIdsOf(managed)]
-    if (ids.length === 0) return c.json<{ users: ManagerMember[]; total: number }>({ users: [], total: 0 })
+    if (ids.length === 0) return c.json({ users: [], total: 0 }, 200)
     const tree = GroupTree.load()
     const memberships = db
       .select({ userId: groupMembership.userId, groupId: groupMembership.groupId })
@@ -95,9 +264,9 @@ export const managerRoutes = new Hono<ManagerEnv>()
         .map((m) => ({ id: m.groupId, name: tree.byId.get(m.groupId)?.name ?? '' }))
         .sort((a, b) => a.name.localeCompare(b.name)),
     }))
-    return c.json({ users, total: users.length })
+    return c.json({ users, total: users.length }, 200)
   })
-  .get('/users/:userId/enrollments', (c) => {
+  .openapi(listMemberEnrollments, (c) => {
     const userId = c.req.param('userId')
     inScopeUser(c.get('managed'), userId)
     const rows = db
@@ -125,72 +294,72 @@ export const managerRoutes = new Hono<ManagerEnv>()
       .where(and(eq(pathEnrollment.userId, userId), eq(learningPath.status, 'published')))
       .orderBy(asc(learningPath.title))
       .all()
-    return c.json({ courses, paths })
+    return c.json({ courses, paths }, 200)
   })
-  .post('/users/:userId/enrollments', validate('json', z.object({ courseId: z.string().min(1) })), async (c) => {
+  .openapi(enrollMember, async (c) => {
     const userId = c.req.param('userId')
     inScopeUser(c.get('managed'), userId)
     const target = db.select().from(course).where(eq(course.id, c.req.valid('json').courseId)).get()
     // Managers enroll in published courses, public or private.
     if (!target || target.status !== 'published') throw new HTTPException(404, { message: 'Course not found' })
-    await grant(userId, target.id, 'manager', c.get('user')!.id)
-    return c.json({ message: 'Enrolled successfully' })
+    await grant(userId, target.id, 'manager', c.get('user').id)
+    return c.json({ message: 'Enrolled successfully' }, 200)
   })
-  .delete('/users/:userId/enrollments/:courseId', async (c) => {
+  .openapi(unenrollMember, async (c) => {
     const userId = c.req.param('userId')
     inScopeUser(c.get('managed'), userId)
     // Only what a manager granted: self, admin, group and path access stay.
     await revoke(userId, c.req.param('courseId'), ['manager'])
-    return c.json({ message: 'Enrollment removed' })
+    return c.json({ message: 'Enrollment removed' }, 200)
   })
   /** Courses a manager can enroll members in. */
-  .get('/courses', (c) => {
+  .openapi(listCourses, (c) => {
     const courses = db
       .select({ id: course.id, slug: course.slug, title: course.title, visibility: course.visibility })
       .from(course)
       .where(eq(course.status, 'published'))
       .orderBy(asc(course.title))
       .all()
-    return c.json({ courses })
+    return c.json({ courses }, 200)
   })
 
   // Spec 182: CSV exports limited to the manager's members.
-  .route('/exports', exportRoutes((c) => [...memberIdsOf((c as unknown as Context<ManagerEnv>).get('managed'))]))
+  .route('/exports', exportRoutes((c) => [...memberIdsOf((c as unknown as Context<ManagerEnv>).get('managed'))], 'Manager: exports'))
 
   // Spec 143: path enrollments of users in scope.
-  .get('/paths', (c) => {
+  .openapi(listPaths, (c) => {
     const paths = db
       .select({ id: learningPath.id, slug: learningPath.slug, title: learningPath.title, kind: learningPath.kind })
       .from(learningPath)
       .where(eq(learningPath.status, 'published'))
       .orderBy(asc(learningPath.title))
       .all()
-    return c.json({ paths })
+    return c.json({ paths }, 200)
   })
-  .get('/paths/:id/enrollments', (c) => {
+  .openapi(listPathEnrollments, (c) => {
     const found = requirePath({ id: c.req.param('id') })
-    return c.json({ users: pathEnrollmentRows(found, memberIdsOf(c.get('managed'))) })
+    return c.json({ users: pathEnrollmentRows(found, memberIdsOf(c.get('managed'))) }, 200)
   })
-  .post('/paths/:id/enrollments', validate('json', z.object({ userId: z.string().min(1) })), (c) => {
+  .openapi(enrollMemberInPath, (c) => {
     const found = requirePath({ id: c.req.param('id') })
     if (found.status !== 'published') throw new HTTPException(404, { message: 'Path not found' })
     const { userId } = c.req.valid('json')
     inScopeUser(c.get('managed'), userId)
-    enrollInPath(found.id, userId, c.get('user')!.id)
-    return c.json({ message: 'User enrolled' })
+    enrollInPath(found.id, userId, c.get('user').id)
+    return c.json({ message: 'User enrolled' }, 200)
   })
-  .delete('/paths/:id/enrollments/:userId', (c) => {
+  .openapi(unenrollMemberFromPath, (c) => {
     const found = requirePath({ id: c.req.param('id') })
     const userId = c.req.param('userId')
     inScopeUser(c.get('managed'), userId)
     unenrollFromPath(found.id, userId)
-    return c.json({ message: 'User unenrolled' })
+    return c.json({ message: 'User unenrolled' }, 200)
   })
 
   // Spec 142: "Mes groupes"
-  .get('/groups', (c) => c.json({ groups: listGroups(GroupTree.load(), new Set(c.get('managed'))) }))
-  .post('/groups', validate('json', groupCreateSchema), (c) => {
-    const me = c.get('user')!
+  .openapi(listManagedGroups, (c) => c.json({ groups: listGroups(GroupTree.load(), new Set(c.get('managed'))) }, 200))
+  .openapi(createManagedGroup, (c) => {
+    const me = c.get('user')
     const input = c.req.valid('json')
     if (input.parentId) inScopeGroup(c.get('managed'), input.parentId)
     const created = createGroup(input)
@@ -199,8 +368,8 @@ export const managerRoutes = new Hono<ManagerEnv>()
     audit(me, 'group.create', { type: 'group', id: created.id, label: created.name }, { by: 'manager' })
     return c.json({ id: created.id, message: 'Group created' }, 201)
   })
-  .delete('/groups/:id', (c) => {
-    const me = c.get('user')!
+  .openapi(deleteManagedGroup, (c) => {
+    const me = c.get('user')
     const groupId = c.req.param('id')
     inScopeGroup(c.get('managed'), groupId)
     const tree = GroupTree.load()
@@ -218,29 +387,29 @@ export const managerRoutes = new Hono<ManagerEnv>()
       tx.delete(userGroup).where(eq(userGroup.id, groupId)).run()
     })
     audit(me, 'group.delete', { type: 'group', id: found.id, label: found.name }, { by: 'manager' })
-    return c.json({ message: 'Group deleted' })
+    return c.json({ message: 'Group deleted' }, 200)
   })
-  .get('/groups/:id/members', (c) => {
+  .openapi(listGroupMembers, (c) => {
     const groupId = c.req.param('id')
     inScopeGroup(c.get('managed'), groupId)
     const members: GroupMember[] = listMembers([groupId], GroupTree.load())
-    return c.json({ members, total: members.length })
+    return c.json({ members, total: members.length }, 200)
   })
   // Adding someone outside the scope is an admin action (spec 191): only users already in scope.
-  .post('/groups/:id/members', validate('json', z.object({ userId: z.string().min(1, 'userId is required') })), (c) => {
+  .openapi(addGroupMember, (c) => {
     const groupId = c.req.param('id')
     const managed = c.get('managed')
     inScopeGroup(managed, groupId)
     const { userId } = c.req.valid('json')
     inScopeUser(managed, userId)
-    addMember(groupId, userId, { role: 'member', addedBy: c.get('user')!.id })
-    return c.json({ message: 'Member added' })
+    addMember(groupId, userId, { role: 'member', addedBy: c.get('user').id })
+    return c.json({ message: 'Member added' }, 200)
   })
-  .delete('/groups/:id/members/:userId', (c) => {
+  .openapi(removeGroupMember, (c) => {
     const groupId = c.req.param('id')
     inScopeGroup(c.get('managed'), groupId)
     const userId = c.req.param('userId')
-    if (userId === c.get('user')!.id) throw new HTTPException(400, { message: 'You cannot leave a group you manage' })
+    if (userId === c.get('user').id) throw new HTTPException(400, { message: 'You cannot leave a group you manage' })
     removeMember(groupId, userId)
-    return c.json({ message: 'Member removed' })
+    return c.json({ message: 'Member removed' }, 200)
   })

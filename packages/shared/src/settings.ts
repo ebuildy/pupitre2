@@ -76,6 +76,22 @@ export type PublicSettings = Pick<Settings, PublicKey>
 
 export const PUBLIC_SETTING_KEYS = SETTING_KEYS.filter((k) => SETTINGS[k].public) as PublicKey[]
 
+function settingValueSchema(key: SettingKey) {
+  const type = SETTINGS[key].type
+  if (type === 'boolean') return z.boolean()
+  if (type === 'number') return z.number()
+  if (type === 'list') return z.array(z.string())
+  return z.string()
+}
+
+function settingsObjectSchema<K extends SettingKey>(keys: readonly K[]) {
+  return z.object(Object.fromEntries(keys.map((k) => [k, settingValueSchema(k)]))) as unknown as z.ZodType<Pick<Settings, K>>
+}
+
+/** `GET /api/settings/public` */
+export const publicSettingsSchema = settingsObjectSchema(PUBLIC_SETTING_KEYS).meta({ id: 'PublicSettings' })
+export const settingsSchema = settingsObjectSchema(SETTING_KEYS).meta({ id: 'Settings' })
+
 export function defaultSettings(): Settings {
   return Object.fromEntries(SETTING_KEYS.map((k) => [k, SETTINGS[k].default])) as Settings
 }
@@ -118,11 +134,14 @@ export const settingsUpdateSchema = z
 export type SettingsUpdateInput = z.input<typeof settingsUpdateSchema>
 
 /** `GET /api/admin/settings` */
-export type AdminSettingsResponse = {
-  settings: Settings
-  /** Last change of each key an admin set. */
-  changes: Partial<Record<SettingKey, { updatedAt: string; updatedBy: string | null }>>
-}
+export const adminSettingsResponseSchema = z
+  .object({
+    settings: settingsSchema,
+    /** Last change of each key an admin set. */
+    changes: z.partialRecord(z.enum(SETTING_KEYS as [SettingKey, ...SettingKey[]]), z.object({ updatedAt: z.string(), updatedBy: z.string().nullable() })),
+  })
+  .meta({ id: 'AdminSettings' })
+export type AdminSettingsResponse = z.infer<typeof adminSettingsResponseSchema>
 
 export type PasswordRule = 'minLength' | 'uppercase' | 'number'
 

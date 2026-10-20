@@ -31,13 +31,16 @@ export const profileUpdateSchema = z
 export type ProfileUpdateInput = z.input<typeof profileUpdateSchema>
 
 /** `GET /api/users/:id` (spec 037): what anyone can see of a user. No e-mail. */
-export type PublicUserProfile = {
-  id: string
-  username: string
-  name: string
-  image: string | null
-  bio: string | null
-  xp: number
-  completedCourses: number
-  memberSince: string
-}
+export const publicUserProfileSchema = z
+  .object({
+    id: z.string(),
+    username: z.string(),
+    name: z.string(),
+    image: z.string().nullable(),
+    bio: z.string().nullable(),
+    xp: z.number(),
+    completedCourses: z.number(),
+    memberSince: z.string(),
+  })
+  .meta({ id: 'PublicUserProfile' })
+export type PublicUserProfile = z.infer<typeof publicUserProfileSchema>

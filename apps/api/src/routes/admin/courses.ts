@@ -1,22 +1,25 @@
 import {
-  type AdminCourse,
+  adminCourseEnrollmentSchema,
   type AdminCourseEnrollment,
+  adminCourseSchema,
+  adminModuleSchema,
   courseCreateSchema,
+  courseDefinitionSchema,
   courseModulesSchema,
   courseSpecSchema,
   MARKDOWN_SPLITS,
   courseUpdateSchema,
+  messageSchema,
   SLUG_PATTERN,
   type EnrollmentSource,
 } from '@pupitre/shared'
 import { and, asc, eq, isNotNull, max, min, sql } from 'drizzle-orm'
-import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { db } from '../../db/index.ts'
 import { course, courseCompletion, courseModule, enrollmentGrant, groupCourseEnrollment, groupMembership, user, userGroup } from '../../db/schema/index.ts'
-import { validate } from '../../lib/validate.ts'
-import type { AppEnv } from '../../middleware/session.ts'
+import { ADMIN, createRoute, createRouter, errors, json, jsonBody, params } from '../../lib/openapi.ts'
+import { cacheClearedSchema } from './cache.ts'
 import {
   countEnrolled,
   findCourseById,
@@ -61,17 +64,209 @@ async function requireCourse(id: string) {
   return found
 }
 
+const tags = ['Admin: courses']
+const id = params('id')
+const userIdBody = jsonBody(z.object({ userId: z.string().min(1) }))
+const modulesResponse = json(z.object({ modules: z.array(adminModuleSchema) }))
+
+const list = createRoute({
+  method: 'get',
+  path: '/',
+  tags,
+  summary: 'Courses',
+  description: 'Spec 165, with enrollment counts; `search` matches the title or the slug.',
+  request: { query: z.object({ search: z.string().optional() }) },
+  responses: { 200: json(z.object({ courses: z.array(adminCourseSchema), total: z.number() })), ...errors(400, ...ADMIN) },
+})
+
+const create = createRoute({
+  method: 'post',
+  path: '/',
+  tags,
+  summary: 'Create a course',
+  description: 'Spec 166.',
+  request: { body: jsonBody(courseCreateSchema) },
+  responses: { 201: json(adminCourseSchema, 'Created'), ...errors(400, ...ADMIN, 409) },
+})
+
+const getOne = createRoute({
+  method: 'get',
+  path: '/{id}',
+  tags,
+  summary: 'A course',
+  request: { params: id },
+  responses: { 200: json(adminCourseSchema), ...errors(...ADMIN, 404) },
+})
+
+const update = createRoute({
+  method: 'patch',
+  path: '/{id}',
+  tags,
+  summary: 'Edit a course',
+  description: 'Spec 167: any subset of the fields; `prerequisites` replaces the list.',
+  request: { params: id, body: jsonBody(courseUpdateSchema) },
+  responses: { 200: json(adminCourseSchema), ...errors(400, ...ADMIN, 404, 409) },
+})
+
+const remove = createRoute({
+  method: 'delete',
+  path: '/{id}',
+  tags,
+  summary: 'Delete a course',
+  description: 'Spec 168: enrollments go with it; earned XP and completions are kept (spec 103).',
+  request: { params: id },
+  responses: { 200: json(messageSchema), ...errors(...ADMIN, 404) },
+})
+
+const listEnrollments = createRoute({
+  method: 'get',
+  path: '/{id}/enrollments',
+  tags,
+  summary: 'Users with access to a course',
+  description: 'Spec 145: each with the sources of their access.',
+  request: { params: id },
+  responses: {
+    200: json(z.object({ enrollments: z.array(adminCourseEnrollmentSchema), total: z.number() })),
+    ...errors(...ADMIN, 404),
+  },
+})
+
+const enroll = createRoute({
+  method: 'post',
+  path: '/{id}/enrollments',
+  tags,
+  summary: 'Enroll a user',
+  description: 'Spec 145: any course, private or not.',
+  request: { params: id, body: userIdBody },
+  responses: { 200: json(messageSchema), ...errors(400, ...ADMIN, 404) },
+})
+
+const unenroll = createRoute({
+  method: 'delete',
+  path: '/{id}/enrollments/{userId}',
+  tags,
+  summary: 'Withdraw a user',
+  description: "Removes the direct grants (the learner's own, automatic, admin and manager ones); group and path access stay.",
+  request: { params: params('id', 'userId') },
+  responses: { 200: json(messageSchema), ...errors(...ADMIN, 404) },
+})
+
+const listGroups = createRoute({
+  method: 'get',
+  path: '/{id}/groups',
+  tags,
+  summary: 'Groups enrolled in a course',
+  description: 'Spec 135; enroll or withdraw a group with `/api/admin/groups/{id}/courses`.',
+  request: { params: id },
+  responses: {
+    200: json(
+      z.object({ groups: z.array(z.object({ id: z.string(), name: z.string(), memberCount: z.number(), enrolledAt: z.string() })) }),
+    ),
+    ...errors(...ADMIN, 404),
+  },
+})
+
+const clearCache = createRoute({
+  method: 'post',
+  path: '/{id}/cache/clear',
+  tags,
+  summary: "Forget a course's git clones",
+  description: 'Spec 177: to see pushed changes before the cache expires.',
+  request: { params: id },
+  responses: { 200: json(cacheClearedSchema), ...errors(...ADMIN, 404) },
+})
+
+const clearModuleCache = createRoute({
+  method: 'post',
+  path: '/{id}/modules/{slug}/cache/clear',
+  tags,
+  summary: "Forget a module's git clone",
+  request: { params: params('id', 'slug') },
+  responses: { 200: json(cacheClearedSchema), ...errors(...ADMIN, 404) },
+})
+
+const exportMarkdown = createRoute({
+  method: 'get',
+  path: '/{id}/export/markdown',
+  tags,
+  summary: 'Export a course as markdown',
+  description: 'Spec 176: one document with a frontmatter; `split`: the heading level modules start at.',
+  request: { params: id, query: z.object({ split: z.enum(MARKDOWN_SPLITS).optional() }) },
+  responses: {
+    200: { description: 'The markdown file (attachment)', content: { 'text/markdown': { schema: z.string() } } },
+    ...errors(400, ...ADMIN, 404),
+  },
+})
+
+const getDefinition = createRoute({
+  method: 'get',
+  path: '/{id}/definition',
+  tags,
+  summary: 'A course as a portable document',
+  description: 'Spec 169: metadata with references by slug, and its ordered modules. What `PUT` takes back.',
+  request: { params: id },
+  responses: { 200: json(courseDefinitionSchema), ...errors(...ADMIN, 404) },
+})
+
+const putDefinition = createRoute({
+  method: 'put',
+  path: '/{id}/definition',
+  tags,
+  summary: 'Replace a course with a document',
+  description: 'Spec 169: metadata, prerequisites and modules, in one transaction; progress on kept modules stays.',
+  request: { params: id, body: jsonBody(z.object({ slug: z.string().optional(), spec: courseSpecSchema })) },
+  responses: { 200: json(courseDefinitionSchema), ...errors(400, ...ADMIN, 404, 409) },
+})
+
+const getModules = createRoute({
+  method: 'get',
+  path: '/{id}/modules',
+  tags,
+  summary: "A course's modules",
+  request: { params: id },
+  responses: { 200: modulesResponse, ...errors(...ADMIN, 404) },
+})
+
+const putModules = createRoute({
+  method: 'put',
+  path: '/{id}/modules',
+  tags,
+  summary: "Replace a course's modules",
+  description: 'In order. Modules are matched by slug, so progress is kept.',
+  request: { params: id, body: jsonBody(courseModulesSchema) },
+  responses: { 200: modulesResponse, ...errors(400, ...ADMIN, 404) },
+})
+
+const complete = createRoute({
+  method: 'post',
+  path: '/{id}/completions',
+  tags,
+  summary: 'Mark a course completed for a user',
+  description: 'The user must be enrolled (400); completion XP and badge are awarded once.',
+  request: { params: id, body: userIdBody },
+  responses: { 200: json(messageSchema), ...errors(400, ...ADMIN, 404) },
+})
+
+const uncomplete = createRoute({
+  method: 'delete',
+  path: '/{id}/completions/{userId}',
+  tags,
+  summary: "Remove a user's completion",
+  request: { params: params('id', 'userId') },
+  responses: { 200: json(messageSchema), ...errors(...ADMIN, 404) },
+})
+
 /** Specs 165–168 (course CRUD) and 145 (course enrollments), under /api/admin/courses. */
-export const adminCourseRoutes = new Hono<AppEnv>()
-  .get('/', validate('query', z.object({ search: z.string().optional() })), async (c) => {
+export const adminCourseRoutes = createRouter()
+  .openapi(list, async (c) => {
     const rows = await listAdminCourses(c.req.valid('query').search)
     const tree = await CategoryTree.load()
-    return c.json<{ courses: AdminCourse[]; total: number }>({
+    return c.json({
       courses: rows.map((r) => toAdminCourse(r.course, r.enrollmentCount, tree)),
       total: rows.length,
-    })
+    }, 200)
   })
-  .post('/', validate('json', courseCreateSchema), async (c) => {
+  .openapi(create, async (c) => {
     const input = c.req.valid('json')
     const tree = await CategoryTree.load()
     checkCategory(tree, input.categoryId)
@@ -81,19 +276,20 @@ export const adminCourseRoutes = new Hono<AppEnv>()
         if (input.prerequisites) setPrerequisites(tx, row.id, input.prerequisites)
         return row
       })
-      return c.json<AdminCourse>(toAdminCourse(created, 0, tree, adminPrerequisites(created.id)), 201)
+      return c.json(toAdminCourse(created, 0, tree, adminPrerequisites(created.id)), 201)
     } catch (err) {
       if (isUniqueViolation(err)) throw new HTTPException(409, { message: SLUG_TAKEN })
       throw err
     }
   })
-  .get('/:id', async (c) => {
+  .openapi(getOne, async (c) => {
     const found = await requireCourse(c.req.param('id'))
-    return c.json<AdminCourse>(
+    return c.json(
       toAdminCourse(found, await countEnrolled(found.id), await CategoryTree.load(), adminPrerequisites(found.id)),
+      200,
     )
   })
-  .patch('/:id', validate('json', courseUpdateSchema), async (c) => {
+  .openapi(update, async (c) => {
     const found = await requireCourse(c.req.param('id'))
     const input = c.req.valid('json')
     const tree = await CategoryTree.load()
@@ -107,21 +303,21 @@ export const adminCourseRoutes = new Hono<AppEnv>()
         if (input.prerequisites) setPrerequisites(tx, found.id, input.prerequisites)
         return row
       })
-      return c.json<AdminCourse>(toAdminCourse(updated, await countEnrolled(found.id), tree, adminPrerequisites(found.id)))
+      return c.json(toAdminCourse(updated, await countEnrolled(found.id), tree, adminPrerequisites(found.id)), 200)
     } catch (err) {
       if (isUniqueViolation(err)) throw new HTTPException(409, { message: SLUG_TAKEN })
       throw err
     }
   })
-  .delete('/:id', async (c) => {
+  .openapi(remove, async (c) => {
     const found = await requireCourse(c.req.param('id'))
     // Enrollment grants cascade.
     await db.delete(course).where(eq(course.id, found.id))
-    return c.json({ message: 'Course deleted' })
+    return c.json({ message: 'Course deleted' }, 200)
   })
 
   // Spec 145
-  .get('/:id/enrollments', async (c) => {
+  .openapi(listEnrollments, async (c) => {
     const found = await requireCourse(c.req.param('id'))
     const rows = await db
       .select({
@@ -149,9 +345,9 @@ export const adminCourseRoutes = new Hono<AppEnv>()
       sources: r.sources.split(',').sort() as EnrollmentSource[],
       completedAt: r.completedAt ? new Date(r.completedAt).toISOString() : null,
     }))
-    return c.json({ enrollments, total: enrollments.length })
+    return c.json({ enrollments, total: enrollments.length }, 200)
   })
-  .post('/:id/enrollments', validate('json', z.object({ userId: z.string().min(1) })), async (c) => {
+  .openapi(enroll, async (c) => {
     const found = await requireCourse(c.req.param('id'))
     const { userId } = c.req.valid('json')
     const target = await db.query.user.findFirst({ columns: { id: true }, where: eq(user.id, userId) })
@@ -159,17 +355,17 @@ export const adminCourseRoutes = new Hono<AppEnv>()
 
     // Admins can enroll in any course, private or not (spec 145).
     await grant(target.id, found.id, 'admin', c.get('user')!.id)
-    return c.json({ message: 'User enrolled' })
+    return c.json({ message: 'User enrolled' }, 200)
   })
-  .delete('/:id/enrollments/:userId', async (c) => {
+  .openapi(unenroll, async (c) => {
     const found = await requireCourse(c.req.param('id'))
     // Removes the direct grants (the learner's own, automatic, admin and manager ones). Group/path grants stay.
     await revoke(c.req.param('userId'), found.id, ['self', 'auto', 'admin', 'manager'])
-    return c.json({ message: 'User unenrolled' })
+    return c.json({ message: 'User unenrolled' }, 200)
   })
 
   // Spec 135: groups enrolled in the course (enroll / withdraw: /api/admin/groups/:id/courses).
-  .get('/:id/groups', async (c) => {
+  .openapi(listGroups, async (c) => {
     const found = await requireCourse(c.req.param('id'))
     const memberCount = sql<number>`(SELECT count(*) FROM ${groupMembership} WHERE ${groupMembership.groupId} = ${userGroup.id})`.mapWith(Number)
     const groups = db
@@ -180,11 +376,11 @@ export const adminCourseRoutes = new Hono<AppEnv>()
       .orderBy(asc(userGroup.name))
       .all()
       .map((g) => ({ ...g, enrolledAt: g.enrolledAt.toISOString() }))
-    return c.json({ groups })
+    return c.json({ groups }, 200)
   })
 
   // Spec 177: forget the git clones used by the course (or one module), to see pushed changes before the TTL.
-  .post('/:id/cache/clear', async (c) => {
+  .openapi(clearCache, async (c) => {
     const found = await requireCourse(c.req.param('id'))
     const repos = db
       .selectDistinct({ repo: courseModule.sourceRepo, ref: courseModule.sourceRef })
@@ -193,9 +389,9 @@ export const adminCourseRoutes = new Hono<AppEnv>()
       .all()
       .map((r) => ({ repo: r.repo!, ref: r.ref ?? 'main' }))
     await contentLoader.clear(repos)
-    return c.json({ status: 'ok', reposCleared: repos.length })
+    return c.json({ status: 'ok' as const, reposCleared: repos.length }, 200)
   })
-  .post('/:id/modules/:slug/cache/clear', async (c) => {
+  .openapi(clearModuleCache, async (c) => {
     const found = await requireCourse(c.req.param('id'))
     const m = db
       .select({ repo: courseModule.sourceRepo, ref: courseModule.sourceRef })
@@ -204,50 +400,46 @@ export const adminCourseRoutes = new Hono<AppEnv>()
       .get()
     if (!m) throw new HTTPException(404, { message: 'Module not found' })
     if (m.repo) await contentLoader.clear([{ repo: m.repo, ref: m.ref ?? 'main' }])
-    return c.json({ status: 'ok', reposCleared: m.repo ? 1 : 0 })
+    return c.json({ status: 'ok' as const, reposCleared: m.repo ? 1 : 0 }, 200)
   })
 
   // Spec 176: markdown export.
-  .get(
-    '/:id/export/markdown',
-    validate('query', z.object({ split: z.enum(MARKDOWN_SPLITS).optional() })),
-    async (c) => {
-      const found = await requireCourse(c.req.param('id'))
-      const { slug, spec } = await readDefinition(found)
-      const markdown = exportMarkdownCourse(slug, spec, c.req.valid('query').split)
-      c.header('Content-Disposition', `attachment; filename="${slug}.md"`)
-      c.header('X-Content-Type-Options', 'nosniff')
-      return c.body(markdown, 200, { 'Content-Type': 'text/markdown; charset=utf-8' })
-    },
-  )
+  .openapi(exportMarkdown, async (c) => {
+    const found = await requireCourse(c.req.param('id'))
+    const { slug, spec } = await readDefinition(found)
+    const markdown = exportMarkdownCourse(slug, spec, c.req.valid('query').split)
+    c.header('Content-Disposition', `attachment; filename="${slug}.md"`)
+    c.header('X-Content-Type-Options', 'nosniff')
+    return c.body(markdown, 200, { 'Content-Type': 'text/markdown; charset=utf-8' })
+  })
 
   // Spec 169: the whole course as a portable document.
-  .get('/:id/definition', async (c) => {
+  .openapi(getDefinition, async (c) => {
     const found = await requireCourse(c.req.param('id'))
-    return c.json(await readDefinition(found))
+    return c.json(await readDefinition(found), 200)
   })
-  .put('/:id/definition', validate('json', z.object({ slug: z.string().optional(), spec: courseSpecSchema })), async (c) => {
+  .openapi(putDefinition, async (c) => {
     const found = await requireCourse(c.req.param('id'))
     const { slug, spec } = c.req.valid('json')
     if (slug !== undefined && !SLUG_PATTERN.test(slug)) throw new HTTPException(400, { message: 'Invalid slug' })
     await writeDefinition(slug ?? found.slug, spec, found)
     audit(c.get('user'), 'course.definition', { type: 'course', id: found.id, label: slug ?? found.slug })
-    return c.json(await readDefinition((await findCourseById(found.id))!))
+    return c.json(await readDefinition((await findCourseById(found.id))!), 200)
   })
 
   // Module list (spec 169 style): read, and replace as a whole. The module editor UI comes later.
-  .get('/:id/modules', async (c) => {
+  .openapi(getModules, async (c) => {
     const found = await requireCourse(c.req.param('id'))
-    return c.json({ modules: await adminModules(found.id) })
+    return c.json({ modules: await adminModules(found.id) }, 200)
   })
-  .put('/:id/modules', validate('json', courseModulesSchema), async (c) => {
+  .openapi(putModules, async (c) => {
     const found = await requireCourse(c.req.param('id'))
     await saveModules(found.id, c.req.valid('json').modules)
-    return c.json({ modules: await adminModules(found.id) })
+    return c.json({ modules: await adminModules(found.id) }, 200)
   })
 
   // Course completion, marked by hand until modules exist (spec 068 will complete courses automatically).
-  .post('/:id/completions', validate('json', z.object({ userId: z.string().min(1) })), async (c) => {
+  .openapi(complete, async (c) => {
     const found = await requireCourse(c.req.param('id'))
     const { userId } = c.req.valid('json')
     const enrolled = await db.query.enrollmentGrant.findFirst({
@@ -256,10 +448,10 @@ export const adminCourseRoutes = new Hono<AppEnv>()
     })
     if (!enrolled) throw new HTTPException(400, { message: 'User is not enrolled in this course' })
     completeCourse(userId, found, c.get('user')!.id)
-    return c.json({ message: 'Course completed' })
+    return c.json({ message: 'Course completed' }, 200)
   })
-  .delete('/:id/completions/:userId', async (c) => {
+  .openapi(uncomplete, async (c) => {
     const found = await requireCourse(c.req.param('id'))
     uncompleteCourse(c.req.param('userId'), found.id)
-    return c.json({ message: 'Completion removed' })
+    return c.json({ message: 'Completion removed' }, 200)
   })
