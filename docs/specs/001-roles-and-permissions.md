@@ -58,6 +58,25 @@ Current routes: `/my-courses` (any signed-in user), the whole admin app `/admin/
 - A student opening `/admin` sees "Accès refusé".
 - Deactivating a user (`is_active = 0`) makes their open session behave as signed out.
 
+## Security tests
+
+`e2e/security.spec.ts` checks access control on the whole API. Its sweep reads the OpenAPI document
+([005](005-http-conventions.md)), so a new route is covered as soon as it is declared:
+
+- signed out, every route that needs a session answers 401 `Authentication required`; routes documented as public do not;
+- students and managers get 403 `Admin access required` on every `/api/admin/*` route;
+- a student who manages no group gets 403 `Manager access required` on every `/api/manager/*` route but the scope;
+- trainer actions on in-person sessions are refused to students; path tricks (`//`, case, encoded `/` or letters,
+  `..`) do not reach admin routes.
+
+Targeted tests cover what the sweep cannot: sign-up, `PATCH /api/me` and better-auth's `update-user` never change the
+role; no account deletes itself (an admin gets 400 on their own `DELETE`, `PATCH` to deactivate or demote; better-auth's
+`delete-user` is not enabled; managers cannot delete accounts; the admin app shows no delete button on the admin's own
+page); deactivation and demotion apply to open sessions at once; a group manager is refused groups and users outside
+their scope ([140](140-manager-space.md)); private and draft courses and their content are 404 to learners who are not
+enrolled; a quiz never sends answers or feedback before submission; public profiles carry no e-mail; other origins
+get no CORS access.
+
 ## Differences from the original
 
 - Sessions are server-side (better-auth) instead of stateless JWTs; there is no `localStorage` token (the original's rebuild note).
