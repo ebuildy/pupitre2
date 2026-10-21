@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { buttonVariants } from '@pupitre/ui/components/ui/button'
 import { cn } from '@pupitre/ui'
 
-import { UserPicker, userLabel } from '../../components/UserPicker.tsx'
+import { UserPicker } from '../../components/UserPicker.tsx'
+import { userLabel } from '../../lib/users.ts'
 
 /** Spec 145: enrolled users of a course; enroll by search, remove. */
 export function EnrollmentsPanel({ courseId }: { courseId: string }) {

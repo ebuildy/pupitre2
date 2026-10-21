@@ -5,10 +5,7 @@ import { Input } from '@pupitre/ui/components/ui/input'
 import { useQuery } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 import { adminApi } from '../lib/api.ts'
-
-export function userLabel(u: { username: string | null; name: string }) {
-  return u.username ?? u.name
-}
+import { userLabel } from '../lib/users.ts'
 
 /**
  * Search-as-you-type user field (username, name or e-mail). `value` is the picked user; typing again clears it.

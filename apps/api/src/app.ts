@@ -99,6 +99,7 @@ const learnerRoutes = createRouter()
   .route('/leaderboard', leaderboardRoutes)
   .route('/users', userRoutes)
   .route('/settings', settingsRoutes)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for its type (`AppType`)
 const routes = app.route('/api', learnerRoutes)
 
 // Admin app routes, all under /api/admin and admin-only. Typed separately (`AdminAppType`)

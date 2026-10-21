@@ -47,6 +47,8 @@ export function Catalogue() {
   useEffect(() => {
     if ((params.get('search') ?? '') === debouncedSearch) return
     update((next) => (debouncedSearch ? next.set('search', debouncedSearch) : next.delete('search')))
+    // Only the debounced search drives this: other URL changes must not write it back.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch])
 
   const skill = params.get('skill') || undefined

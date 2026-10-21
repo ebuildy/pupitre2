@@ -1,4 +1,3 @@
-import { useSession } from '@pupitre/auth-ui'
 import { useTranslation } from '@pupitre/i18n'
 import { type AdminUserUpdateInput, ROLES, type Role } from '@pupitre/shared'
 import { toast, unwrap } from '@pupitre/ui'
@@ -28,7 +27,7 @@ import { Switch } from '@pupitre/ui/components/ui/switch'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { adminApi } from '../lib/api.ts'
-import { userLabel } from './UserPicker.tsx'
+import { userLabel } from '../lib/users.ts'
 
 type EditableUser = { id: string; username: string | null; name: string; role: Role; isActive: boolean }
 
@@ -160,7 +159,3 @@ export function UserDeleteDialog({
   )
 }
 
-/** The signed-in admin: their own row has no delete button (spec 163). */
-export function useSelfId() {
-  return useSession().data?.user.id ?? null
-}

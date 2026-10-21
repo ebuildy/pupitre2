@@ -8,7 +8,7 @@ import { CheckIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 
-export function percentOf(progress: { done: number; total: number } | null) {
+function percentOf(progress: { done: number; total: number } | null) {
   return progress && progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0
 }
 

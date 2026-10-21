@@ -13,7 +13,8 @@ import { Textarea } from '@pupitre/ui/components/ui/textarea'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { UserPicker, userLabel } from '../../components/UserPicker.tsx'
+import { UserPicker } from '../../components/UserPicker.tsx'
+import { userLabel } from '../../lib/users.ts'
 import { adminApi } from '../../lib/api.ts'
 
 /** Specs 131–133, 135: rename / describe / move, members (with managers), courses of the group. */

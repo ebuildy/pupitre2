@@ -33,7 +33,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowDownIcon, ArrowUpIcon, XIcon } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { UserPicker, userLabel } from '../../components/UserPicker.tsx'
+import { UserPicker } from '../../components/UserPicker.tsx'
+import { userLabel } from '../../lib/users.ts'
 import { adminApi } from '../../lib/api.ts'
 
 function useSavePath(id: string) {

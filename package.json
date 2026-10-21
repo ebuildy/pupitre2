@@ -2,6 +2,7 @@
   "name": "pupitre",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.18.0",
   "engines": {
     "node": ">=24"
   },
@@ -11,6 +12,7 @@
     "sso:down": "docker compose -f docker/keycloak/compose.yaml down",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck && tsc -p e2e",
+    "lint": "eslint .",
     "db:generate": "pnpm --filter @pupitre/api db:generate",
     "db:migrate": "pnpm --filter @pupitre/api db:migrate",
     "db:seed": "pnpm --filter @pupitre/api db:seed",
@@ -22,8 +24,10 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
+    "@pupitre/lint": "workspace:*",
     "@pupitre/shared": "workspace:*",
     "@types/node": "^26.6.5",
+    "eslint": "10.13.0",
     "ldapjs": "3.0.7",
     "typescript": "^7.0.2"
   }

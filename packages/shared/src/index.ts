@@ -36,6 +36,7 @@ const WhatwgUrl = (globalThis as unknown as { URL: new (url: string, base: strin
  */
 export function safeRedirectPath(value: string | null | undefined): string | null {
   if (!value || value.length > 2048 || !value.startsWith('/')) return null
+  // eslint-disable-next-line no-control-regex -- control characters are exactly what is refused
   if (/[\u0000-\u001f\u007f\\]/.test(value)) return null
   let url
   try {

@@ -34,7 +34,7 @@ Everything is served on one origin (spec 004): the learner app's Vite server pro
 4. **Document** the behaviour as implemented in `docs/specs/<NNN>-<slug>.md`, same number as the
    original spec, ending with "Differences from the original" and "Source". Add it to
    `docs/specs/README.md` (sorted by number). Update `README.md` when commands or conventions change.
-5. **Verify** before saying it is done: `pnpm typecheck`, `pnpm build`, `pnpm test:e2e`
+5. **Verify** before saying it is done: `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test:e2e`
    (and `pnpm test:e2e --repeat-each 4` for new tests, to catch flakiness).
 6. **Commit and merge only when the user asks**: commit on the feature branch, then
    `git switch master && git merge --ff-only feat/<name>`. The default branch is `master`. No remote yet.
@@ -46,6 +46,7 @@ pnpm install
 pnpm dev            # http://localhost:3000 (admin at /admin/), API :3001, admin Vite :3002
 pnpm dev:sso        # starts the Keycloak demo (docker/keycloak, :8180), then pnpm dev; pnpm sso:down stops it
 pnpm typecheck      # every package + e2e
+pnpm lint           # ESLint; config in packages/lint (its own TypeScript 6: typescript-eslint cannot use TS 7)
 pnpm build          # both frontends
 pnpm test:e2e       # Playwright, starts its own servers (see below)
 pnpm db:generate    # Drizzle migration from schema changes
@@ -57,6 +58,9 @@ pnpm openapi        # write the OpenAPI document to apps/api/openapi.json (Swagg
 - Adding a dependency to `apps/api` can change how better-auth resolves (optional peers such as `@opentelemetry/api`)
   and break the `Auth` type used by `@pupitre/auth-ui` (`role` disappears from the session): run `pnpm typecheck` after
   `pnpm add`, and avoid such packages.
+- CI (`.github/workflows`) runs lint, typecheck, build, e2e, `pnpm audit --audit-level high`, gitleaks, CodeQL and
+  dependency review: a new dependency with a high advisory fails it (fix it, or override the transitive version in
+  `pnpm-workspace.yaml`). Pin new actions to a commit SHA.
 - New native dependency with a build script: allow it in `pnpm-workspace.yaml` (`allowBuilds`).
 - The shell is zsh: quote globs and arguments like `'@pupitre/shared@workspace:*'`, and do not rely on
   word-splitting of unquoted variables (`$H`).

@@ -4,7 +4,7 @@ import { Input } from '@pupitre/ui/components/ui/input'
 import { useState } from 'react'
 
 /** Spec 062: `POST /api/admin/media` (multipart), answers the served URL. */
-export async function uploadMedia(file: File): Promise<string> {
+async function uploadMedia(file: File): Promise<string> {
   const body = new FormData()
   body.append('file', file)
   const res = await fetch('/api/admin/media', { method: 'POST', body })

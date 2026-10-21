@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { UserDeleteDialog, UserEditDialog, useSelfId } from '../../components/UserDialogs.tsx'
+import { UserDeleteDialog, UserEditDialog } from '../../components/UserDialogs.tsx'
+import { useSelfId } from '../../lib/users.ts'
 import { adminApi } from '../../lib/api.ts'
 
 /** Spec 162: search, role and status filters (kept in the URL), edit and delete (163), XP and level (103). */

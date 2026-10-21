@@ -2,7 +2,7 @@ import { useTranslation } from '@pupitre/i18n'
 import { DIFFICULTIES, type Difficulty } from '@pupitre/shared'
 import { Slider } from '@pupitre/ui/components/ui/slider'
 import { cn } from '@pupitre/ui/lib/utils'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 /** Stops of the slider: every difficulty first, then each level. */
 const STOPS = ['', ...DIFFICULTIES] as const
@@ -15,10 +15,12 @@ type Stop = (typeof STOPS)[number]
 export function DifficultySlider({ value, onChange }: { value: Difficulty | ''; onChange: (value: Difficulty | '') => void }) {
   const { t } = useTranslation(['app', 'common'])
   const [index, setIndex] = useState(() => Math.max(0, STOPS.indexOf(value)))
-  // Back / forward navigation changes the URL under us.
-  useEffect(() => {
+  // Back / forward navigation changes the URL under us: follow it (adjusting state while rendering, not in an effect).
+  const [shown, setShown] = useState(value)
+  if (value !== shown) {
+    setShown(value)
     setIndex(Math.max(0, STOPS.indexOf(value)))
-  }, [value])
+  }
 
   const label = (stop: Stop) => (stop ? t(`common:difficulty.${stop}`) : t('catalogue.difficultyAll'))
   const commit = (i: number) => {

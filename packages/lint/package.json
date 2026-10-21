@@ -1,0 +1,19 @@
+{
+  "name": "@pupitre/lint",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ESLint config of the monorepo. typescript-eslint needs TypeScript's JavaScript API, which TypeScript 7 no longer ships: this package has its own TypeScript 6 (same language).",
+  "exports": {
+    ".": "./eslint.config.js"
+  },
+  "dependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.7",
+    "globals": "17.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0"
+  }
+}

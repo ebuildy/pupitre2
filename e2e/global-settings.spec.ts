@@ -11,7 +11,7 @@ async function fake(url: string, data: unknown) {
 }
 /** Spec 091: the verdict of e2e/fake-opa.mjs for a project, and what it was asked to evaluate. */
 const opaAnswer = (project: string, result: { allow: boolean; violations: string[] }) => fake(`${opa}/__fake/answers`, { project, result })
-type OpaCall = { engine: 'server' | 'cli'; policy: string; input: Record<string, any> }
+type OpaCall = { engine: 'server' | 'cli'; policy: string; input: Record<string, unknown> }
 const opaCalls = async (project: string): Promise<OpaCall[]> => (await (await fetch(`${opa}/__fake/calls?project=${encodeURIComponent(project)}`)).json()) as OpaCall[]
 
 // Runs in the `global-settings` project: alone, after every other test, one test at a time (see playwright.config.ts).

@@ -46,6 +46,7 @@ pupitre). See [docs/specs/027](docs/specs/027-sso.md#sso-demo-keycloak).
 | `pnpm dev` | API (tsx watch) + app + admin (Vite) in parallel |
 | `pnpm dev:sso` / `pnpm sso:down` | SSO demo: Keycloak (Docker), then `pnpm dev` / stop Keycloak |
 | `pnpm typecheck` | `tsc` across every package and the e2e tests |
+| `pnpm lint` | ESLint (typescript-eslint, React hooks) over the whole repo; config in `packages/lint` |
 | `pnpm build` | Production build of both frontends |
 | `pnpm test:e2e` | Playwright (ports 3100 app / 3101 api / 3102 admin, fresh `apps/api/data/e2e.db`) |
 | `pnpm db:generate` | Drizzle migration from schema changes (`apps/api/drizzle/`) |
@@ -54,6 +55,17 @@ pupitre). See [docs/specs/027](docs/specs/027-sso.md#sso-demo-keycloak).
 | `pnpm db:reset` | Delete the dev database, then migrate and load the mock data |
 | `pnpm auth:generate` | Regenerate `apps/api/src/db/schema/auth.ts` after changing better-auth plugins/config, then `pnpm db:generate` |
 | `pnpm openapi` | Write the OpenAPI 3.1 document of the API to `apps/api/openapi.json` (`pnpm openapi -- <file>` elsewhere) |
+
+## CI
+
+GitHub Actions, on pushes to `main` and on pull requests:
+
+- `.github/workflows/ci.yml`: `pnpm lint`, `pnpm typecheck`, `pnpm build` (both frontends), then `pnpm test:e2e`
+  (the Playwright report is kept as an artifact).
+- `.github/workflows/security.yml` (also weekly): `pnpm audit --audit-level high`, gitleaks over the git history,
+  CodeQL (`security-extended`), and dependency review on pull requests (high and critical advisories fail).
+
+Actions are pinned to commit SHAs. Run `pnpm lint && pnpm typecheck && pnpm build && pnpm test:e2e` before pushing.
 
 ## Conventions
 

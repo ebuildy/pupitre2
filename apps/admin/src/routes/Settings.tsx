@@ -8,7 +8,7 @@ import { Label } from '@pupitre/ui/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@pupitre/ui/components/ui/native-select'
 import { Switch } from '@pupitre/ui/components/ui/switch'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { adminApi } from '../lib/api.ts'
 
 /** The form keeps the whitelist and the minimum length as typed text; they are parsed on save. */
@@ -62,10 +62,13 @@ export function Settings() {
     queryKey: ['settings'],
     queryFn: () => unwrap(adminApi.settings.$get()),
   })
+  // The form restarts from the server's settings whenever they change (loaded, or saved).
   const [draft, setDraft] = useState<Draft | null>(null)
-  useEffect(() => {
+  const [loaded, setLoaded] = useState(data)
+  if (data !== loaded) {
+    setLoaded(data)
     if (data) setDraft(toDraft(data.settings))
-  }, [data])
+  }
 
   const save = useMutation({
     mutationFn: (input: SettingsUpdateInput) => unwrap(adminApi.settings.$put({ json: input })),
